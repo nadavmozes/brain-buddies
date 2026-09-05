@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# Builds the Flutter web app and publishes it to GitHub Pages on every push
+# to main. The site appears at:
+#   https://<owner>.github.io/<repo>/
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Permissions required for the Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate platform folders (web)
+        run: flutter create . --platforms=web
+
+      - name: Run tests
+        run: flutter test
+
+      # base-href MUST match the repo name so assets load under the
+      # /<repo>/ path on GitHub Pages.
+      - name: Build web
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

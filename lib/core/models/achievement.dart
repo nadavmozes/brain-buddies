@@ -1,0 +1,110 @@
+/// A hub-wide achievement, earned across any game and shown in the shared
+/// achievements shelf.
+class Achievement {
+  const Achievement({
+    required this.id,
+    required this.name,
+    required this.emoji,
+    required this.description,
+  });
+
+  final String id;
+  final String name;
+  final String emoji;
+  final String description;
+}
+
+/// The shared catalog of achievements. Games grant these by id via the
+/// PlayerProfile; keep ids stable once shipped.
+class Achievements {
+  Achievements._();
+
+  // General / cross-game
+  static const firstGame = Achievement(
+    id: 'first_game',
+    name: 'First Steps',
+    emoji: '👣',
+    description: 'Finish your very first round.',
+  );
+  static const perfectRound = Achievement(
+    id: 'perfect_round',
+    name: 'Flawless',
+    emoji: '💯',
+    description: 'Get every answer right in a round.',
+  );
+  static const streak5 = Achievement(
+    id: 'streak_5',
+    name: 'On Fire',
+    emoji: '🔥',
+    description: 'Answer 5 in a row correctly.',
+  );
+  static const coin200 = Achievement(
+    id: 'coin_200',
+    name: 'Coin Collector',
+    emoji: '💰',
+    description: 'Collect 200 coins in total.',
+  );
+  static const coin500 = Achievement(
+    id: 'coin_500',
+    name: 'Treasure Hunter',
+    emoji: '💎',
+    description: 'Collect 500 coins in total.',
+  );
+  static const collector = Achievement(
+    id: 'avatar_collector',
+    name: 'Dress Up',
+    emoji: '🎭',
+    description: 'Own 3 different avatars.',
+  );
+
+  // Number Quest
+  static const bossFriend = Achievement(
+    id: 'nq_boss',
+    name: 'Boss Beater',
+    emoji: '⚔️',
+    description: 'Beat a boss in Number Quest.',
+  );
+  static const multMaster = Achievement(
+    id: 'nq_mult',
+    name: 'Times Master',
+    emoji: '✖️',
+    description: 'Answer 50 multiplication questions right.',
+  );
+  static const heroLevel5 = Achievement(
+    id: 'nq_level5',
+    name: 'Rising Star',
+    emoji: '⭐',
+    description: 'Reach hero level 5 in Number Quest.',
+  );
+
+  // Shape Safari
+  static const guardianFriend = Achievement(
+    id: 'ss_guardian',
+    name: 'Animal Friend',
+    emoji: '🤝',
+    description: 'Befriend a guardian in Shape Safari.',
+  );
+  static const shapeExplorer = Achievement(
+    id: 'ss_explorer',
+    name: 'Trailblazer',
+    emoji: '🧭',
+    description: 'Clear a whole habitat trail in Shape Safari.',
+  );
+
+  static const List<Achievement> all = [
+    firstGame,
+    perfectRound,
+    streak5,
+    coin200,
+    coin500,
+    collector,
+    bossFriend,
+    multMaster,
+    heroLevel5,
+    guardianFriend,
+    shapeExplorer,
+  ];
+
+  static Achievement byId(String id) =>
+      all.firstWhere((a) => a.id == id, orElse: () => all.first);
+}
