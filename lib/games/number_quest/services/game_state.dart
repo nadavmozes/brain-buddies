@@ -216,9 +216,11 @@ class GameState extends ChangeNotifier {
 
     // Fastest time: record only on a decent run (>=70%) so rushing-and-missing
     // can't set a bogus record. Skip for the daily challenge (not on the map).
+    // Fastest time: only count a perfect 3-star run (skip the daily challenge,
+    // which isn't on the map).
     var isNewFastest = false;
     final onMap = WorldMap.allLevels.any((l) => l.id == level.id);
-    if (onMap && percent >= 70 && elapsedSeconds > 0) {
+    if (onMap && earnedStars == 3 && elapsedSeconds > 0) {
       final prevFastest = fastestSeconds(level.id);
       if (prevFastest == 0 || elapsedSeconds < prevFastest) {
         _levelFastest[level.id] = elapsedSeconds;
@@ -245,16 +247,13 @@ class GameState extends ChangeNotifier {
 
     // Grant SHARED achievements.
     final ids = <String>[Achievements.firstGame.id];
-    if (earnedStars == 3) ids.add(Achievements.perfectRound.id);
+    if (correct == total && total > 0) ids.add(Achievements.perfectRound.id);
+    if (earnedStars == 3) ids.add(Achievements.threeStar.id);
+    if (isNewFastest) ids.add(Achievements.speedster.id);
     if (bestAnswerStreak >= 5) ids.add(Achievements.streak5.id);
     if (bossDefeated) ids.add(Achievements.bossFriend.id);
     if (_multCorrect >= 50) ids.add(Achievements.multMaster.id);
     if (afterLevel >= 5) ids.add(Achievements.heroLevel5.id);
-    // Whole-world cleared? (all levels in this world have a star)
-    final worldLevels = WorldMap.world(level.world).levels;
-    if (worldLevels.every((l) => stars(l.id) > 0)) {
-      // reuse trailblazer-style meaning via bossFriend already covered; skip.
-    }
     final newAchievements = await profile.grantAll(ids);
 
     notifyListeners();

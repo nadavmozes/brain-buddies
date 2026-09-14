@@ -56,6 +56,36 @@ class Achievements {
     emoji: '🎭',
     description: 'Own 3 different avatars.',
   );
+  static const coin1000 = Achievement(
+    id: 'coin_1000',
+    name: 'Coin Champion',
+    emoji: '🏦',
+    description: 'Collect 1000 coins in total.',
+  );
+  static const wardrobe = Achievement(
+    id: 'avatar_wardrobe',
+    name: 'Fashionista',
+    emoji: '👗',
+    description: 'Own 6 different avatars.',
+  );
+  static const speedster = Achievement(
+    id: 'speedster',
+    name: 'Speedster',
+    emoji: '⚡',
+    description: 'Set a fastest-time record in any game.',
+  );
+  static const threeStar = Achievement(
+    id: 'three_star',
+    name: 'Star Power',
+    emoji: '🌟',
+    description: 'Earn 3 stars in a round.',
+  );
+  static const explorer = Achievement(
+    id: 'hub_explorer',
+    name: 'Explorer',
+    emoji: '🗺️',
+    description: 'Play every game at least once.',
+  );
 
   // Number Quest
   static const bossFriend = Achievement(
@@ -91,18 +121,41 @@ class Achievements {
     description: 'Clear a whole habitat trail in Shape Safari.',
   );
 
+  // Word Wizard
+  static const spellMaster = Achievement(
+    id: 'ww_master',
+    name: 'Spell Master',
+    emoji: '📜',
+    description: 'Get a perfect round in Word Wizard.',
+  );
+
+  // Clock Hero
+  static const timeKeeper = Achievement(
+    id: 'ch_keeper',
+    name: 'Time Keeper',
+    emoji: '⏰',
+    description: 'Get a perfect round in Clock Hero.',
+  );
+
   static const List<Achievement> all = [
     firstGame,
     perfectRound,
+    threeStar,
     streak5,
+    speedster,
     coin200,
     coin500,
+    coin1000,
     collector,
+    wardrobe,
+    explorer,
     bossFriend,
     multMaster,
     heroLevel5,
     guardianFriend,
     shapeExplorer,
+    spellMaster,
+    timeKeeper,
   ];
 
   static Achievement byId(String id) =>

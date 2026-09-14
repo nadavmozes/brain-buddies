@@ -17,6 +17,7 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _ownedAvatars = {Avatars.defaultId};
   String _selectedAvatar = Avatars.defaultId;
   final Set<String> _achievements = {};
+  final Set<String> _playedGames = {};
   bool _soundOn = true;
 
   static const _kCoins = 'profile_coins';
@@ -24,6 +25,7 @@ class PlayerProfile extends ChangeNotifier {
   static const _kOwned = 'profile_owned_avatars';
   static const _kSelected = 'profile_selected_avatar';
   static const _kAchievements = 'profile_achievements';
+  static const _kPlayed = 'profile_played_games';
   static const _kSound = 'profile_sound';
 
   bool get isLoaded => _loaded;
@@ -53,6 +55,9 @@ class PlayerProfile extends ChangeNotifier {
     _achievements
       ..clear()
       ..addAll(p.getStringList(_kAchievements) ?? const []);
+    _playedGames
+      ..clear()
+      ..addAll(p.getStringList(_kPlayed) ?? const []);
     _loaded = true;
     notifyListeners();
   }
@@ -76,6 +81,7 @@ class PlayerProfile extends ChangeNotifier {
     // Coin milestone achievements.
     if (_lifetimeCoins >= 200) _grant(Achievements.coin200.id);
     if (_lifetimeCoins >= 500) _grant(Achievements.coin500.id);
+    if (_lifetimeCoins >= 1000) _grant(Achievements.coin1000.id);
     await _persistAchievements();
     notifyListeners();
   }
@@ -92,12 +98,25 @@ class PlayerProfile extends ChangeNotifier {
     _ownedAvatars.add(avatar.id);
     await _prefs?.setInt(_kCoins, _coins);
     await _prefs?.setStringList(_kOwned, _ownedAvatars.toList());
-    if (_ownedAvatars.length >= 3) {
-      _grant(Achievements.collector.id);
-      await _persistAchievements();
-    }
+    if (_ownedAvatars.length >= 3) _grant(Achievements.collector.id);
+    if (_ownedAvatars.length >= 6) _grant(Achievements.wardrobe.id);
+    await _persistAchievements();
     notifyListeners();
     return true;
+  }
+
+  // ---- play tracking (for the "played every game" achievement) ----
+
+  /// Records that a game was opened; grants the Explorer award once all games
+  /// have been played. [totalGames] is the number of games in the hub.
+  Future<void> recordGamePlayed(String gameId, int totalGames) async {
+    if (_playedGames.contains(gameId)) return;
+    _playedGames.add(gameId);
+    await _prefs?.setStringList(_kPlayed, _playedGames.toList());
+    if (_playedGames.length >= totalGames) {
+      if (_grant(Achievements.explorer.id)) await _persistAchievements();
+    }
+    notifyListeners();
   }
 
   Future<void> selectAvatar(String id) async {
@@ -153,6 +172,7 @@ class PlayerProfile extends ChangeNotifier {
       ..add(Avatars.defaultId);
     _selectedAvatar = Avatars.defaultId;
     _achievements.clear();
+    _playedGames.clear();
     _soundOn = true;
     SoundBridge.enabled = true;
     await _prefs?.remove(_kCoins);
@@ -160,6 +180,7 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kOwned);
     await _prefs?.remove(_kSelected);
     await _prefs?.remove(_kAchievements);
+    await _prefs?.remove(_kPlayed);
     await _prefs?.remove(_kSound);
     notifyListeners();
   }

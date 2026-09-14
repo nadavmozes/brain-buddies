@@ -9,19 +9,23 @@ import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/timer_chip.dart';
 import '../models/word_question.dart';
+import '../models/wizard_level.dart';
 import '../services/word_generator.dart';
 import '../services/wizard_state.dart';
 import 'wizard_result_screen.dart';
 
-/// Word Wizard gameplay: 8 word questions, timed for a fastest-run record.
+/// Word Wizard gameplay for a single spellbook level, timed for a record.
 class WizardGameScreen extends StatefulWidget {
-  const WizardGameScreen(
-      {super.key, required this.state, required this.profile});
+  const WizardGameScreen({
+    super.key,
+    required this.state,
+    required this.profile,
+    required this.level,
+  });
 
   final WizardState state;
   final PlayerProfile profile;
-
-  static const int questionsPerRound = 8;
+  final WizardLevel level;
 
   @override
   State<WizardGameScreen> createState() => _WizardGameScreenState();
@@ -45,8 +49,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = WordQuestionGenerator()
-        .generateRound(WizardGameScreen.questionsPerRound, difficulty: 0.3);
+    _questions = WordQuestionGenerator.forLevel(widget.level);
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed = _stopwatch.elapsed.inSeconds);
@@ -92,14 +95,15 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     }
     _stopwatch.stop();
     _ticker?.cancel();
-    final outcome = await widget.state.completeRound(
+    final outcome = await widget.state.completeLevel(
       profile: widget.profile,
+      level: widget.level,
       correct: _correct,
       total: _questions.length,
       elapsedSeconds: _stopwatch.elapsed.inSeconds,
     );
     if (!mounted) return;
-    if (outcome.stars == 3 || outcome.isNewFastest) {
+    if (outcome.stars == 3 || outcome.isNewFastest || outcome.bossBeaten) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();
     }
     Navigator.of(context).pushReplacement(
@@ -107,6 +111,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
         builder: (_) => WizardResultScreen(
           state: widget.state,
           profile: widget.profile,
+          level: widget.level,
           outcome: outcome,
           correct: _correct,
           total: _questions.length,
@@ -134,9 +139,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               children: [
                 Row(
                   children: [
-                    const Text('🔤 Wizard',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w900)),
+                    Text(
+                      widget.level.isBoss
+                          ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
+                          : '${widget.level.chapter.emoji} ${widget.level.title}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w900),
+                    ),
                     const Spacer(),
                     TimerChip(seconds: _elapsed),
                     const SizedBox(width: 10),

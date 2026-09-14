@@ -19,10 +19,23 @@ class ProblemGenerator {
   /// Scales a base range size by the challenge multiplier (min 1).
   int _scale(int base) => max(1, (base * _challenge).round());
 
-  /// Returns a list of [count] problems for the given [difficulty].
+  /// Returns a list of [count] problems for the given [difficulty], avoiding
+  /// repeated questions where the pool allows it.
   List<MathProblem> generateRound(Difficulty difficulty, {int? count}) {
     final total = count ?? difficulty.questionsPerRound;
-    return List.generate(total, (_) => generateOne(difficulty));
+    final problems = <MathProblem>[];
+    final seen = <String>{};
+    for (var i = 0; i < total; i++) {
+      MathProblem p;
+      var guard = 0;
+      do {
+        p = generateOne(difficulty);
+        guard++;
+      } while (seen.contains(p.question) && guard < 25);
+      seen.add(p.question);
+      problems.add(p);
+    }
+    return problems;
   }
 
   /// Builds a round for a specific map level. Later levels in a world are a

@@ -53,9 +53,12 @@ class _GameScreenState extends State<GameScreen>
   BuddyMood _mood = BuddyMood.idle;
   String _feedbackText = '';
 
-  // Boss state
+  // Boss state. The boss has one heart per question so every question counts;
+  // the hero has a fixed cushion of lives.
   late int _bossHearts;
+  late int _bossMaxHearts;
   late int _heroHearts;
+  static const int _heroMaxHearts = 3;
   bool get _isBoss => widget.level.isBoss;
 
   late AnimationController _shakeController;
@@ -75,8 +78,10 @@ class _GameScreenState extends State<GameScreen>
       widget.level,
       recentAccuracy: _recentAccuracy(),
     );
-    _bossHearts = 5;
-    _heroHearts = 3;
+    // One boss heart per question, so beating the boss needs every question.
+    _bossMaxHearts = _problems.length;
+    _bossHearts = _bossMaxHearts;
+    _heroHearts = _heroMaxHearts;
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -246,7 +251,9 @@ class _GameScreenState extends State<GameScreen>
                 if (_isBoss)
                   _BossBar(
                     bossHearts: _bossHearts,
+                    bossMaxHearts: _bossMaxHearts,
                     heroHearts: _heroHearts,
+                    heroMaxHearts: _heroMaxHearts,
                     bossEmoji: widget.level.boss.emoji,
                     heroEmoji: hero.emoji,
                   ),
@@ -358,13 +365,17 @@ class _Header extends StatelessWidget {
 class _BossBar extends StatelessWidget {
   const _BossBar({
     required this.bossHearts,
+    required this.bossMaxHearts,
     required this.heroHearts,
+    required this.heroMaxHearts,
     required this.bossEmoji,
     required this.heroEmoji,
   });
 
   final int bossHearts;
+  final int bossMaxHearts;
   final int heroHearts;
+  final int heroMaxHearts;
   final String bossEmoji;
   final String heroEmoji;
 
@@ -376,22 +387,32 @@ class _BossBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Text(bossEmoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: 6),
-              for (int i = 0; i < 5; i++)
-                Text(i < bossHearts ? '💜' : '🖤',
-                    style: const TextStyle(fontSize: 16)),
-            ],
+          // Boss hearts (one per question). Wrap so 8 fit on small screens.
+          Flexible(
+            child: Row(
+              children: [
+                Text(bossEmoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Wrap(
+                    children: [
+                      for (int i = 0; i < bossMaxHearts; i++)
+                        Text(i < bossHearts ? '💜' : '🖤',
+                            style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Row(
             children: [
-              for (int i = 0; i < 3; i++)
+              for (int i = 0; i < heroMaxHearts; i++)
                 Text(i < heroHearts ? '❤️' : '🤍',
-                    style: const TextStyle(fontSize: 16)),
+                    style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 6),
-              Text(heroEmoji, style: const TextStyle(fontSize: 24)),
+              Text(heroEmoji, style: const TextStyle(fontSize: 22)),
             ],
           ),
         ],

@@ -86,8 +86,9 @@ class ClockState extends ChangeNotifier {
     final isNewBest = correct > _bestCorrect;
     if (isNewBest) _bestCorrect = correct;
 
+    // A record only counts on a perfect 3-star run.
     var isNewFastest = false;
-    if (percent >= 70) {
+    if (stars == 3 && elapsedSeconds > 0) {
       if (_fastestSeconds == 0 || elapsedSeconds < _fastestSeconds) {
         _fastestSeconds = elapsedSeconds;
         isNewFastest = true;
@@ -99,7 +100,12 @@ class ClockState extends ChangeNotifier {
     await _prefs?.setInt(_kRounds, _roundsPlayed);
 
     final ids = <String>[Achievements.firstGame.id];
-    if (correct == total && total > 0) ids.add(Achievements.perfectRound.id);
+    if (correct == total && total > 0) {
+      ids.add(Achievements.perfectRound.id);
+      ids.add(Achievements.timeKeeper.id);
+    }
+    if (stars == 3) ids.add(Achievements.threeStar.id);
+    if (isNewFastest) ids.add(Achievements.speedster.id);
     await profile.grantAll(ids);
 
     notifyListeners();

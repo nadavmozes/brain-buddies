@@ -42,12 +42,28 @@ class ShapeQuestionGenerator {
     return List.of(ShapeKind.values);
   }
 
+  /// A signature identifying a question so a round can avoid near-duplicates.
+  String _signature(ShapeQuestion q) {
+    final seq = q.patternSequence?.map((s) => s.name).join('-') ?? '';
+    return '${q.type}|${q.prompt}|${q.promptShape?.name ?? ''}|$seq';
+  }
+
   List<ShapeQuestion> generateRound(int count, {double difficulty = 0.4}) {
-    return List.generate(count, (i) {
+    final questions = <ShapeQuestion>[];
+    final seen = <String>{};
+    for (var i = 0; i < count; i++) {
       // Ramp difficulty across the round.
       final d = (difficulty + i / (count * 2)).clamp(0.0, 1.0);
-      return generateOne(d);
-    });
+      ShapeQuestion q;
+      var guard = 0;
+      do {
+        q = generateOne(d);
+        guard++;
+      } while (seen.contains(_signature(q)) && guard < 25);
+      seen.add(_signature(q));
+      questions.add(q);
+    }
+    return questions;
   }
 
   ShapeQuestion generateOne(double difficulty) {

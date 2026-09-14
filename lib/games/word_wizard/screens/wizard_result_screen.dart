@@ -9,8 +9,17 @@ import '../../../core/widgets/confetti.dart';
 import '../../../core/widgets/double_awards_button.dart';
 import '../../../core/widgets/star_row.dart';
 import '../../../core/widgets/timer_chip.dart';
+import '../models/wizard_level.dart';
 import '../services/wizard_state.dart';
 import 'wizard_game_screen.dart';
+
+/// The next lesson after [level] in play order, or null if it's the last.
+WizardLevel? _nextLevelAfter(WizardLevel level) {
+  final order = WizardMap.allLevels;
+  final pos = order.indexWhere((l) => l.id == level.id);
+  if (pos < 0 || pos + 1 >= order.length) return null;
+  return order[pos + 1];
+}
 
 /// Word Wizard results: stars, coins, time, new-record banner, confetti.
 class WizardResultScreen extends StatefulWidget {
@@ -18,6 +27,7 @@ class WizardResultScreen extends StatefulWidget {
     super.key,
     required this.state,
     required this.profile,
+    required this.level,
     required this.outcome,
     required this.correct,
     required this.total,
@@ -25,6 +35,7 @@ class WizardResultScreen extends StatefulWidget {
 
   final WizardState state;
   final PlayerProfile profile;
+  final WizardLevel level;
   final WizardOutcome outcome;
   final int correct;
   final int total;
@@ -144,30 +155,8 @@ class _WizardResultScreenState extends State<WizardResultScreen> {
                       ),
                       const SizedBox(height: 16),
                       const DoubleAwardsButton(),
-                      const SizedBox(height: 20),
-                      ComicButton(
-                        label: 'Play Again',
-                        icon: Icons.replay_rounded,
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => WizardGameScreen(
-                                  state: widget.state,
-                                  profile: widget.profile),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      ComicButton(
-                        label: 'Home',
-                        icon: Icons.home_rounded,
-                        color: Colors.white,
-                        textColor: AppTheme.ink,
-                        fontSize: 18,
-                        onPressed: () =>
-                            Navigator.of(context).popUntil((r) => r.isFirst),
-                      ),
+                      const SizedBox(height: 16),
+                      _buildActions(context),
                     ],
                   ),
                 ),
@@ -177,6 +166,62 @@ class _WizardResultScreenState extends State<WizardResultScreen> {
           if (_celebrate) const Positioned.fill(child: Confetti()),
         ],
       ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context) {
+    final level = widget.level;
+    final next = _nextLevelAfter(level);
+    // Advance once this lesson is cleared (>=1 star); boss must be beaten.
+    final canAdvance =
+        widget.outcome.stars > 0 && (!level.isBoss || widget.outcome.bossBeaten);
+    final showNext = next != null && canAdvance;
+
+    return Column(
+      children: [
+        if (showNext)
+          ComicButton(
+            label: 'Next Lesson',
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => WizardGameScreen(
+                      state: widget.state,
+                      profile: widget.profile,
+                      level: next),
+                ),
+              );
+            },
+          ),
+        if (showNext) const SizedBox(height: 12),
+        ComicButton(
+          label: 'Back to Path',
+          icon: Icons.map_rounded,
+          color: showNext ? Colors.white : AppTheme.primary,
+          textColor: showNext ? AppTheme.ink : Colors.white,
+          fontSize: showNext ? 18 : 22,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        const SizedBox(height: 12),
+        ComicButton(
+          label: 'Play Again',
+          icon: Icons.replay_rounded,
+          color: Colors.white,
+          textColor: AppTheme.ink,
+          fontSize: 18,
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => WizardGameScreen(
+                    state: widget.state,
+                    profile: widget.profile,
+                    level: level),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

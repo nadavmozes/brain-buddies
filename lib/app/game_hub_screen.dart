@@ -52,6 +52,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
       await _numberQuestState!.load();
     }
     if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.numberQuest.id, GameCatalog.all.length);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
@@ -66,6 +68,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
       await _safariState!.load();
     }
     if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.shapeSafari.id, GameCatalog.all.length);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
@@ -80,6 +84,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
       await _wizardState!.load();
     }
     if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.wordWizard.id, GameCatalog.all.length);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => WordWizardHome(state: _wizardState!, profile: _profile),
@@ -93,6 +99,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
       await _clockState!.load();
     }
     if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.clockHero.id, GameCatalog.all.length);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ClockHeroHome(state: _clockState!, profile: _profile),
@@ -143,40 +151,45 @@ class _GameHubScreenState extends State<GameHubScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              if (_profileReady)
-                _ProfileBar(
-                  profile: _profile,
-                  onTapAvatar: () => showAvatarPicker(context, _profile),
+          // Whole hub scrolls so nothing is clipped on short screens.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                if (_profileReady)
+                  _ProfileBar(
+                    profile: _profile,
+                    onTapAvatar: () => showAvatarPicker(context, _profile),
+                  ),
+                const SizedBox(height: 12),
+                const _HubTitle(),
+                const SizedBox(height: 6),
+                const Text(
+                  'Pick a game and start learning!',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
-              const SizedBox(height: 12),
-              const _HubTitle(),
-              const SizedBox(height: 6),
-              const Text(
-                'Pick a game and start learning!',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: GridView.count(
+                const SizedBox(height: 12),
+                GridView.count(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.82,
+                  // Let the grid size to its content; the page scrolls.
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   children: [
                     for (final game in GameCatalog.all)
                       _GameCard(game: game, onTap: () => _onTap(game)),
                   ],
                 ),
-              ),
-              if (_profileReady) _hubActions(),
-              const SizedBox(height: 8),
-              _Footer(onFeedback: () => FeedbackEmail.open(context)),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 12),
+                if (_profileReady) _hubActions(),
+                const SizedBox(height: 8),
+                _Footer(onFeedback: () => FeedbackEmail.open(context)),
+              ],
+            ),
           ),
         ),
       ),

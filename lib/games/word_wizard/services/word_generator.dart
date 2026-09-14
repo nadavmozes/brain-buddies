@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../models/word_bank.dart';
 import '../models/word_question.dart';
+import '../models/wizard_level.dart';
 
 /// Generates Word Wizard questions. [difficulty] 0..1 selects the word pool
 /// and mixes in harder question types.
@@ -10,11 +11,34 @@ class WordQuestionGenerator {
 
   final Random _rng;
 
+  /// Builds a round for a specific spellbook level using its difficulty.
+  static List<WordQuestion> forLevel(WizardLevel level, {Random? random}) {
+    final gen = WordQuestionGenerator(random: random);
+    return gen.generateRound(
+      level.questionCount,
+      difficulty: level.difficulty(WizardMap.levelsPerChapter),
+    );
+  }
+
+  /// A signature so a round can avoid repeating the same question.
+  String _signature(WordQuestion q) =>
+      '${q.type}|${q.emoji}|${q.display}|${q.choices[q.correctIndex]}';
+
   List<WordQuestion> generateRound(int count, {double difficulty = 0.3}) {
-    return List.generate(count, (i) {
+    final questions = <WordQuestion>[];
+    final seen = <String>{};
+    for (var i = 0; i < count; i++) {
       final d = (difficulty + i / (count * 2)).clamp(0.0, 1.0);
-      return generateOne(d);
-    });
+      WordQuestion q;
+      var guard = 0;
+      do {
+        q = generateOne(d);
+        guard++;
+      } while (seen.contains(_signature(q)) && guard < 25);
+      seen.add(_signature(q));
+      questions.add(q);
+    }
+    return questions;
   }
 
   WordQuestion generateOne(double difficulty) {

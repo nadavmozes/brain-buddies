@@ -124,9 +124,9 @@ class SafariState extends ChangeNotifier {
       await _prefs?.setInt('safari_level_${level.id}', stars);
     }
 
-    // Fastest time: only count a decent run (>=70%).
+    // Fastest time: only count a perfect 3-star run.
     var isNewFastest = false;
-    if (percent >= 70 && elapsedSeconds > 0) {
+    if (stars == 3 && elapsedSeconds > 0) {
       final prevFastest = fastestSeconds(level.id);
       if (prevFastest == 0 || elapsedSeconds < prevFastest) {
         _levelFastest[level.id] = elapsedSeconds;
@@ -155,6 +155,8 @@ class SafariState extends ChangeNotifier {
     // Grant SHARED achievements.
     final ids = <String>[Achievements.firstGame.id];
     if (correct == total && total > 0) ids.add(Achievements.perfectRound.id);
+    if (stars == 3) ids.add(Achievements.threeStar.id);
+    if (isNewFastest) ids.add(Achievements.speedster.id);
     if (guardianBefriended) ids.add(Achievements.guardianFriend.id);
     // Whole habitat trail cleared?
     final trailLevels = SafariMap.trail(level.habitat).levels;
