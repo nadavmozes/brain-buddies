@@ -18,12 +18,39 @@ lib/
 │  ├─ services/                 # player_profile (shared), feedback_service,
 │  │                            #   sound_bridge / _stub / _web
 │  ├─ theme/app_theme.dart      # Comic palette, borders, shadows
-│  └─ widgets/                  # comic_button, comic_panel, star_row,
-│                               #   coin_pill, xp_bar, confetti
+│  └─ widgets/                  # comic_button, comic_panel, star_row, coin_pill,
+│                               #   xp_bar, confetti, timer_chip,
+│                               #   double_awards_button
 └─ games/
-   ├─ number_quest/             # models / services / screens / widgets
-   └─ shape_safari/             # models / services / screens / widgets
+   ├─ number_quest/             # worlds → level map → boss battles
+   ├─ shape_safari/             # habitats → trail map → guardian encounters
+   ├─ word_wizard/              # chapters → spellbook path → Spell Master boss
+   └─ clock_hero/               # time-of-day worlds → trail → guardian
 ```
+
+All four games are playable. Each game folder is self-contained with its own
+`models/`, `services/`, `screens/`, and (where needed) `widgets/`.
+
+## Shared per-game pattern
+
+Every game follows the same proven shape, so new ones should too:
+
+- **A world/level model** (`<game>_level.dart` or similar): an enum of worlds
+  with theme color + difficulty, a `<Game>Level` (id, questionCount, difficulty,
+  `isBoss`), and a `<Game>Map` with `levelsPer...` + `allLevels` in play order.
+  The final level of each world is a friendly **boss/guardian** (never scary).
+- **A question generator** with a static `forLevel(level)` that uses the world's
+  difficulty and **de-duplicates** questions within a round (seen-set + retry
+  guard, ~25 tries).
+- **A per-game state** (`ChangeNotifier`): per-level **stars** and **fastest
+  time** maps, `isLevelUnlocked` (previous level in `allLevels` needs ≥1 star),
+  and `completeLevel(...)` that awards **shared** coins/achievements via
+  `PlayerProfile` while keeping stars/times local. Fastest time only counts on a
+  3-star run.
+- **Screens**: a home that is a **world select**, a **trail/map** screen (winding
+  path, locked/unlocked nodes, stars), a **game** screen (live `TimerChip`), and a
+  **result** screen (stars, coins, time, `DoubleAwardsButton`, and
+  Next-level / Back-to-map / Play-again actions).
 
 ## Rules
 
@@ -37,7 +64,11 @@ lib/
 
 ## Adding a new game
 
-1. Create `lib/games/<game>/` with its own models/screens/services.
+1. Create `lib/games/<game>/` following the **Shared per-game pattern** above
+   (world/level model, generator with `forLevel` + de-dup, `ChangeNotifier`
+   state with per-level stars/fastest, and the four screens).
 2. Add a `GameEntry` in `core/models/game_catalog.dart` (`available: true`).
-3. Pass the shared `PlayerProfile` into its entry screen and route from
-   `game_hub_screen.dart`.
+3. Pass the shared `PlayerProfile` into its entry screen, route from
+   `game_hub_screen.dart`, and call
+   `profile.recordGamePlayed(GameCatalog.<id>.id, GameCatalog.all.length)` in
+   the hub open method (powers the "Explorer" achievement).

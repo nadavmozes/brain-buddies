@@ -9,8 +9,17 @@ import '../../../core/widgets/confetti.dart';
 import '../../../core/widgets/double_awards_button.dart';
 import '../../../core/widgets/star_row.dart';
 import '../../../core/widgets/timer_chip.dart';
+import '../models/time_world.dart';
 import '../services/clock_state.dart';
 import 'clock_game_screen.dart';
+
+/// The next trail level after [level], or null if it's the last.
+ClockLevel? _nextLevelAfter(ClockLevel level) {
+  final order = ClockMap.allLevels;
+  final pos = order.indexWhere((l) => l.id == level.id);
+  if (pos < 0 || pos + 1 >= order.length) return null;
+  return order[pos + 1];
+}
 
 /// Clock Hero results: stars, coins, time, new-record banner, confetti.
 class ClockResultScreen extends StatefulWidget {
@@ -18,6 +27,7 @@ class ClockResultScreen extends StatefulWidget {
     super.key,
     required this.state,
     required this.profile,
+    required this.level,
     required this.outcome,
     required this.correct,
     required this.total,
@@ -25,6 +35,7 @@ class ClockResultScreen extends StatefulWidget {
 
   final ClockState state;
   final PlayerProfile profile;
+  final ClockLevel level;
   final ClockOutcome outcome;
   final int correct;
   final int total;
@@ -38,7 +49,18 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
       widget.total == 0 ? 0 : ((widget.correct / widget.total) * 100).round();
 
   bool get _celebrate =>
-      widget.outcome.stars == 3 || widget.outcome.isNewFastest;
+      widget.outcome.stars == 3 ||
+      widget.outcome.isNewFastest ||
+      widget.outcome.guardianGreeted;
+
+  String get _title {
+    if (widget.level.isBoss) {
+      return widget.outcome.guardianGreeted
+          ? 'GUARDIAN GREETED!'
+          : 'ALMOST! TRY AGAIN';
+    }
+    return widget.outcome.stars == 3 ? 'TIME MASTER!' : 'GOOD TIMING!';
+  }
 
   @override
   void initState() {
@@ -77,11 +99,10 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           child: Text(
-                            outcome.stars == 3
-                                ? 'TIME MASTER!'
-                                : 'GOOD TIMING!',
+                            _title,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 26,
+                              fontSize: 24,
                               fontWeight: FontWeight.w900,
                               shadows: [
                                 Shadow(color: AppTheme.ink, offset: Offset(2, 2)),
@@ -146,30 +167,8 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                       ),
                       const SizedBox(height: 16),
                       const DoubleAwardsButton(),
-                      const SizedBox(height: 20),
-                      ComicButton(
-                        label: 'Play Again',
-                        icon: Icons.replay_rounded,
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => ClockGameScreen(
-                                  state: widget.state,
-                                  profile: widget.profile),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      ComicButton(
-                        label: 'Home',
-                        icon: Icons.home_rounded,
-                        color: Colors.white,
-                        textColor: AppTheme.ink,
-                        fontSize: 18,
-                        onPressed: () =>
-                            Navigator.of(context).popUntil((r) => r.isFirst),
-                      ),
+                      const SizedBox(height: 16),
+                      _buildActions(context),
                     ],
                   ),
                 ),
@@ -179,6 +178,59 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
           if (_celebrate) const Positioned.fill(child: Confetti()),
         ],
       ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context) {
+    final level = widget.level;
+    final next = _nextLevelAfter(level);
+    final canAdvance = widget.outcome.stars > 0 &&
+        (!level.isBoss || widget.outcome.guardianGreeted);
+    final showNext = next != null && canAdvance;
+
+    return Column(
+      children: [
+        if (showNext)
+          ComicButton(
+            label: 'Next Stop',
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => ClockGameScreen(
+                      state: widget.state,
+                      profile: widget.profile,
+                      level: next),
+                ),
+              );
+            },
+          ),
+        if (showNext) const SizedBox(height: 12),
+        ComicButton(
+          label: 'Back to Trail',
+          icon: Icons.map_rounded,
+          color: showNext ? Colors.white : AppTheme.primary,
+          textColor: showNext ? AppTheme.ink : Colors.white,
+          fontSize: showNext ? 18 : 22,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        const SizedBox(height: 12),
+        ComicButton(
+          label: 'Play Again',
+          icon: Icons.replay_rounded,
+          color: Colors.white,
+          textColor: AppTheme.ink,
+          fontSize: 18,
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => ClockGameScreen(
+                    state: widget.state, profile: widget.profile, level: level),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

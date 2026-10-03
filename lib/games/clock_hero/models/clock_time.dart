@@ -23,6 +23,14 @@ class ClockTime {
     return label;
   }
 
+  /// Returns the time [hours] later (wrapping around the 12-hour clock),
+  /// keeping the same minute. Used for elapsed-time questions.
+  ClockTime addHours(int hours) {
+    var h = (hour + hours) % 12;
+    if (h == 0) h = 12;
+    return ClockTime(h, minute);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is ClockTime && other.hour == hour && other.minute == minute;

@@ -86,6 +86,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('CLOCK'), findsOneWidget);
     expect(find.text('HERO'), findsOneWidget);
+
+    // Clock Hero home is a world select; open the Morning trail map.
+    expect(find.text('Morning Trail'), findsOneWidget);
+    await tester.tap(find.text('Morning Trail'));
+    await tester.pumpAndSettle();
+    expect(find.text('🌅 Morning Trail'), findsOneWidget);
   });
 
   testWidgets('Hub opens the shared Avatar Shop with a premium coming-soon',

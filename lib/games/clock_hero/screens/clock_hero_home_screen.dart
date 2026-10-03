@@ -5,13 +5,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/coin_pill.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/timer_chip.dart';
-import '../models/clock_time.dart';
+import '../models/time_world.dart';
 import '../services/clock_state.dart';
-import '../widgets/clock_face.dart';
-import 'clock_game_screen.dart';
+import 'clock_trail_screen.dart';
 
-/// Clock Hero landing screen.
+/// Clock Hero landing screen: title, HUD, and the time-of-day world select.
 class ClockHeroHome extends StatelessWidget {
   const ClockHeroHome({super.key, required this.state, required this.profile});
 
@@ -51,46 +49,34 @@ class ClockHeroHome extends StatelessWidget {
                     ),
                     const Spacer(),
                     AnimatedBuilder(
-                      animation: profile,
-                      builder: (_, __) => CoinPill(amount: profile.coins),
+                      animation: Listenable.merge([state, profile]),
+                      builder: (_, __) => Row(
+                        children: [
+                          const Icon(Icons.star_rounded,
+                              color: AppTheme.accent, size: 22),
+                          Text(' ${state.totalStars} ',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w900)),
+                          const SizedBox(width: 8),
+                          CoinPill(amount: profile.coins),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const _TitleBanner(),
                 const SizedBox(height: 12),
-                const ClockFace(time: ClockTime(10, 30), size: 120),
+                const _TitleBanner(),
                 const SizedBox(height: 16),
-                AnimatedBuilder(
-                  animation: state,
-                  builder: (_, __) => ComicPanel(
-                    color: AppTheme.accent,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _stat('Best',
-                            '${state.bestCorrect}/${ClockGameScreen.questionsPerRound}'),
-                        _fastest(),
-                        _stat('Rounds', '${state.roundsPlayed}'),
-                      ],
-                    ),
-                  ),
+                const Text(
+                  'Pick a time of day to explore!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 20),
-                ComicButton(
-                  label: 'PLAY',
-                  icon: Icons.play_arrow_rounded,
-                  fontSize: 26,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ClockGameScreen(state: state, profile: profile),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+                for (final world in TimeWorld.values) ...[
+                  _WorldCard(state: state, profile: profile, world: world),
+                  const SizedBox(height: 14),
+                ],
+                const SizedBox(height: 4),
                 AnimatedBuilder(
                   animation: profile,
                   builder: (_, __) => ComicButton(
@@ -115,30 +101,81 @@ class ClockHeroHome extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _stat(String label, String value) {
-    return Column(
-      children: [
-        Text(value,
-            style:
-                const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-        Text(label,
-            style:
-                const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-      ],
-    );
+class _WorldCard extends StatelessWidget {
+  const _WorldCard(
+      {required this.state, required this.profile, required this.world});
+
+  final ClockState state;
+  final PlayerProfile profile;
+  final TimeWorld world;
+
+  int _worldStars() {
+    final trail = ClockMap.trail(world);
+    return trail.levels.fold(0, (sum, l) => sum + state.stars(l.id));
   }
 
-  Widget _fastest() {
-    return Column(
-      children: [
-        state.hasFastest
-            ? TimerChip(seconds: state.fastestSeconds)
-            : const Text('—',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-        const Text('Fastest',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-      ],
+  @override
+  Widget build(BuildContext context) {
+    final maxStars = ClockMap.levelsPerTrail * 3;
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                ClockTrailScreen(state: state, profile: profile, world: world),
+          ),
+        );
+      },
+      child: ComicPanel(
+        color: world.color,
+        child: Row(
+          children: [
+            Text(world.emoji, style: const TextStyle(fontSize: 40)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${world.label} Trail',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(color: AppTheme.ink, offset: Offset(2, 2)),
+                        ],
+                      )),
+                  const SizedBox(height: 2),
+                  Text(world.subtitle,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                  const SizedBox(height: 8),
+                  AnimatedBuilder(
+                    animation: state,
+                    builder: (_, __) => Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            color: AppTheme.accent, size: 20),
+                        Text(' ${_worldStars()} / $maxStars',
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white, size: 34),
+          ],
+        ),
+      ),
     );
   }
 }
