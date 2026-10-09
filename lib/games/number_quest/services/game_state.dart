@@ -256,6 +256,14 @@ class GameState extends ChangeNotifier {
     if (afterLevel >= 5) ids.add(Achievements.heroLevel5.id);
     final newAchievements = await profile.grantAll(ids);
 
+    // Hub-wide: streak, pet growth, daily missions.
+    await profile.onRoundFinished(
+      correct: correct,
+      coinsEarned: coinsEarned,
+      threeStars: earnedStars == 3,
+      bossBeaten: bossDefeated,
+    );
+
     notifyListeners();
     return LevelOutcome(
       stars: earnedStars,

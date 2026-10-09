@@ -14,19 +14,33 @@ lib/
 │  ├─ game_hub_screen.dart      # Grid of games; hosts shared PlayerProfile
 │  └─ (hub shop / achievements screens live here too)
 ├─ core/                        # Shared across ALL games
-│  ├─ models/                   # game_catalog, avatar catalog, achievements
+│  ├─ models/                   # game_catalog, avatar, achievement,
+│  │                            #   mission, pet
 │  ├─ services/                 # player_profile (shared), feedback_service,
-│  │                            #   sound_bridge / _stub / _web
+│  │                            #   feedback_email, sound_bridge / _stub / _web
 │  ├─ theme/app_theme.dart      # Comic palette, borders, shadows
 │  └─ widgets/                  # comic_button, comic_panel, star_row, coin_pill,
 │                               #   xp_bar, confetti, timer_chip,
 │                               #   double_awards_button
+├─ app/                         # hub screens: game_hub, shop, achievements,
+│                               #   missions, pet, avatar_picker
 └─ games/
    ├─ number_quest/             # worlds → level map → boss battles
    ├─ shape_safari/             # habitats → trail map → guardian encounters
    ├─ word_wizard/              # chapters → spellbook path → Spell Master boss
-   └─ clock_hero/               # time-of-day worlds → trail → guardian
+   ├─ clock_hero/               # time-of-day worlds → trail → guardian
+   ├─ money_math/               # piggy/wallet/vault worlds → trail → guardian
+   └─ memory_match/             # animal/fruit/space decks → trail → guardian
 ```
+
+## Hub-wide shared systems (in PlayerProfile)
+
+- **Daily streak** (`recordPlayDay`), a **pet** that grows with cross-game XP
+  (`addPetXp`, stages in `core/models/pet.dart`), and **daily missions**
+  (`core/models/mission.dart`, rotated by date).
+- Games call one hook at round end:
+  `onRoundFinished(correct, coinsEarned, threeStars, bossBeaten)` which bundles
+  streak + pet growth + mission progress. Do NOT re-implement these per game.
 
 All four games are playable. Each game folder is self-contained with its own
 `models/`, `services/`, `screens/`, and (where needed) `widgets/`.

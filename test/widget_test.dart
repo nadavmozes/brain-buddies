@@ -94,6 +94,55 @@ void main() {
     expect(find.text('🌅 Morning Trail'), findsOneWidget);
   });
 
+  testWidgets('Hub opens Money Math', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const BrainBuddiesApp());
+    await tester.pumpAndSettle();
+
+    // The grid may need scrolling to reveal the 5th game.
+    await tester.dragUntilVisible(
+      find.text('Money Math'),
+      find.byType(Scrollable).first,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Money Math'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MONEY'), findsOneWidget);
+    expect(find.text('MATH'), findsOneWidget);
+  });
+
+  testWidgets('Hub opens Memory Match', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const BrainBuddiesApp());
+    await tester.pumpAndSettle();
+
+    await tester.dragUntilVisible(
+      find.text('Memory Match'),
+      find.byType(Scrollable).first,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Memory Match'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MEMORY'), findsOneWidget);
+    expect(find.text('MATCH'), findsOneWidget);
+  });
+
   testWidgets('Hub opens the shared Avatar Shop with a premium coming-soon',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -103,6 +152,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const BrainBuddiesApp());
+    await tester.pumpAndSettle();
+
+    // The hub actions sit below the game grid; scroll the Shop button in.
+    await tester.dragUntilVisible(
+      find.text('Shop'),
+      find.byType(Scrollable).first,
+      const Offset(0, -200),
+    );
     await tester.pumpAndSettle();
 
     // Open the hub-level shop.

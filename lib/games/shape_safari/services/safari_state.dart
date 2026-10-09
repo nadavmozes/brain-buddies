@@ -165,6 +165,13 @@ class SafariState extends ChangeNotifier {
     }
     await profile.grantAll(ids);
 
+    await profile.onRoundFinished(
+      correct: correct,
+      coinsEarned: coinsEarned,
+      threeStars: stars == 3,
+      bossBeaten: guardianBefriended,
+    );
+
     notifyListeners();
     return SafariOutcome(
       stars: stars,

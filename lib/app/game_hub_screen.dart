@@ -8,6 +8,10 @@ import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_panel.dart';
 import '../games/clock_hero/screens/clock_hero_home_screen.dart';
 import '../games/clock_hero/services/clock_state.dart';
+import '../games/memory_match/screens/memory_match_home_screen.dart';
+import '../games/memory_match/services/memory_state.dart';
+import '../games/money_math/screens/money_math_home_screen.dart';
+import '../games/money_math/services/money_state.dart';
 import '../games/number_quest/screens/number_quest_home_screen.dart';
 import '../games/number_quest/services/game_state.dart';
 import '../games/shape_safari/screens/shape_safari_home_screen.dart';
@@ -16,6 +20,8 @@ import '../games/word_wizard/screens/word_wizard_home_screen.dart';
 import '../games/word_wizard/services/wizard_state.dart';
 import 'achievements_screen.dart';
 import 'avatar_picker.dart';
+import 'missions_screen.dart';
+import 'pet_screen.dart';
 import 'shop_screen.dart';
 
 /// The BrainBuddies home: a shared profile bar, a grid of games, and hub-level
@@ -37,6 +43,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
   SafariState? _safariState;
   WizardState? _wizardState;
   ClockState? _clockState;
+  MoneyState? _moneyState;
+  MemoryState? _memoryState;
 
   @override
   void initState() {
@@ -108,9 +116,52 @@ class _GameHubScreenState extends State<GameHubScreen> {
     );
   }
 
+  Future<void> _openMoneyMath() async {
+    _moneyState ??= MoneyState();
+    if (!_moneyState!.isLoaded) {
+      await _moneyState!.load();
+    }
+    if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.moneyMath.id, GameCatalog.all.length);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MoneyMathHome(state: _moneyState!, profile: _profile),
+      ),
+    );
+  }
+
+  Future<void> _openMemoryMatch() async {
+    _memoryState ??= MemoryState();
+    if (!_memoryState!.isLoaded) {
+      await _memoryState!.load();
+    }
+    if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.memoryMatch.id, GameCatalog.all.length);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            MemoryMatchHome(state: _memoryState!, profile: _profile),
+      ),
+    );
+  }
+
   void _openShop() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ShopScreen(profile: _profile)),
+    );
+  }
+
+  void _openMissions() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MissionsScreen(profile: _profile)),
+    );
+  }
+
+  void _openPet() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PetScreen(profile: _profile)),
     );
   }
 
@@ -136,6 +187,10 @@ class _GameHubScreenState extends State<GameHubScreen> {
       _openWordWizard();
     } else if (game.id == GameCatalog.clockHero.id) {
       _openClockHero();
+    } else if (game.id == GameCatalog.moneyMath.id) {
+      _openMoneyMath();
+    } else if (game.id == GameCatalog.memoryMatch.id) {
+      _openMemoryMatch();
     }
   }
 
@@ -199,22 +254,48 @@ class _GameHubScreenState extends State<GameHubScreen> {
   Widget _hubActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _ActionButton(
-              label: 'Shop',
-              emoji: '🛍️',
-              onTap: _openShop,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: 'Missions',
+                  emoji: '📋',
+                  onTap: _openMissions,
+                  // Nudge the child when a reward is ready to claim.
+                  badge: _profile.hasClaimableMission,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _ActionButton(
+                  label: 'Buddy',
+                  emoji: _profile.petStage.emoji,
+                  onTap: _openPet,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: _ActionButton(
-              label: 'Awards',
-              emoji: '🏆',
-              onTap: _openAchievements,
-            ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: 'Shop',
+                  emoji: '🛍️',
+                  onTap: _openShop,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _ActionButton(
+                  label: 'Awards',
+                  emoji: '🏆',
+                  onTap: _openAchievements,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -277,6 +358,28 @@ class _ProfileBar extends StatelessWidget {
                 style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w800)),
             const Spacer(),
+            if (profile.dailyStreak > 0) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: AppTheme.ink, width: 2.5),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🔥', style: TextStyle(fontSize: 14)),
+                    const SizedBox(width: 3),
+                    Text('${profile.dailyStreak}',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+            ],
             CoinPill(amount: profile.coins),
           ],
         ),
@@ -338,30 +441,62 @@ class _Footer extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton(
-      {required this.label, required this.emoji, required this.onTap});
+  const _ActionButton({
+    required this.label,
+    required this.emoji,
+    required this.onTap,
+    this.badge = false,
+  });
 
   final String label;
   final String emoji;
   final VoidCallback onTap;
 
+  /// Shows a small red "!" dot to nudge the player (e.g. a claimable reward).
+  final bool badge;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ComicPanel(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 8),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w900)),
-          ],
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ComicPanel(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          if (badge)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                width: 20,
+                height: 20,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.danger,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppTheme.ink, width: 2),
+                ),
+                child: const Text('!',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900)),
+              ),
+            ),
+        ],
       ),
     );
   }

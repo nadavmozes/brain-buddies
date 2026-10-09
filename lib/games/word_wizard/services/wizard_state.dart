@@ -149,6 +149,13 @@ class WizardState extends ChangeNotifier {
     if (isNewFastest) ids.add(Achievements.speedster.id);
     await profile.grantAll(ids);
 
+    await profile.onRoundFinished(
+      correct: correct,
+      coinsEarned: coinsEarned,
+      threeStars: stars == 3,
+      bossBeaten: bossBeaten,
+    );
+
     notifyListeners();
     return WizardOutcome(
       stars: stars,

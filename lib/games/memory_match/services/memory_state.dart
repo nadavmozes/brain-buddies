@@ -4,46 +4,45 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/achievement.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/services/sound_bridge.dart';
-import '../models/time_world.dart';
+import '../models/memory_level.dart';
 
-/// Rewards from finishing a Clock Hero level.
-class ClockOutcome {
-  ClockOutcome({
+/// Rewards from finishing a Memory Match level.
+class MemoryOutcome {
+  MemoryOutcome({
     required this.stars,
     required this.coinsEarned,
-    required this.isNewBestScore,
     required this.isNewFastest,
-    required this.guardianGreeted,
+    required this.bossBeaten,
     required this.elapsedSeconds,
+    required this.perfect,
   });
 
   final int stars;
   final int coinsEarned;
-  final bool isNewBestScore;
   final bool isNewFastest;
-  final bool guardianGreeted;
+  final bool bossBeaten;
   final int elapsedSeconds;
+
+  /// True when the board was cleared with no wrong flips.
+  final bool perfect;
 }
 
-/// Persisted state for Clock Hero: per-level stars, fastest times, world
-/// unlocks. Coins & achievements go to the shared [PlayerProfile].
-class ClockState extends ChangeNotifier {
+/// Per-level stars + fastest times + unlocks for Memory Match. Coins and
+/// achievements go to the shared [PlayerProfile].
+class MemoryState extends ChangeNotifier {
   SharedPreferences? _prefs;
   bool _loaded = false;
 
-  int _bestCorrect = 0;
   int _roundsPlayed = 0;
   bool _soundOn = true;
 
   final Map<String, int> _levelStars = {};
   final Map<String, int> _levelFastest = {};
 
-  static const _kBest = 'clock_best';
-  static const _kRounds = 'clock_rounds';
-  static const _kSound = 'clock_sound';
+  static const _kRounds = 'memory_rounds';
+  static const _kSound = 'memory_sound';
 
   bool get isLoaded => _loaded;
-  int get bestCorrect => _bestCorrect;
   int get roundsPlayed => _roundsPlayed;
   bool get soundOn => _soundOn;
 
@@ -58,8 +57,8 @@ class ClockState extends ChangeNotifier {
 
   bool get hasFastest => _levelFastest.isNotEmpty;
 
-  bool isLevelUnlocked(ClockLevel level) {
-    final order = ClockMap.allLevels;
+  bool isLevelUnlocked(MemoryLevel level) {
+    final order = MemoryMap.allLevels;
     final pos = order.indexWhere((l) => l.id == level.id);
     if (pos <= 0) return true;
     return stars(order[pos - 1].id) > 0;
@@ -68,14 +67,13 @@ class ClockState extends ChangeNotifier {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
-    _bestCorrect = p.getInt(_kBest) ?? 0;
     _roundsPlayed = p.getInt(_kRounds) ?? 0;
     _soundOn = p.getBool(_kSound) ?? true;
     SoundBridge.enabled = _soundOn;
-    for (final lvl in ClockMap.allLevels) {
-      final s = p.getInt('clock_level_${lvl.id}');
+    for (final lvl in MemoryMap.allLevels) {
+      final s = p.getInt('memory_level_${lvl.id}');
       if (s != null) _levelStars[lvl.id] = s;
-      final f = p.getInt('clock_fastest_${lvl.id}');
+      final f = p.getInt('memory_fastest_${lvl.id}');
       if (f != null) _levelFastest[lvl.id] = f;
     }
     _loaded = true;
@@ -89,90 +87,89 @@ class ClockState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<ClockOutcome> completeLevel({
+  /// Completes a Memory Match level. Stars are based on efficiency: how few
+  /// wrong flips relative to a generous allowance. [wrongFlips] is the number
+  /// of non-matching pair reveals.
+  Future<MemoryOutcome> completeLevel({
     required PlayerProfile profile,
-    required ClockLevel level,
-    required int correct,
-    required int total,
+    required MemoryLevel level,
+    required int wrongFlips,
     required int elapsedSeconds,
   }) async {
-    final percent = total == 0 ? 0 : ((correct / total) * 100).round();
-    final stars = percent >= 90
+    final pairs = level.pairs;
+    // Allowance scales with the board size. Fewer mistakes → more stars.
+    final perfect = wrongFlips == 0;
+    final stars = wrongFlips == 0
         ? 3
-        : percent >= 70
+        : wrongFlips <= pairs
             ? 2
-            : percent >= 50
+            : wrongFlips <= pairs * 2
                 ? 1
-                : 0;
+                : 1; // always at least 1 for finishing
 
     final prevStars = this.stars(level.id);
     if (stars > prevStars) {
       _levelStars[level.id] = stars;
-      await _prefs?.setInt('clock_level_${level.id}', stars);
+      await _prefs?.setInt('memory_level_${level.id}', stars);
     }
 
-    final guardianGreeted = level.isBoss && percent >= 70;
-
-    final coinsEarned = correct * 3 + stars * 5 + (guardianGreeted ? 20 : 0);
+    final bossBeaten = level.isBoss; // finishing the boss grid counts
+    final coinsEarned = pairs * 3 + stars * 5 + (bossBeaten ? 20 : 0);
     await profile.addCoins(coinsEarned);
 
     _roundsPlayed++;
-    final isNewBest = correct > _bestCorrect;
-    if (isNewBest) _bestCorrect = correct;
 
     var isNewFastest = false;
     if (stars == 3 && elapsedSeconds > 0) {
       final prevFastest = fastestSeconds(level.id);
       if (prevFastest == 0 || elapsedSeconds < prevFastest) {
         _levelFastest[level.id] = elapsedSeconds;
-        await _prefs?.setInt('clock_fastest_${level.id}', elapsedSeconds);
+        await _prefs?.setInt('memory_fastest_${level.id}', elapsedSeconds);
         isNewFastest = true;
       }
     }
 
-    await _prefs?.setInt(_kBest, _bestCorrect);
     await _prefs?.setInt(_kRounds, _roundsPlayed);
 
     final ids = <String>[Achievements.firstGame.id];
-    if (correct == total && total > 0) {
+    if (perfect) {
       ids.add(Achievements.perfectRound.id);
-      ids.add(Achievements.timeKeeper.id);
+      ids.add(Achievements.memoryMaster.id);
     }
     if (stars == 3) ids.add(Achievements.threeStar.id);
     if (isNewFastest) ids.add(Achievements.speedster.id);
     await profile.grantAll(ids);
 
+    // Hub-wide systems. Treat matched pairs as "correct answers".
     await profile.onRoundFinished(
-      correct: correct,
+      correct: pairs,
       coinsEarned: coinsEarned,
       threeStars: stars == 3,
-      bossBeaten: guardianGreeted,
+      bossBeaten: bossBeaten,
     );
 
     notifyListeners();
-    return ClockOutcome(
+    return MemoryOutcome(
       stars: stars,
       coinsEarned: coinsEarned,
-      isNewBestScore: isNewBest,
       isNewFastest: isNewFastest,
-      guardianGreeted: guardianGreeted,
+      bossBeaten: bossBeaten,
       elapsedSeconds: elapsedSeconds,
+      perfect: perfect,
     );
   }
 
   Future<void> reset() async {
-    _bestCorrect = 0;
     _roundsPlayed = 0;
     _soundOn = true;
     SoundBridge.enabled = true;
     _levelStars.clear();
     _levelFastest.clear();
-    await _prefs?.remove(_kBest);
     await _prefs?.remove(_kRounds);
     await _prefs?.remove(_kSound);
-    for (final lvl in ClockMap.allLevels) {
-      await _prefs?.remove('clock_level_${lvl.id}');
-      await _prefs?.remove('clock_fastest_${lvl.id}');
+    for (final lvl in MemoryMap.allLevels) {
+      await _prefs?.remove('memory_level_${lvl.id}');
+      await _prefs?.remove('memory_fastest_${lvl.id}');
     }
     notifyListeners();
   }

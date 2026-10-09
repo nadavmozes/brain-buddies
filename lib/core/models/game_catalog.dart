@@ -61,10 +61,30 @@ class GameCatalog {
     available: true,
   );
 
+  static const moneyMath = GameEntry(
+    id: 'money_math',
+    title: 'Money Math',
+    tagline: 'Count coins, make amounts & compare money.',
+    emoji: '💰',
+    color: Color(0xFF66BB6A),
+    available: true,
+  );
+
+  static const memoryMatch = GameEntry(
+    id: 'memory_match',
+    title: 'Memory Match',
+    tagline: 'Flip cards and find the matching pairs.',
+    emoji: '🧠',
+    color: Color(0xFF8E24AA),
+    available: true,
+  );
+
   static const List<GameEntry> all = [
     numberQuest,
     shapeSafari,
     wordWizard,
     clockHero,
+    moneyMath,
+    memoryMatch,
   ];
 }

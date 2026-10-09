@@ -86,6 +86,36 @@ class Achievements {
     emoji: '🗺️',
     description: 'Play every game at least once.',
   );
+  static const streak3days = Achievement(
+    id: 'streak_3_days',
+    name: 'Daily Dabbler',
+    emoji: '📅',
+    description: 'Play 3 days in a row.',
+  );
+  static const streak7days = Achievement(
+    id: 'streak_7_days',
+    name: 'Week Warrior',
+    emoji: '🗓️',
+    description: 'Play 7 days in a row.',
+  );
+  static const missionsDone = Achievement(
+    id: 'missions_done',
+    name: 'Mission Master',
+    emoji: '📋',
+    description: 'Finish all of today\'s missions.',
+  );
+  static const petLevel5 = Achievement(
+    id: 'pet_level5',
+    name: 'Pet Pal',
+    emoji: '🐣',
+    description: 'Grow your pet to level 5.',
+  );
+  static const petLevel10 = Achievement(
+    id: 'pet_level10',
+    name: 'Pet Pro',
+    emoji: '🐦',
+    description: 'Grow your pet to level 10.',
+  );
 
   // Number Quest
   static const bossFriend = Achievement(
@@ -137,6 +167,22 @@ class Achievements {
     description: 'Get a perfect round in Clock Hero.',
   );
 
+  // Money Math
+  static const moneyMaster = Achievement(
+    id: 'mm_master',
+    name: 'Money Master',
+    emoji: '💵',
+    description: 'Get a perfect round in Money Math.',
+  );
+
+  // Memory Match
+  static const memoryMaster = Achievement(
+    id: 'mem_master',
+    name: 'Memory Master',
+    emoji: '🧠',
+    description: 'Get a perfect round in Memory Match.',
+  );
+
   static const List<Achievement> all = [
     firstGame,
     perfectRound,
@@ -149,6 +195,11 @@ class Achievements {
     collector,
     wardrobe,
     explorer,
+    streak3days,
+    streak7days,
+    missionsDone,
+    petLevel5,
+    petLevel10,
     bossFriend,
     multMaster,
     heroLevel5,
@@ -156,6 +207,8 @@ class Achievements {
     shapeExplorer,
     spellMaster,
     timeKeeper,
+    moneyMaster,
+    memoryMaster,
   ];
 
   static Achievement byId(String id) =>
