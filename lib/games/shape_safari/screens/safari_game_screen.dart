@@ -5,6 +5,7 @@ import 'dart:async';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/timer_chip.dart';
@@ -349,37 +350,65 @@ class _ChoiceGrid extends StatelessWidget {
             if (choice.isShape) {
               final highlighted = answered &&
                   (index == question.correctIndex || index == selectedIndex);
-              return GestureDetector(
-                onTap: answered ? null : () => onAnswer(index),
-                child: Container(
-                  width: tileWidth,
-                  height: tileHeight,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _bg(index),
-                    border: Border.all(color: AppTheme.ink, width: 3.5),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow:
-                        AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: answered ? null : () => onAnswer(index),
+                    child: Container(
+                      width: tileWidth,
+                      height: tileHeight,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _bg(index),
+                        border: Border.all(color: AppTheme.ink, width: 3.5),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow:
+                            AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+                      ),
+                      child: ShapeView(
+                          shape: choice.shape!, size: tileHeight * 0.62),
+                    ),
                   ),
-                  child: ShapeView(
-                      shape: choice.shape!, size: tileHeight * 0.62),
-                ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: highlighted,
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               );
             }
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: choice.text!,
-                fontSize: 22,
-                color: _bg(index),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: choice.text!,
+                    fontSize: 22,
+                    color: _bg(index),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),

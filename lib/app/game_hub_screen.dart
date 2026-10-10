@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/models/game_catalog.dart';
+import '../core/services/analytics_service.dart';
 import '../core/services/feedback_email.dart';
 import '../core/services/player_profile.dart';
 import '../core/theme/app_theme.dart';
@@ -36,6 +37,8 @@ class GameHubScreen extends StatefulWidget {
 class _GameHubScreenState extends State<GameHubScreen> {
   // Shared across all games. Created and loaded once here.
   final PlayerProfile _profile = PlayerProfile();
+  // Local-only analytics sink, attached to the profile once at startup.
+  final AnalyticsService _analytics = AnalyticsService();
   bool _profileReady = false;
 
   // Each game's per-game progress state, loaded lazily on first open.
@@ -49,7 +52,11 @@ class _GameHubScreenState extends State<GameHubScreen> {
   @override
   void initState() {
     super.initState();
-    _profile.load().then((_) {
+    _profile.load().then((_) async {
+      // Load the local-only analytics store and attach it before any game open
+      // or round so opens and round-ends are always counted.
+      await _analytics.load();
+      _profile.attachAnalytics(_analytics);
       if (mounted) setState(() => _profileReady = true);
     });
   }

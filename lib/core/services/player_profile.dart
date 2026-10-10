@@ -5,6 +5,7 @@ import '../models/achievement.dart';
 import '../models/avatar.dart';
 import '../models/mission.dart';
 import '../models/pet.dart';
+import 'analytics_service.dart';
 import 'sound_bridge.dart';
 
 /// The shared, hub-level player profile: coins, avatar ownership + equipped
@@ -13,6 +14,15 @@ import 'sound_bridge.dart';
 class PlayerProfile extends ChangeNotifier {
   SharedPreferences? _prefs;
   bool _loaded = false;
+
+  // Optional local-only analytics sink, attached once at the hub. The profile
+  // depends only on the [AnalyticsSink] interface, never a concrete class.
+  AnalyticsSink? _analytics;
+
+  /// Attaches a local-only analytics sink so opens and round-ends are counted.
+  void attachAnalytics(AnalyticsSink sink) {
+    _analytics = sink;
+  }
 
   int _coins = 0;
   int _lifetimeCoins = 0;
@@ -195,6 +205,11 @@ class PlayerProfile extends ChangeNotifier {
     await reportMission(MissionMetric.coinsEarned, coinsEarned);
     if (threeStars) await reportMission(MissionMetric.threeStarRounds, 1);
     if (bossBeaten) await reportMission(MissionMetric.bossesBeaten, 1);
+    // Local-only analytics: aggregate counters + latest snapshots.
+    _analytics?.recordRound(
+        correct: correct, threeStars: threeStars, bossBeaten: bossBeaten);
+    await _analytics?.updateSnapshots(
+        streak: dailyStreak, petLevel: petLevel, coins: coins);
   }
 
   // ---- pet companion ----
@@ -279,6 +294,8 @@ class PlayerProfile extends ChangeNotifier {
   /// Records that a game was opened; grants the Explorer award once all games
   /// have been played. [totalGames] is the number of games in the hub.
   Future<void> recordGamePlayed(String gameId, int totalGames) async {
+    // Count every open (including repeats) before the already-played return.
+    _analytics?.recordGameOpened(gameId);
     if (_playedGames.contains(gameId)) return;
     _playedGames.add(gameId);
     await _prefs?.setStringList(_kPlayed, _playedGames.toList());

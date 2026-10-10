@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/timer_chip.dart';
@@ -298,17 +299,32 @@ class _TextChoices extends StatelessWidget {
           children: List.generate(question.textChoices!.length, (index) {
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: question.textChoices![index],
-                fontSize: 24,
-                color: _bg(question, index, selectedIndex, answered),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: question.textChoices![index],
+                    fontSize: 24,
+                    color: _bg(question, index, selectedIndex, answered),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),
@@ -342,23 +358,38 @@ class _TwoPiles extends StatelessWidget {
           runSpacing: 14,
           alignment: WrapAlignment.center,
           children: List.generate(2, (index) {
-            return GestureDetector(
-              onTap: answered ? null : () => onAnswer(index),
-              child: Container(
-                width: tileWidth,
-                constraints: const BoxConstraints(minHeight: 90),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _bg(question, index, selectedIndex, answered),
-                  border: Border.all(color: AppTheme.ink, width: 3.5),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: AppTheme.comicShadow(offset: 5),
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap: answered ? null : () => onAnswer(index),
+                  child: Container(
+                    width: tileWidth,
+                    constraints: const BoxConstraints(minHeight: 90),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _bg(question, index, selectedIndex, answered),
+                      border: Border.all(color: AppTheme.ink, width: 3.5),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.comicShadow(offset: 5),
+                    ),
+                    child: Text(piles[index].emojiRow,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 28)),
+                  ),
                 ),
-                child: Text(piles[index].emojiRow,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 28)),
-              ),
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: AnswerBadge(
+                    show: answered &&
+                        (index == question.correctIndex ||
+                            index == selectedIndex),
+                    correct: index == question.correctIndex,
+                  ),
+                ),
+              ],
             );
           }),
         );
@@ -391,23 +422,38 @@ class _PileChoices extends StatelessWidget {
           runSpacing: 14,
           alignment: WrapAlignment.center,
           children: List.generate(piles.length, (index) {
-            return GestureDetector(
-              onTap: answered ? null : () => onAnswer(index),
-              child: Container(
-                width: tileWidth,
-                constraints: const BoxConstraints(minHeight: 80),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _bg(question, index, selectedIndex, answered),
-                  border: Border.all(color: AppTheme.ink, width: 3.5),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: AppTheme.comicShadow(offset: 5),
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap: answered ? null : () => onAnswer(index),
+                  child: Container(
+                    width: tileWidth,
+                    constraints: const BoxConstraints(minHeight: 80),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _bg(question, index, selectedIndex, answered),
+                      border: Border.all(color: AppTheme.ink, width: 3.5),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.comicShadow(offset: 5),
+                    ),
+                    child: Text(piles[index].emojiRow,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 24)),
+                  ),
                 ),
-                child: Text(piles[index].emojiRow,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 24)),
-              ),
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: AnswerBadge(
+                    show: answered &&
+                        (index == question.correctIndex ||
+                            index == selectedIndex),
+                    correct: index == question.correctIndex,
+                  ),
+                ),
+              ],
             );
           }),
         );

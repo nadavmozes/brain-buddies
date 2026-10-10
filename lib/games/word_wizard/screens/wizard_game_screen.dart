@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/timer_chip.dart';
@@ -258,17 +259,32 @@ class _ChoiceGrid extends StatelessWidget {
           children: List.generate(question.choices.length, (index) {
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: question.choices[index],
-                fontSize: 22,
-                color: _bg(index),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: question.choices[index],
+                    fontSize: 22,
+                    color: _bg(index),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),
