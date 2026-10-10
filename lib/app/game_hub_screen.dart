@@ -13,6 +13,8 @@ import '../games/memory_match/screens/memory_match_home_screen.dart';
 import '../games/memory_match/services/memory_state.dart';
 import '../games/money_math/screens/money_math_home_screen.dart';
 import '../games/money_math/services/money_state.dart';
+import '../games/number_quest/models/level.dart';
+import '../games/number_quest/screens/game_screen.dart';
 import '../games/number_quest/screens/number_quest_home_screen.dart';
 import '../games/number_quest/services/game_state.dart';
 import '../games/shape_safari/screens/shape_safari_home_screen.dart';
@@ -73,6 +75,30 @@ class _GameHubScreenState extends State<GameHubScreen> {
       MaterialPageRoute(
         builder: (_) =>
             NumberQuestHome(state: _numberQuestState!, profile: _profile),
+      ),
+    );
+  }
+
+  /// Launches today's Number Quest daily challenge, reusing NQ's [GameScreen]
+  /// with [WorldMap.dailyLevel] and [isDaily]. The daily round still ticks
+  /// streak/pet/missions/analytics via onRoundFinished, but its off-map id
+  /// keeps it out of star/unlock progression.
+  Future<void> _openDailyChallenge() async {
+    _numberQuestState ??= GameState();
+    if (!_numberQuestState!.isLoaded) {
+      await _numberQuestState!.load();
+    }
+    if (!mounted) return;
+    _profile.recordGamePlayed(
+        GameCatalog.numberQuest.id, GameCatalog.all.length);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          level: WorldMap.dailyLevel(),
+          state: _numberQuestState!,
+          profile: _profile,
+          isDaily: true,
+        ),
       ),
     );
   }
@@ -263,6 +289,12 @@ class _GameHubScreenState extends State<GameHubScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
+          _ActionButton(
+            label: 'Daily',
+            emoji: '📅',
+            onTap: _openDailyChallenge,
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(

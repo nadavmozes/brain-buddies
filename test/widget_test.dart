@@ -143,6 +143,32 @@ void main() {
     expect(find.text('MATCH'), findsOneWidget);
   });
 
+  testWidgets('Hub opens the Daily Challenge into Number Quest',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const BrainBuddiesApp());
+    await tester.pumpAndSettle();
+
+    // The hub actions sit below the game grid; scroll the Daily button in.
+    await tester.dragUntilVisible(
+      find.text('Daily'),
+      find.byType(Scrollable).first,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Daily'));
+    await tester.pumpAndSettle();
+
+    // The NQ game screen renders the daily header when isDaily is true.
+    expect(find.text('📅 Daily'), findsOneWidget);
+  });
+
   testWidgets('Hub opens the shared Avatar Shop with a premium coming-soon',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});

@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Task 5 — surface a Daily Challenge in the hub. Number Quest already defines WorldMap.dailyLevel (a repeatable daily challenge that rotates by day and uses an off-map id so it never affects unlock/star progression) and its home screen already launches it via GameScreen(level: WorldMap.dailyLevel(), isDaily: true). Add a hub-level 'Daily Challenge' tile in game_hub_screen.dart that launches today's Number Quest daily level, reusing the existing NQ GameScreen. Keep onRoundFinished behavior (the daily round still ticks streak/pet/missions/analytics; it does NOT affect star/unlock progression). Independent of FEAT-001 and FEAT-002, but small and UI-only; sequence it last.",
+  "status": "completed",
+  "steps": [
+    "In lib/app/game_hub_screen.dart add imports for the NQ GameScreen and WorldMap: import '../games/number_quest/screens/game_screen.dart'; import '../games/number_quest/models/level.dart'; (GameState and NumberQuestHome imports already exist).",
+    "Add a Future<void> _openDailyChallenge() method mirroring _openNumberQuest: _numberQuestState ??= GameState(); if(!_numberQuestState!.isLoaded) await _numberQuestState!.load(); if(!mounted) return; _profile.recordGamePlayed(GameCatalog.numberQuest.id, GameCatalog.all.length); then Navigator.of(context).push(MaterialPageRoute(builder: (_) => GameScreen(level: WorldMap.dailyLevel(), state: _numberQuestState!, profile: _profile, isDaily: true))).",
+    "Surface a 'Daily Challenge' entry in _hubActions(). Add a new row (or extend an existing row) using the existing _ActionButton with label 'Daily', emoji '📅', onTap: _openDailyChallenge. Keep the 430px-safe comic styling and existing layout rhythm (SizedBox spacing like the other rows). Do not break the existing Missions/Buddy/Shop/Awards buttons.",
+    "Do NOT suppress onRoundFinished for the daily round: the dailyLevel doc says it must not affect unlock/star progression, and NQ's completeLevel already honors that via its off-map id (index 999, not in WorldMap.allLevels) and the onMap fastest/unlock guard while still calling onRoundFinished. Reuse that existing path; add no new daily engine. Leave generalizing the daily challenge to all six games as future work (note it in findings).",
+    "Optionally extend test/widget_test.dart with a test that, on a 430x900+ surface, scrolls the 'Daily' button into view, taps it, pumpAndSettle, and asserts the NQ game screen is shown (e.g. find.text('📅 Daily') from the game screen header, which GameScreen renders when isDaily is true). Keep SharedPreferences.setMockInitialValues({}).",
+    "Run build web and flutter test; fix any compile errors. Record in findings the exact hub placement of the tile and confirmation that a daily round calls onRoundFinished but not star/unlock progression."
+  ],
+  "acceptance_criteria": [
+    "build web succeeds (output contains 'Built build\\web').",
+    "flutter test passes (including the optional daily-challenge widget test if added).",
+    "The hub shows a 'Daily Challenge' tile that launches NQ's GameScreen with WorldMap.dailyLevel() and isDaily: true, lazy-loading the shared GameState and calling recordGamePlayed.",
+    "A daily round still calls profile.onRoundFinished (streak/pet/missions/analytics tick) and does NOT affect star/unlock progression (off-map id + existing onMap guard).",
+    "Existing hub actions (Missions, Buddy, Shop, Awards) and the game grid still render and work."
+  ],
+  "verification": [
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web  (expect 'Built build\\web')",
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test  (expect all pass)"
+  ],
+  "blocked_reason": null,
+  "findings": "Added a hub-level 'Daily Challenge' tile. Placement: in lib/app/game_hub_screen.dart _hubActions(), it is a full-width _ActionButton (label 'Daily', emoji '📅') at the TOP of the actions Column, above the existing Missions/Buddy row (separated by a SizedBox(height:14)); the Missions/Buddy and Shop/Awards two-up rows are unchanged. Imports added: '../games/number_quest/models/level.dart' and '../games/number_quest/screens/game_screen.dart'. New _openDailyChallenge() mirrors _openNumberQuest: lazy-inits & loads the shared GameState, calls _profile.recordGamePlayed(GameCatalog.numberQuest.id, GameCatalog.all.length), then pushes GameScreen(level: WorldMap.dailyLevel(), state: _numberQuestState!, profile: _profile, isDaily: true). onRoundFinished behavior is UNCHANGED and NOT suppressed: GameScreen's completeLevel call still runs for the daily round, so streak/pet/missions/analytics all tick. Star/unlock progression is NOT affected because WorldMap.dailyLevel() uses the off-map id (index 999, not in WorldMap.allLevels) and GameState.completeLevel's onMap guard only records fastest/unlock for mapped levels. No new daily engine was added; NQ's existing dailyLevel path is reused. Added a widget test ('Hub opens the Daily Challenge into Number Quest', 430x1000 surface) that scrolls 'Daily' into view, taps it, and asserts the GameScreen daily header find.text('📅 Daily'). Verification: build web -> 'Built build\\web' present; flutter test -> all 15 tests pass. flutter analyze NOT run (crashes on Hebrew path, per context). FUTURE WORK: generalize the Daily Challenge to rotate across all six games rather than always launching Number Quest."
+}
