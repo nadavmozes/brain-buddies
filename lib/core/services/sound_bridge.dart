@@ -3,7 +3,7 @@
 //
 // Conditional import picks the right implementation at compile time.
 import 'sound_bridge_stub.dart'
-    if (dart.library.js_interop) 'sound_bridge_web.dart';
+    if (dart.library.js_interop) 'sound_bridge_web.dart' as impl;
 
 /// Simple façade over the platform sound implementation.
 class SoundBridge {
@@ -14,7 +14,7 @@ class SoundBridge {
 
   static void _play(String name) {
     if (!enabled) return;
-    playSound(name);
+    impl.playSound(name);
   }
 
   static void click() => _play('click');
@@ -23,4 +23,14 @@ class SoundBridge {
   static void coin() => _play('coin');
   static void levelUp() => _play('levelup');
   static void victory() => _play('victory');
+
+  /// Speaks [text] aloud with the browser's text-to-speech. Respects the same
+  /// [enabled] toggle as sound effects; a no-op where speech is unavailable.
+  static void speak(String text) {
+    if (!enabled) return;
+    impl.speak(text);
+  }
+
+  /// Stops any in-progress speech. Safe no-op where speech is unavailable.
+  static void cancelSpeech() => impl.cancelSpeech();
 }

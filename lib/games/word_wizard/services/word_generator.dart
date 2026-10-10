@@ -74,6 +74,7 @@ class WordQuestionGenerator {
       display: '',
       choices: options,
       correctIndex: options.indexOf(answer.word),
+      word: answer.word,
     );
   }
 
@@ -100,6 +101,7 @@ class WordQuestionGenerator {
       display: shown,
       choices: options,
       correctIndex: options.indexOf(missing),
+      word: word,
     );
   }
 
@@ -127,6 +129,7 @@ class WordQuestionGenerator {
       display: '',
       choices: list,
       correctIndex: list.indexOf(correct),
+      word: correct,
     );
   }
 

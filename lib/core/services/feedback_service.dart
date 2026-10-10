@@ -51,4 +51,11 @@ class FeedbackService {
     SoundBridge.victory();
     HapticFeedback.mediumImpact();
   }
+
+  /// Reads [text] aloud with text-to-speech (e.g. a Word Wizard answer word).
+  /// Routes through the same sound-respecting layer as effects; no haptics.
+  void speak(String text) {
+    if (!enabled) return;
+    SoundBridge.speak(text);
+  }
 }

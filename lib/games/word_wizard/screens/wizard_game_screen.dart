@@ -64,6 +64,15 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     super.dispose();
   }
 
+  // Reads the current question's correct word aloud. Routes through
+  // FeedbackService so it respects the sound toggle; a no-op where
+  // text-to-speech is unavailable.
+  void _speakWord() {
+    final word = _q.spokenWord;
+    if (word.isEmpty) return;
+    FeedbackService(enabled: widget.state.soundOn).speak(word);
+  }
+
   void _onAnswer(int index) {
     if (_answered) return;
     final isRight = index == _q.correctIndex;
@@ -178,6 +187,11 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   child: Column(
                     children: [
                       Text(_q.emoji, style: const TextStyle(fontSize: 72)),
+                      const SizedBox(height: 10),
+                      _SpeakerButton(
+                        enabled: widget.state.soundOn,
+                        onTap: _speakWord,
+                      ),
                       if (_q.display.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -221,6 +235,37 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A big comic-style speaker button that reads the word aloud. Stays visible
+/// for a stable layout; when sound is off it is greyed out and inert.
+class _SpeakerButton extends StatelessWidget {
+  const _SpeakerButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: enabled ? AppTheme.sky : Colors.grey.shade400,
+          border: AppTheme.comicBorder,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.comicShadow(offset: 4),
+        ),
+        child: const Icon(
+          Icons.volume_up_rounded,
+          color: Colors.white,
+          size: 36,
         ),
       ),
     );
