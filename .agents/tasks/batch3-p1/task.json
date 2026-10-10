@@ -1,0 +1,7 @@
+{
+  "task_id": "task-batch3-p1-refactor-data-safety",
+  "task_description": "High-risk Batch 3 P1 for BrainBuddies (Flutter, package brain_buddies): extract a shared GameProgressStore base used by the five sibling game states (shape_safari, word_wizard, clock_hero, money_math, memory_match) while preserving every shared_preferences key byte-identically and every completeLevel signature/Outcome/coin/achievement; namespace Number Quest's bare prefs keys to nq_* with a one-time migration; fix mission day-rollover across midnight in PlayerProfile; surface a friendly pet round-moment on all six result screens; and add a hub-level Daily Challenge tile reusing Number Quest's existing dailyLevel. Correctness and not changing user-visible behavior or breaking saved progress are paramount.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
