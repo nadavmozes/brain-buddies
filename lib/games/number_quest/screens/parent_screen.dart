@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../models/skill.dart';
@@ -7,9 +8,10 @@ import '../services/game_state.dart';
 
 /// A calm, parent-facing view of the child's math progress by skill.
 class ParentScreen extends StatelessWidget {
-  const ParentScreen({super.key, required this.state});
+  const ParentScreen({super.key, required this.state, required this.profile});
 
   final GameState state;
+  final PlayerProfile profile;
 
   Color _colorFor(int percent, int attempts) {
     if (attempts < 5) return Colors.grey;
@@ -39,7 +41,7 @@ class ParentScreen extends StatelessWidget {
                   children: [
                     _stat('Hero Level', '${state.level}'),
                     _stat('Total Stars', '${state.totalStars}'),
-                    _stat('Day Streak', '${state.dailyStreak}'),
+                    _stat('Day Streak', '${profile.dailyStreak}'),
                   ],
                 ),
               ),

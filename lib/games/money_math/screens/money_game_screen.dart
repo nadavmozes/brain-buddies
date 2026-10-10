@@ -237,6 +237,13 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
           answered: _answered,
           onAnswer: _onAnswer,
         );
+      case MoneyQuestionType.makeChange:
+        return _TextChoices(
+          question: _q,
+          selectedIndex: _selectedIndex,
+          answered: _answered,
+          onAnswer: _onAnswer,
+        );
     }
   }
 }

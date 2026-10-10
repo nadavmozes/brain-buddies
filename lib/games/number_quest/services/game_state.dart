@@ -50,10 +50,6 @@ class GameState extends ChangeNotifier {
   // Per-level fastest completion time in seconds: levelId -> seconds.
   final Map<String, int> _levelFastest = {};
 
-  // Daily streak
-  int _dailyStreak = 0;
-  String _lastPlayedDay = '';
-
   // Skill accuracy stats
   final Map<Skill, SkillStat> _skills = {
     for (final s in Skill.values) s: SkillStat(),
@@ -68,8 +64,6 @@ class GameState extends ChangeNotifier {
 
   // ---- keys ----
   static const _kXp = 'xp';
-  static const _kStreak = 'daily_streak';
-  static const _kLastDay = 'last_day';
   static const _kSound = 'sound_on';
   static const _kBestStreak = 'best_answer_streak';
   static const _kMultCorrect = 'mult_correct';
@@ -77,7 +71,6 @@ class GameState extends ChangeNotifier {
   // ---- getters ----
   bool get isLoaded => _loaded;
   int get xp => _xp;
-  int get dailyStreak => _dailyStreak;
   bool get soundOn => _soundOn;
 
   /// Hero level derived from XP. Each level needs a bit more than the last.
@@ -129,8 +122,6 @@ class GameState extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
     _xp = p.getInt(_kXp) ?? 0;
-    _dailyStreak = p.getInt(_kStreak) ?? 0;
-    _lastPlayedDay = p.getString(_kLastDay) ?? '';
     _soundOn = p.getBool(_kSound) ?? true;
     SoundBridge.enabled = _soundOn;
     _bestAnswerStreak = p.getInt(_kBestStreak) ?? 0;
@@ -243,7 +234,6 @@ class GameState extends ChangeNotifier {
     final leveledUp = afterLevel > beforeLevel;
 
     reportAnswerStreak(bestAnswerStreak);
-    await _updateDailyStreak();
 
     // Grant SHARED achievements.
     final ids = <String>[Achievements.firstGame.id];
@@ -279,40 +269,17 @@ class GameState extends ChangeNotifier {
 
   int level_() => _levelForXp(_xp);
 
-  /// Updates the daily streak based on the calendar day.
-  Future<void> _updateDailyStreak() async {
-    final today = _todayKey();
-    if (_lastPlayedDay == today) return; // already counted today
-    final yesterday = _dayKey(DateTime.now().subtract(const Duration(days: 1)));
-    if (_lastPlayedDay == yesterday) {
-      _dailyStreak++;
-    } else {
-      _dailyStreak = 1;
-    }
-    _lastPlayedDay = today;
-    await _prefs?.setInt(_kStreak, _dailyStreak);
-    await _prefs?.setString(_kLastDay, _lastPlayedDay);
-  }
-
-  String _todayKey() => _dayKey(DateTime.now());
-  String _dayKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
   // ---- reset ----
   /// Resets Number Quest's local progress (XP, stars, streak, skills).
   /// Shared coins/avatars/achievements are reset from the PlayerProfile.
   Future<void> reset() async {
     _xp = 0;
-    _dailyStreak = 0;
-    _lastPlayedDay = '';
     _bestAnswerStreak = 0;
     _multCorrect = 0;
     _levelStars.clear();
     _soundOn = true;
     SoundBridge.enabled = true;
     await _prefs?.remove(_kXp);
-    await _prefs?.remove(_kStreak);
-    await _prefs?.remove(_kLastDay);
     await _prefs?.remove(_kBestStreak);
     await _prefs?.remove(_kMultCorrect);
     await _prefs?.remove(_kSound);
