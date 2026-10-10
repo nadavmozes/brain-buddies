@@ -245,8 +245,6 @@ class GameState extends ChangeNotifier {
       await _prefs?.setInt('nq_level_${level.id}', earnedStars);
     }
 
-    // Fastest time: record only on a decent run (>=70%) so rushing-and-missing
-    // can't set a bogus record. Skip for the daily challenge (not on the map).
     // Fastest time: only count a perfect 3-star run (skip the daily challenge,
     // which isn't on the map).
     var isNewFastest = false;
