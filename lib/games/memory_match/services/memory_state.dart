@@ -1,9 +1,6 @@
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../core/models/achievement.dart';
+import '../../../core/services/game_progress_store.dart';
 import '../../../core/services/player_profile.dart';
-import '../../../core/services/sound_bridge.dart';
 import '../models/memory_level.dart';
 
 /// Rewards from finishing a Memory Match level.
@@ -29,61 +26,26 @@ class MemoryOutcome {
 
 /// Per-level stars + fastest times + unlocks for Memory Match. Coins and
 /// achievements go to the shared [PlayerProfile].
-class MemoryState extends ChangeNotifier {
-  SharedPreferences? _prefs;
-  bool _loaded = false;
-
+class MemoryState extends GameProgressStore {
   int _roundsPlayed = 0;
-  bool _soundOn = true;
-
-  final Map<String, int> _levelStars = {};
-  final Map<String, int> _levelFastest = {};
 
   static const _kRounds = 'memory_rounds';
-  static const _kSound = 'memory_sound';
 
-  bool get isLoaded => _loaded;
+  @override
+  String get keyPrefix => 'memory';
+
+  @override
+  List<String> get orderedLevelIds =>
+      MemoryMap.allLevels.map((l) => l.id).toList();
+
   int get roundsPlayed => _roundsPlayed;
-  bool get soundOn => _soundOn;
 
-  int stars(String levelId) => _levelStars[levelId] ?? 0;
-  int get totalStars => _levelStars.values.fold(0, (s, v) => s + v);
-  int fastestSeconds(String levelId) => _levelFastest[levelId] ?? 0;
+  bool isLevelUnlocked(MemoryLevel level) => isLevelUnlockedById(level.id);
 
-  int get overallFastest {
-    if (_levelFastest.isEmpty) return 0;
-    return _levelFastest.values.reduce((a, b) => a < b ? a : b);
-  }
-
-  bool get hasFastest => _levelFastest.isNotEmpty;
-
-  bool isLevelUnlocked(MemoryLevel level) {
-    final order = MemoryMap.allLevels;
-    final pos = order.indexWhere((l) => l.id == level.id);
-    if (pos <= 0) return true;
-    return stars(order[pos - 1].id) > 0;
-  }
-
+  @override
   Future<void> load() async {
-    _prefs = await SharedPreferences.getInstance();
-    final p = _prefs!;
-    _roundsPlayed = p.getInt(_kRounds) ?? 0;
-    _soundOn = p.getBool(_kSound) ?? true;
-    SoundBridge.enabled = _soundOn;
-    for (final lvl in MemoryMap.allLevels) {
-      final s = p.getInt('memory_level_${lvl.id}');
-      if (s != null) _levelStars[lvl.id] = s;
-      final f = p.getInt('memory_fastest_${lvl.id}');
-      if (f != null) _levelFastest[lvl.id] = f;
-    }
-    _loaded = true;
-    notifyListeners();
-  }
-
-  Future<void> setSoundOn(bool value) async {
-    _soundOn = value;
-    SoundBridge.enabled = value;
-    await _prefs?.setBool(_kSound, value);
+    await super.load();
+    _roundsPlayed = prefs!.getInt(_kRounds) ?? 0;
     notifyListeners();
   }
 
@@ -107,11 +69,7 @@ class MemoryState extends ChangeNotifier {
                 ? 1
                 : 1; // always at least 1 for finishing
 
-    final prevStars = this.stars(level.id);
-    if (stars > prevStars) {
-      _levelStars[level.id] = stars;
-      await _prefs?.setInt('memory_level_${level.id}', stars);
-    }
+    await keepBestStars(level.id, stars);
 
     final bossBeaten = level.isBoss; // finishing the boss grid counts
     final coinsEarned = pairs * 3 + stars * 5 + (bossBeaten ? 20 : 0);
@@ -119,17 +77,10 @@ class MemoryState extends ChangeNotifier {
 
     _roundsPlayed++;
 
-    var isNewFastest = false;
-    if (stars == 3 && elapsedSeconds > 0) {
-      final prevFastest = fastestSeconds(level.id);
-      if (prevFastest == 0 || elapsedSeconds < prevFastest) {
-        _levelFastest[level.id] = elapsedSeconds;
-        await _prefs?.setInt('memory_fastest_${level.id}', elapsedSeconds);
-        isNewFastest = true;
-      }
-    }
+    final isNewFastest =
+        await recordFastestIfBest(level.id, stars, elapsedSeconds);
 
-    await _prefs?.setInt(_kRounds, _roundsPlayed);
+    await prefs?.setInt(_kRounds, _roundsPlayed);
 
     final ids = <String>[Achievements.firstGame.id];
     if (perfect) {
@@ -159,18 +110,11 @@ class MemoryState extends ChangeNotifier {
     );
   }
 
+  @override
   Future<void> reset() async {
+    await super.reset();
     _roundsPlayed = 0;
-    _soundOn = true;
-    SoundBridge.enabled = true;
-    _levelStars.clear();
-    _levelFastest.clear();
-    await _prefs?.remove(_kRounds);
-    await _prefs?.remove(_kSound);
-    for (final lvl in MemoryMap.allLevels) {
-      await _prefs?.remove('memory_level_${lvl.id}');
-      await _prefs?.remove('memory_fastest_${lvl.id}');
-    }
+    await prefs?.remove(_kRounds);
     notifyListeners();
   }
 }

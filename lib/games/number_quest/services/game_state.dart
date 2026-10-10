@@ -63,10 +63,12 @@ class GameState extends ChangeNotifier {
   int _multCorrect = 0;
 
   // ---- keys ----
-  static const _kXp = 'xp';
-  static const _kSound = 'sound_on';
-  static const _kBestStreak = 'best_answer_streak';
-  static const _kMultCorrect = 'mult_correct';
+  // Namespaced with an `nq_` prefix to avoid collisions with other stores.
+  // Legacy bare keys are migrated once on load (see [_migrateLegacyKeys]).
+  static const _kXp = 'nq_xp';
+  static const _kSound = 'nq_sound_on';
+  static const _kBestStreak = 'nq_best_answer_streak';
+  static const _kMultCorrect = 'nq_mult_correct';
 
   // ---- getters ----
   bool get isLoaded => _loaded;
@@ -121,6 +123,7 @@ class GameState extends ChangeNotifier {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
+    await _migrateLegacyKeys(p);
     _xp = p.getInt(_kXp) ?? 0;
     _soundOn = p.getBool(_kSound) ?? true;
     SoundBridge.enabled = _soundOn;
@@ -128,20 +131,57 @@ class GameState extends ChangeNotifier {
     _multCorrect = p.getInt(_kMultCorrect) ?? 0;
 
     for (final lvl in WorldMap.allLevels) {
-      final s = p.getInt('level_${lvl.id}');
+      final s = p.getInt('nq_level_${lvl.id}');
       if (s != null) _levelStars[lvl.id] = s;
-      final f = p.getInt('fastest_${lvl.id}');
+      final f = p.getInt('nq_fastest_${lvl.id}');
       if (f != null) _levelFastest[lvl.id] = f;
     }
     for (final s in Skill.values) {
       _skills[s] = SkillStat(
-        correct: p.getInt('${s.key}_correct') ?? 0,
-        attempts: p.getInt('${s.key}_attempts') ?? 0,
+        correct: p.getInt('nq_${s.key}_correct') ?? 0,
+        attempts: p.getInt('nq_${s.key}_attempts') ?? 0,
       );
     }
 
     _loaded = true;
     notifyListeners();
+  }
+
+  /// One-time migration of Number Quest's legacy bare shared_preferences keys
+  /// to the `nq_` namespace. For each known old key, if the new key is absent
+  /// and the old key exists, its value is copied (by type) and the old key is
+  /// removed. Only Number Quest's own keys are touched; other stores'
+  /// (safari_*, wizard_*, etc.) keys are never read or removed here.
+  Future<void> _migrateLegacyKeys(SharedPreferences p) async {
+    // Int-valued keys: {old: new}.
+    final intKeys = <String, String>{
+      'xp': _kXp,
+      'best_answer_streak': _kBestStreak,
+      'mult_correct': _kMultCorrect,
+    };
+    for (final lvl in WorldMap.allLevels) {
+      intKeys['level_${lvl.id}'] = 'nq_level_${lvl.id}';
+      intKeys['fastest_${lvl.id}'] = 'nq_fastest_${lvl.id}';
+    }
+    for (final s in Skill.values) {
+      intKeys['${s.key}_correct'] = 'nq_${s.key}_correct';
+      intKeys['${s.key}_attempts'] = 'nq_${s.key}_attempts';
+    }
+    intKeys.forEach((oldKey, newKey) {
+      if (!p.containsKey(newKey) && p.containsKey(oldKey)) {
+        final v = p.getInt(oldKey);
+        if (v != null) p.setInt(newKey, v);
+        p.remove(oldKey);
+      }
+    });
+
+    // Bool-valued key.
+    const oldSound = 'sound_on';
+    if (!p.containsKey(_kSound) && p.containsKey(oldSound)) {
+      final v = p.getBool(oldSound);
+      if (v != null) await p.setBool(_kSound, v);
+      await p.remove(oldSound);
+    }
   }
 
   Future<void> setSoundOn(bool value) async {
@@ -161,8 +201,8 @@ class GameState extends ChangeNotifier {
       stat.correct++;
       if (skill == Skill.multiplication) _multCorrect++;
     }
-    _prefs?.setInt('${skill.key}_correct', stat.correct);
-    _prefs?.setInt('${skill.key}_attempts', stat.attempts);
+    _prefs?.setInt('nq_${skill.key}_correct', stat.correct);
+    _prefs?.setInt('nq_${skill.key}_attempts', stat.attempts);
     if (skill == Skill.multiplication) {
       _prefs?.setInt(_kMultCorrect, _multCorrect);
     }
@@ -202,7 +242,7 @@ class GameState extends ChangeNotifier {
     final prevStars = stars(level.id);
     if (earnedStars > prevStars) {
       _levelStars[level.id] = earnedStars;
-      await _prefs?.setInt('level_${level.id}', earnedStars);
+      await _prefs?.setInt('nq_level_${level.id}', earnedStars);
     }
 
     // Fastest time: record only on a decent run (>=70%) so rushing-and-missing
@@ -215,7 +255,7 @@ class GameState extends ChangeNotifier {
       final prevFastest = fastestSeconds(level.id);
       if (prevFastest == 0 || elapsedSeconds < prevFastest) {
         _levelFastest[level.id] = elapsedSeconds;
-        await _prefs?.setInt('fastest_${level.id}', elapsedSeconds);
+        await _prefs?.setInt('nq_fastest_${level.id}', elapsedSeconds);
         isNewFastest = true;
       }
     }
@@ -285,13 +325,13 @@ class GameState extends ChangeNotifier {
     await _prefs?.remove(_kSound);
     _levelFastest.clear();
     for (final lvl in WorldMap.allLevels) {
-      await _prefs?.remove('level_${lvl.id}');
-      await _prefs?.remove('fastest_${lvl.id}');
+      await _prefs?.remove('nq_level_${lvl.id}');
+      await _prefs?.remove('nq_fastest_${lvl.id}');
     }
     for (final s in Skill.values) {
       _skills[s] = SkillStat();
-      await _prefs?.remove('${s.key}_correct');
-      await _prefs?.remove('${s.key}_attempts');
+      await _prefs?.remove('nq_${s.key}_correct');
+      await _prefs?.remove('nq_${s.key}_attempts');
     }
     notifyListeners();
   }
