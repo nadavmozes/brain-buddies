@@ -7,6 +7,7 @@ import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/confetti.dart';
 import '../../../core/widgets/double_awards_button.dart';
+import '../../../core/widgets/pet_round_moment.dart';
 import '../../../core/widgets/star_row.dart';
 import '../../../core/widgets/timer_chip.dart';
 import '../models/time_world.dart';
@@ -165,6 +166,8 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      PetRoundMoment(profile: widget.profile),
                       const SizedBox(height: 16),
                       const DoubleAwardsButton(),
                       const SizedBox(height: 16),

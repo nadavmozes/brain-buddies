@@ -39,6 +39,14 @@ class PlayerProfile extends ChangeNotifier {
   // Pet companion: grows with XP earned across all games.
   int _petXp = 0;
 
+  // Transient (non-persisted) summary of the pet's change in the most recent
+  // round, so result screens can surface a small "Buddy grew" moment. Reset
+  // at the start of every onRoundFinished.
+  int _lastRoundPetXp = 0;
+  bool _lastRoundPetLeveledUp = false;
+  int _lastRoundPetNewLevel = 0;
+  bool _lastRoundPetStageChanged = false;
+
   // Daily missions: progress per mission id, claimed set, and the day they
   // belong to (progress resets when the calendar day changes).
   final Map<String, int> _missionProgress = {};
@@ -78,6 +86,13 @@ class PlayerProfile extends ChangeNotifier {
   int get petLevel => Pet.levelForXp(_petXp);
   double get petProgress => Pet.progressForXp(_petXp);
   PetStage get petStage => Pet.stageForLevel(petLevel);
+
+  // Transient pet-change summary from the most recent round (0 when nothing
+  // was fed, so a result screen renders no pet moment).
+  int get lastRoundPetXp => _lastRoundPetXp;
+  bool get lastRoundPetLeveledUp => _lastRoundPetLeveledUp;
+  int get lastRoundPetNewLevel => _lastRoundPetNewLevel;
+  bool get lastRoundPetStageChanged => _lastRoundPetStageChanged;
 
   /// Today's three missions.
   List<MissionDef> get todaysMissions => Missions.forDay(DateTime.now());
@@ -135,6 +150,21 @@ class PlayerProfile extends ChangeNotifier {
 
     _loaded = true;
     notifyListeners();
+  }
+
+  /// Rolls the mission board over to today if the stored day is stale. This
+  /// mirrors load()'s else-branch so a session left open past midnight resets
+  /// yesterday's progress before any new mission report is applied.
+  Future<void> _rolloverMissionsIfNeeded() async {
+    final today = _todayKey();
+    if (_missionDay != today) {
+      _missionDay = today;
+      _missionProgress.clear();
+      _missionClaimed.clear();
+      await _prefs?.setString(_kMissionDay, today);
+      await _prefs?.remove(_kMissionProgress);
+      await _prefs?.remove(_kMissionClaimed);
+    }
   }
 
   // ---- date helpers ----
@@ -196,9 +226,23 @@ class PlayerProfile extends ChangeNotifier {
     required bool threeStars,
     required bool bossBeaten,
   }) async {
+    // Reset the transient pet-moment summary so a 0-coin round shows nothing.
+    _lastRoundPetXp = 0;
+    _lastRoundPetLeveledUp = false;
+    _lastRoundPetNewLevel = 0;
+    _lastRoundPetStageChanged = false;
+
     await recordPlayDay();
     // Pet grows with roughly the coins earned, so playing anything feeds it.
+    final beforeLevel = petLevel;
+    final beforeStage = Pet.stageForLevel(beforeLevel);
     await addPetXp(coinsEarned);
+    final afterLevel = petLevel;
+    _lastRoundPetXp = coinsEarned;
+    _lastRoundPetNewLevel = afterLevel;
+    _lastRoundPetLeveledUp = afterLevel > beforeLevel;
+    _lastRoundPetStageChanged =
+        Pet.stageForLevel(afterLevel).name != beforeStage.name;
     // Mission progress.
     await reportMission(MissionMetric.correctAnswers, correct);
     await reportMission(MissionMetric.levelsFinished, 1);
@@ -233,6 +277,7 @@ class PlayerProfile extends ChangeNotifier {
 
   /// Advances any of today's missions matching [metric] by [amount].
   Future<void> reportMission(MissionMetric metric, int amount) async {
+    await _rolloverMissionsIfNeeded();
     if (amount <= 0) return;
     var changed = false;
     for (final m in todaysMissions) {
@@ -251,6 +296,7 @@ class PlayerProfile extends ChangeNotifier {
   /// Claims a completed mission's coin reward. Returns coins granted (0 if not
   /// claimable).
   Future<int> claimMission(MissionDef m) async {
+    await _rolloverMissionsIfNeeded();
     if (!missionComplete(m) || missionClaimed(m.id)) return 0;
     _missionClaimed.add(m.id);
     await _persistMissions();
