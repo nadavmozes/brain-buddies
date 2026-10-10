@@ -1,0 +1,36 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "severity": "info",
+      "detail": "FEAT-001(A): Number Quest's duplicate streak is fully removed from game_state.dart (fields _dailyStreak/_lastPlayedDay, keys _kStreak='daily_streak'/_kLastDay='last_day', getter dailyStreak, _updateDailyStreak(), its call in completeLevel, load() reads, reset() lines+removes, and the now-unused _dayKey/_todayKey helpers). A git-tracked grep of the worktree confirms zero matches for state.dailyStreak, daily_streak, last_day, _dayKey, _todayKey, _updateDailyStreak, _dailyStreak under lib/games/number_quest/. The shared streak still advances via profile.onRoundFinished -> recordPlayDay.",
+      "file": "lib/games/number_quest/services/game_state.dart"
+    },
+    {
+      "severity": "info",
+      "detail": "FEAT-001(A): Both NQ screens read profile.dailyStreak. _Hud in number_quest_home_screen.dart (~line 207) now uses profile.dailyStreak; ParentScreen gained a required PlayerProfile profile (with the core import) and reads profile.dailyStreak, and its construction site passes profile: state, profile.",
+      "file": "lib/games/number_quest/screens/parent_screen.dart"
+    },
+    {
+      "severity": "info",
+      "detail": "FEAT-001(B): MoneyQuestionType.makeChange added; generator threads MoneyWorld through generateRound/generateOne (default piggy so existing callers unaffected) and only adds makeChange when world==MoneyWorld.vault; _makeChange builds a positive change answer from 5-cent-multiple price/payment with 4 distinct non-negative choices via _distinctAmounts. money_game_screen _buildBody renders makeChange via the existing _TextChoices path. test/money_make_change_test.dart confirms Vault yields makeChange with a valid in-range non-negative correct choice and non-Vault worlds never do.",
+      "file": "lib/games/money_math/services/money_generator.dart"
+    },
+    {
+      "severity": "info",
+      "detail": "FEAT-002(A): Shared const AnswerBadge renders a 26px check_rounded (success) / close_rounded (danger) comic chip and SizedBox.shrink when !show. Layered via Stack(clipBehavior: Clip.none) + Positioned(top:-6,right:-6) over answered correct/chosen-wrong tiles in all five choice games, covering BOTH ComicButton tiles (NQ, Word Wizard, Shape Safari text, Clock Hero _TextChoices, Money Math _TextChoices) and Container tiles (Shape Safari shapes, Clock Hero clock faces, Money Math _TwoPiles/_PileChoices). Existing _bg/_bgFor fills, textColor flips, and onAnswer/SFX wiring are preserved unchanged; the badge is purely additive. Memory Match has no diff (confirmed via git).",
+      "file": "lib/core/widgets/answer_badge.dart"
+    },
+    {
+      "severity": "info",
+      "detail": "FEAT-002(B): AnalyticsService (ChangeNotifier implements AnalyticsSink) is local-only/COPPA-safe. All keys use the 'analytics_' prefix (opens_<gameId>, rounds_total, correct_total, threestar_total, boss_total, snap_streak, snap_pet, snap_coins), counters only, defensive getInt(...)??0, no network, no PII, no timestamps. PlayerProfile holds a nullable AnalyticsSink and depends only on the interface: recordGameOpened is the first line of recordGamePlayed (before the already-played early return, so repeat opens count); recordRound + updateSnapshots run at the end of onRoundFinished. The hub owns one AnalyticsService, loads it, and attaches it inside the _profile.load().then chain before any open/round. test/analytics_test.dart verifies counts, reload persistence, and that only 'analytics_'-prefixed keys are written.",
+      "file": "lib/core/services/analytics_service.dart"
+    },
+    {
+      "severity": "info",
+      "detail": "Build/test evidence verified independently in the worktree: `flutter test` -> All tests passed (9: analytics x1, money_make_change x2, widget x6); `flutter build web` -> 'Built build\\web' present (the trailing Exit Code 1 is Select-String with no further matches, not a build failure, per the documented environment quirk).",
+      "file": ".agents/tasks/batch1-p0"
+    }
+  ],
+  "summary": "Both FEATs meet all acceptance criteria and verification is reproduced. FEAT-001: NQ duplicate streak fully removed with both screens reading profile.dailyStreak (worktree grep clean), and a Vault-only makeChange type rendering via the text-choice path with passing tests. FEAT-002: shared AnswerBadge covers correct+chosen-wrong tiles across all five choice games for both ComicButton and Container shapes with color/SFX intact and Memory Match untouched, and a local-only/COPPA-safe AnalyticsService sits behind the AnalyticsSink interface, wired through PlayerProfile and attached once at the hub. flutter test passes (9/9) and flutter build web shows 'Built build\\web'. No blocking concerns."
+}

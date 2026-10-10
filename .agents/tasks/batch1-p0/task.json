@@ -1,0 +1,7 @@
+{
+  "task_id": "task-batch1-p0",
+  "task_description": "Batch 1 P0 correctness for the live BrainBuddies kids app: (1) remove Number Quest's duplicate daily-streak that can diverge from the hub streak; (2) add non-color-only answer feedback (check/cross icons) across the five multiple-choice games for color-blind accessibility; (3) add a local-only, no-PII, COPPA-safe analytics service with a decoupled sink seam; (4) add a Money Math 'make change' question type served in the Vault world to match its advertised content.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
