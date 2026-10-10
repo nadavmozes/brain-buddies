@@ -11,7 +11,7 @@ class WordEntry {
 class WordBank {
   WordBank._();
 
-  // Short, simple words.
+  // Easy: short CVC / grade-1 sight words with a clear picture.
   static const List<WordEntry> easy = [
     WordEntry('cat', '🐱'),
     WordEntry('dog', '🐶'),
@@ -23,9 +23,24 @@ class WordBank {
     WordEntry('pig', '🐷'),
     WordEntry('car', '🚗'),
     WordEntry('fox', '🦊'),
+    WordEntry('ant', '🐜'),
+    WordEntry('bat', '🦇'),
+    WordEntry('cow', '🐮'),
+    WordEntry('owl', '🦉'),
+    WordEntry('bed', '🛏️'),
+    WordEntry('key', '🔑'),
+    WordEntry('pen', '🖊️'),
+    WordEntry('egg', '🥚'),
+    WordEntry('map', '🗺️'),
+    WordEntry('box', '📦'),
+    WordEntry('ball', '⚽'),
+    WordEntry('leaf', '🍃'),
+    WordEntry('milk', '🥛'),
+    WordEntry('kite', '🪁'),
+    WordEntry('bell', '🔔'),
   ];
 
-  // Medium words.
+  // Medium: grade-2 words, mostly 4-5 letters.
   static const List<WordEntry> medium = [
     WordEntry('frog', '🐸'),
     WordEntry('star', '⭐'),
@@ -37,9 +52,24 @@ class WordBank {
     WordEntry('duck', '🦆'),
     WordEntry('boat', '⛵'),
     WordEntry('bird', '🐦'),
+    WordEntry('shoe', '👟'),
+    WordEntry('drum', '🥁'),
+    WordEntry('clock', '🕐'),
+    WordEntry('chair', '🪑'),
+    WordEntry('crab', '🦀'),
+    WordEntry('bear', '🐻'),
+    WordEntry('lion', '🦁'),
+    WordEntry('rain', '🌧️'),
+    WordEntry('corn', '🌽'),
+    WordEntry('horse', '🐴'),
+    WordEntry('mouse', '🐭'),
+    WordEntry('candy', '🍬'),
+    WordEntry('grape', '🍇'),
+    WordEntry('whale', '🐳'),
+    WordEntry('pizza', '🍕'),
   ];
 
-  // Longer words.
+  // Hard: grade-3 words, 5+ letters.
   static const List<WordEntry> hard = [
     WordEntry('apple', '🍎'),
     WordEntry('tiger', '🐯'),
@@ -51,6 +81,21 @@ class WordBank {
     WordEntry('cloud', '☁️'),
     WordEntry('sheep', '🐑'),
     WordEntry('bread', '🍞'),
+    WordEntry('rabbit', '🐰'),
+    WordEntry('turtle', '🐢'),
+    WordEntry('rocket', '🚀'),
+    WordEntry('flower', '🌸'),
+    WordEntry('monkey', '🐵'),
+    WordEntry('banana', '🍌'),
+    WordEntry('carrot', '🥕'),
+    WordEntry('castle', '🏰'),
+    WordEntry('pencil', '✏️'),
+    WordEntry('guitar', '🎸'),
+    WordEntry('rainbow', '🌈'),
+    WordEntry('penguin', '🐧'),
+    WordEntry('dolphin', '🐬'),
+    WordEntry('balloon', '🎈'),
+    WordEntry('dinosaur', '🦖'),
   ];
 
   static List<WordEntry> forDifficulty(double d) {
