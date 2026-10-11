@@ -4,6 +4,7 @@ import '../core/models/game_catalog.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/feedback_email.dart';
 import '../core/services/player_profile.dart';
+import '../core/services/sound_bridge.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_panel.dart';
@@ -22,6 +23,7 @@ import '../games/shape_safari/services/safari_state.dart';
 import '../games/word_wizard/screens/word_wizard_home_screen.dart';
 import '../games/word_wizard/services/wizard_state.dart';
 import 'achievements_screen.dart';
+import 'admin_screen.dart';
 import 'avatar_picker.dart';
 import 'missions_screen.dart';
 import 'pet_screen.dart';
@@ -205,6 +207,62 @@ class _GameHubScreenState extends State<GameHubScreen> {
     );
   }
 
+  /// Opens the HIDDEN admin / dev panel (reached only via the long-press on the
+  /// hub footer; see [_Footer]).
+  void _openAdmin() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdminScreen(
+          profile: _profile,
+          onResetEverything: _resetEverything,
+        ),
+      ),
+    );
+  }
+
+  /// Wipes EVERYTHING: the shared [PlayerProfile] plus all six per-game stores.
+  ///
+  /// A game store's `reset()` removes its keys via `prefs?.remove(...)`, which
+  /// is a no-op when `prefs` is null — and the hub constructs/loads each game
+  /// store lazily (only on first open). So for every one of the six stores we
+  /// must construct it if missing and `load()` it (attaching `prefs` and
+  /// populating `orderedLevelIds`) BEFORE calling `reset()`, otherwise stale
+  /// stars/times for never-opened games would survive the wipe.
+  ///
+  /// The screen (not this method) decides whether to reload the web page or
+  /// show a SnackBar afterward, so this stays a pure data wipe.
+  Future<void> _resetEverything() async {
+    await _profile.reset();
+
+    _numberQuestState ??= GameState();
+    if (!_numberQuestState!.isLoaded) await _numberQuestState!.load();
+    await _numberQuestState!.reset();
+
+    _safariState ??= SafariState();
+    if (!_safariState!.isLoaded) await _safariState!.load();
+    await _safariState!.reset();
+
+    _wizardState ??= WizardState();
+    if (!_wizardState!.isLoaded) await _wizardState!.load();
+    await _wizardState!.reset();
+
+    _clockState ??= ClockState();
+    if (!_clockState!.isLoaded) await _clockState!.load();
+    await _clockState!.reset();
+
+    _moneyState ??= MoneyState();
+    if (!_moneyState!.isLoaded) await _moneyState!.load();
+    await _moneyState!.reset();
+
+    _memoryState ??= MemoryState();
+    if (!_memoryState!.isLoaded) await _memoryState!.load();
+    await _memoryState!.reset();
+
+    // Final deterministic re-sync of the one global sound flag (profile and
+    // every store set this during reset; "last writer wins").
+    SoundBridge.enabled = _profile.soundOn;
+  }
+
   void _onTap(GameEntry game) {
     if (!game.available) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,7 +333,10 @@ class _GameHubScreenState extends State<GameHubScreen> {
                 const SizedBox(height: 12),
                 if (_profileReady) _hubActions(),
                 const SizedBox(height: 8),
-                _Footer(onFeedback: () => FeedbackEmail.open(context)),
+                _Footer(
+                  onFeedback: () => FeedbackEmail.open(context),
+                  onSecret: _openAdmin,
+                ),
               ],
             ),
           ),
@@ -430,9 +491,13 @@ class _ProfileBar extends StatelessWidget {
 /// Hub footer: an "AI-made" disclosure on the left and a Feedback button
 /// (opens the mail app) on the right.
 class _Footer extends StatelessWidget {
-  const _Footer({required this.onFeedback});
+  const _Footer({required this.onFeedback, required this.onSecret});
 
   final VoidCallback onFeedback;
+
+  /// HIDDEN entry point: a long-press on the "Made with AI 🤖" text opens the
+  /// developer admin panel. Deliberately unlabeled so kids never discover it.
+  final VoidCallback onSecret;
 
   @override
   Widget build(BuildContext context) {
@@ -440,13 +505,18 @@ class _Footer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          const Expanded(
-            child: Text(
-              'Made with AI 🤖',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.ink,
+          Expanded(
+            child: GestureDetector(
+              // No visible hint — long-press is the hidden admin gesture.
+              onLongPress: onSecret,
+              behavior: HitTestBehavior.opaque,
+              child: const Text(
+                'Made with AI 🤖',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink,
+                ),
               ),
             ),
           ),
