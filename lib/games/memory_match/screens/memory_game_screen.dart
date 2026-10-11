@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/timer_chip.dart';
+import '../../../core/widgets/game_header.dart';
 import '../models/memory_level.dart';
 import '../services/memory_state.dart';
 import 'memory_result_screen.dart';
@@ -167,32 +167,14 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      widget.level.isBoss
-                          ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                          : '${world.emoji} ${widget.level.title}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    const Spacer(),
-                    TimerChip(seconds: _elapsed),
-                    const SizedBox(width: 10),
-                    Text('$_matchedPairs / ${widget.level.pairs}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    backgroundColor: Colors.white,
-                    color: world.color,
-                  ),
+                GameHeader(
+                  title: widget.level.isBoss
+                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
+                      : '${world.emoji} ${widget.level.title}',
+                  countLabel: '$_matchedPairs / ${widget.level.pairs}',
+                  seconds: _elapsed,
+                  progress: progress,
+                  progressColor: world.color,
                 ),
                 const SizedBox(height: 16),
                 Expanded(

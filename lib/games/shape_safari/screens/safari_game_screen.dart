@@ -8,7 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/timer_chip.dart';
+import '../../../core/widgets/game_header.dart';
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../models/shape_kind.dart';
@@ -163,32 +163,14 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      _isGuardian
-                          ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                          : '${habitat.emoji} ${widget.level.title}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    const Spacer(),
-                    TimerChip(seconds: _elapsed),
-                    const SizedBox(width: 10),
-                    Text('${_current + 1} / ${_questions.length}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    backgroundColor: Colors.white,
-                    color: habitat.color,
-                  ),
+                GameHeader(
+                  title: _isGuardian
+                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
+                      : '${habitat.emoji} ${widget.level.title}',
+                  countLabel: '${_current + 1} / ${_questions.length}',
+                  seconds: _elapsed,
+                  progress: progress,
+                  progressColor: habitat.color,
                 ),
                 if (_isGuardian) ...[
                   const SizedBox(height: 10),

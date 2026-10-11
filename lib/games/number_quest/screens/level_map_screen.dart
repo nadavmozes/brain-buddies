@@ -125,7 +125,7 @@ class _LevelNode extends StatelessWidget {
               ),
               if (unlocked) ...[
                 const SizedBox(height: 4),
-                StarRow(earned: stars, size: 18),
+                StarRow(earned: stars, size: 17),
               ],
             ],
           ),

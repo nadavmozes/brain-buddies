@@ -8,6 +8,8 @@ import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/confetti.dart';
 import '../../../core/widgets/double_awards_button.dart';
 import '../../../core/widgets/pet_round_moment.dart';
+import '../../../core/widgets/result_banner.dart';
+import '../../../core/widgets/reward_row.dart';
 import '../../../core/widgets/star_row.dart';
 import '../../../core/widgets/timer_chip.dart';
 import '../models/time_world.dart';
@@ -127,21 +129,11 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFFFF9800))),
                             const Divider(height: 24, thickness: 2),
-                            Row(
-                              children: [
-                                const Text('🪙',
-                                    style: TextStyle(fontSize: 22)),
-                                const SizedBox(width: 10),
-                                const Text('Coins earned',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w700)),
-                                const Spacer(),
-                                Text('+${outcome.coinsEarned}',
-                                    style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900)),
-                              ],
+                            RewardRow(
+                              leading: const Text('🪙',
+                                  style: TextStyle(fontSize: 22)),
+                              label: 'Coins earned',
+                              value: '+${outcome.coinsEarned}',
                             ),
                             const SizedBox(height: 10),
                             Row(
@@ -158,10 +150,10 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                             ),
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              _banner('⚡ NEW FASTEST TIME!'),
+                              const ResultBanner('⚡ NEW FASTEST TIME!'),
                             ] else if (outcome.isNewBestScore) ...[
                               const SizedBox(height: 12),
-                              _banner('🏆 NEW BEST SCORE!'),
+                              const ResultBanner('🏆 NEW BEST SCORE!'),
                             ],
                           ],
                         ),
@@ -237,21 +229,4 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
     );
   }
 
-  Widget _banner(String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.ink, width: 2.5),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-            color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900),
-      ),
-    );
-  }
 }
