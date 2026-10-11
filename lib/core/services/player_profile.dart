@@ -53,6 +53,12 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _missionClaimed = {};
   String _missionDay = '';
 
+  /// Current persistence schema version. Bump (and add migration logic in
+  /// [load]) if the profile key layout ever changes. Read + re-stamped on
+  /// load; no migration needed yet.
+  static const int schemaVersion = 1;
+
+  static const _kSchemaVersion = 'profile_schema_version';
   static const _kCoins = 'profile_coins';
   static const _kLifetime = 'profile_lifetime_coins';
   static const _kOwned = 'profile_owned_avatars';
@@ -106,6 +112,10 @@ class PlayerProfile extends ChangeNotifier {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
+    // Read (default 1 when absent) and re-stamp the schema version. No
+    // migration logic needed yet; this just future-proofs the profile.
+    final _ = p.getInt(_kSchemaVersion) ?? schemaVersion;
+    await p.setInt(_kSchemaVersion, schemaVersion);
     _coins = p.getInt(_kCoins) ?? 0;
     _lifetimeCoins = p.getInt(_kLifetime) ?? 0;
     _selectedAvatar = p.getString(_kSelected) ?? Avatars.defaultId;
@@ -413,6 +423,7 @@ class PlayerProfile extends ChangeNotifier {
     _missionProgress.clear();
     _missionClaimed.clear();
     _missionDay = '';
+    await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
     await _prefs?.remove(_kOwned);

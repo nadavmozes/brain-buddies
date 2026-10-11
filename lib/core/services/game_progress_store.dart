@@ -24,6 +24,10 @@ abstract class GameProgressStore extends ChangeNotifier {
   bool _loaded = false;
   bool _soundOn = true;
 
+  /// Current persistence schema version for every per-game store. Bump this
+  /// (and add migration logic in [load]) if the key layout ever changes.
+  static const int schemaVersion = 1;
+
   @protected
   final Map<String, int> levelStars = {};
 
@@ -61,6 +65,10 @@ abstract class GameProgressStore extends ChangeNotifier {
   Future<void> load() async {
     prefs = await SharedPreferences.getInstance();
     final p = prefs!;
+    // Read (default 1 when absent) and re-stamp the schema version. No
+    // migration logic needed yet; this just future-proofs the store.
+    final _ = p.getInt('${keyPrefix}_schema_version') ?? schemaVersion;
+    await p.setInt('${keyPrefix}_schema_version', schemaVersion);
     _soundOn = p.getBool('${keyPrefix}_sound') ?? true;
     SoundBridge.enabled = _soundOn;
     for (final id in orderedLevelIds) {
@@ -86,6 +94,7 @@ abstract class GameProgressStore extends ChangeNotifier {
     _soundOn = true;
     SoundBridge.enabled = true;
     await prefs?.remove('${keyPrefix}_sound');
+    await prefs?.remove('${keyPrefix}_schema_version');
     for (final id in orderedLevelIds) {
       await prefs?.remove('${keyPrefix}_level_$id');
       await prefs?.remove('${keyPrefix}_fastest_$id');

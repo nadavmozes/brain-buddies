@@ -65,6 +65,12 @@ class GameState extends ChangeNotifier {
   // ---- keys ----
   // Namespaced with an `nq_` prefix to avoid collisions with other stores.
   // Legacy bare keys are migrated once on load (see [_migrateLegacyKeys]).
+  /// Current persistence schema version for Number Quest. Bump (and extend
+  /// the existing migration) if the key layout changes. Read + re-stamped on
+  /// load; the Batch 3 legacy-key migration is unaffected.
+  static const int schemaVersion = 1;
+
+  static const _kSchemaVersion = 'nq_schema_version';
   static const _kXp = 'nq_xp';
   static const _kSound = 'nq_sound_on';
   static const _kBestStreak = 'nq_best_answer_streak';
@@ -124,6 +130,10 @@ class GameState extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
     await _migrateLegacyKeys(p);
+    // Read (default 1 when absent) and re-stamp the schema version. No new
+    // migration logic needed yet beyond the legacy-key migration above.
+    final _ = p.getInt(_kSchemaVersion) ?? schemaVersion;
+    await p.setInt(_kSchemaVersion, schemaVersion);
     _xp = p.getInt(_kXp) ?? 0;
     _soundOn = p.getBool(_kSound) ?? true;
     SoundBridge.enabled = _soundOn;
@@ -317,6 +327,7 @@ class GameState extends ChangeNotifier {
     _levelStars.clear();
     _soundOn = true;
     SoundBridge.enabled = true;
+    await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kXp);
     await _prefs?.remove(_kBestStreak);
     await _prefs?.remove(_kMultCorrect);
