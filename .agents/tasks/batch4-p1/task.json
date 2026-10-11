@@ -1,0 +1,7 @@
+{
+  "task_id": "task-batch4-p1",
+  "task_description": "Batch 4 — P1 content + tests + widget promotion for the BrainBuddies Flutter web app. (1) Expand Word Wizard word bank to ~60-90 real grade-appropriate words with sensible emojis, keeping all three question types and Batch-2 TTS working. (2) Add high-value deterministic unit tests (streak, missions, level-unlock, completeLevel scoring, generator forLevel structure, NQ problem correctness). (3) Promote duplicated chrome (home HUD, All-Games back link, sound toggle, game header, trail StarRow size, result reward rows/banners) into lib/core/widgets with zero visual/behavior change. Order: tests first (lock behavior), then content, then widget promotion. No merge, no push.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/timer_chip.dart';
+import '../../../core/widgets/game_header.dart';
 import '../models/clock_question.dart';
 import '../models/clock_time.dart';
 import '../models/time_world.dart';
@@ -175,32 +176,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      widget.level.isBoss
-                          ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                          : '${world.emoji} ${widget.level.title}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    const Spacer(),
-                    TimerChip(seconds: _elapsed),
-                    const SizedBox(width: 10),
-                    Text('${_current + 1} / ${_questions.length}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    backgroundColor: Colors.white,
-                    color: world.color,
-                  ),
+                GameHeader(
+                  title: widget.level.isBoss
+                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
+                      : '${world.emoji} ${widget.level.title}',
+                  countLabel: '${_current + 1} / ${_questions.length}',
+                  seconds: _elapsed,
+                  progress: progress,
+                  progressColor: world.color,
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -330,17 +313,32 @@ class _TextChoices extends StatelessWidget {
           children: List.generate(question.textChoices!.length, (index) {
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: question.textChoices![index],
-                fontSize: 24,
-                color: _bgFor(question, index, selectedIndex, answered),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: question.textChoices![index],
+                    fontSize: 24,
+                    color: _bgFor(question, index, selectedIndex, answered),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),
@@ -375,22 +373,36 @@ class _ClockChoices extends StatelessWidget {
           children: List.generate(question.clockChoices!.length, (index) {
             final highlighted = answered &&
                 (index == question.correctIndex || index == selectedIndex);
-            return GestureDetector(
-              onTap: answered ? null : () => onAnswer(index),
-              child: Container(
-                width: tileWidth,
-                height: tileWidth,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _bgFor(question, index, selectedIndex, answered),
-                  border: Border.all(color: AppTheme.ink, width: 3.5),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap: answered ? null : () => onAnswer(index),
+                  child: Container(
+                    width: tileWidth,
+                    height: tileWidth,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _bgFor(question, index, selectedIndex, answered),
+                      border: Border.all(color: AppTheme.ink, width: 3.5),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow:
+                          AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+                    ),
+                    child: ClockFace(
+                        time: question.clockChoices![index],
+                        size: tileWidth * 0.82),
+                  ),
                 ),
-                child: ClockFace(
-                    time: question.clockChoices![index],
-                    size: tileWidth * 0.82),
-              ),
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: AnswerBadge(
+                    show: highlighted,
+                    correct: index == question.correctIndex,
+                  ),
+                ),
+              ],
             );
           }),
         );

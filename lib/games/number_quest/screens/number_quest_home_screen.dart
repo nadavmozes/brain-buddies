@@ -102,8 +102,8 @@ class NumberQuestHome extends StatelessWidget {
                         color: Colors.white,
                         textColor: AppTheme.ink,
                         fontSize: 18,
-                        onPressed: () =>
-                            _push(context, ParentScreen(state: state)),
+                        onPressed: () => _push(context,
+                            ParentScreen(state: state, profile: profile)),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -204,7 +204,7 @@ class _Hud extends StatelessWidget {
               children: [
                 const Text('🔥', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 4),
-                Text('${state.dailyStreak}',
+                Text('${profile.dailyStreak}',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w900)),
               ],

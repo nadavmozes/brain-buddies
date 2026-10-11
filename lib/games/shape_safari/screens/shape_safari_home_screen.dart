@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/coin_pill.dart';
-import '../../../core/widgets/comic_button.dart';
+import '../../../core/widgets/all_games_back_button.dart';
 import '../../../core/widgets/comic_panel.dart';
+import '../../../core/widgets/sound_toggle_button.dart';
+import '../../../core/widgets/star_coin_hud.dart';
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../services/safari_state.dart';
@@ -35,32 +36,13 @@ class ShapeSafariHome extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.arrow_back_rounded, color: AppTheme.ink),
-                          Text('All Games',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.ink)),
-                        ],
-                      ),
-                    ),
+                    const AllGamesBackButton(),
                     const Spacer(),
                     AnimatedBuilder(
                       animation: Listenable.merge([state, profile]),
-                      builder: (_, __) => Row(
-                        children: [
-                          const Icon(Icons.star_rounded,
-                              color: AppTheme.accent, size: 22),
-                          Text(' ${state.totalStars} ',
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w900)),
-                          const SizedBox(width: 8),
-                          CoinPill(amount: profile.coins),
-                        ],
+                      builder: (_, __) => StarCoinHud(
+                        stars: state.totalStars,
+                        coins: profile.coins,
                       ),
                     ),
                   ],
@@ -81,15 +63,9 @@ class ShapeSafariHome extends StatelessWidget {
                 const SizedBox(height: 4),
                 AnimatedBuilder(
                   animation: profile,
-                  builder: (_, __) => ComicButton(
-                    label: profile.soundOn ? 'Sound: On' : 'Sound: Off',
-                    icon: profile.soundOn
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    color: Colors.white,
-                    textColor: AppTheme.ink,
-                    fontSize: 16,
-                    onPressed: () {
+                  builder: (_, __) => SoundToggleButton(
+                    soundOn: profile.soundOn,
+                    onToggle: () {
                       final v = !profile.soundOn;
                       profile.setSoundOn(v);
                       state.setSoundOn(v);

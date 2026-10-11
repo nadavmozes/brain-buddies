@@ -5,9 +5,10 @@ import 'dart:async';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/timer_chip.dart';
+import '../../../core/widgets/game_header.dart';
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../models/shape_kind.dart';
@@ -162,32 +163,14 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      _isGuardian
-                          ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                          : '${habitat.emoji} ${widget.level.title}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    const Spacer(),
-                    TimerChip(seconds: _elapsed),
-                    const SizedBox(width: 10),
-                    Text('${_current + 1} / ${_questions.length}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    backgroundColor: Colors.white,
-                    color: habitat.color,
-                  ),
+                GameHeader(
+                  title: _isGuardian
+                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
+                      : '${habitat.emoji} ${widget.level.title}',
+                  countLabel: '${_current + 1} / ${_questions.length}',
+                  seconds: _elapsed,
+                  progress: progress,
+                  progressColor: habitat.color,
                 ),
                 if (_isGuardian) ...[
                   const SizedBox(height: 10),
@@ -256,7 +239,7 @@ class _GuardianBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ComicPanel(
-      color: const Color(0xFF3E4E63),
+      color: AppTheme.guardianBar,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -349,37 +332,65 @@ class _ChoiceGrid extends StatelessWidget {
             if (choice.isShape) {
               final highlighted = answered &&
                   (index == question.correctIndex || index == selectedIndex);
-              return GestureDetector(
-                onTap: answered ? null : () => onAnswer(index),
-                child: Container(
-                  width: tileWidth,
-                  height: tileHeight,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _bg(index),
-                    border: Border.all(color: AppTheme.ink, width: 3.5),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow:
-                        AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: answered ? null : () => onAnswer(index),
+                    child: Container(
+                      width: tileWidth,
+                      height: tileHeight,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _bg(index),
+                        border: Border.all(color: AppTheme.ink, width: 3.5),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow:
+                            AppTheme.comicShadow(offset: highlighted ? 2 : 5),
+                      ),
+                      child: ShapeView(
+                          shape: choice.shape!, size: tileHeight * 0.62),
+                    ),
                   ),
-                  child: ShapeView(
-                      shape: choice.shape!, size: tileHeight * 0.62),
-                ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: highlighted,
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               );
             }
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: choice.text!,
-                fontSize: 22,
-                color: _bg(index),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: choice.text!,
+                    fontSize: 22,
+                    color: _bg(index),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),

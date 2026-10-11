@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/timer_chip.dart';
+import '../../../core/widgets/game_header.dart';
 import '../models/word_question.dart';
 import '../models/wizard_level.dart';
 import '../services/word_generator.dart';
@@ -61,6 +62,15 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     _ticker?.cancel();
     _stopwatch.stop();
     super.dispose();
+  }
+
+  // Reads the current question's correct word aloud. Routes through
+  // FeedbackService so it respects the sound toggle; a no-op where
+  // text-to-speech is unavailable.
+  void _speakWord() {
+    final word = _q.spokenWord;
+    if (word.isEmpty) return;
+    FeedbackService(enabled: widget.state.soundOn).speak(word);
   }
 
   void _onAnswer(int index) {
@@ -137,32 +147,14 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      widget.level.isBoss
-                          ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
-                          : '${widget.level.chapter.emoji} ${widget.level.title}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    const Spacer(),
-                    TimerChip(seconds: _elapsed),
-                    const SizedBox(width: 10),
-                    Text('${_current + 1} / ${_questions.length}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    backgroundColor: Colors.white,
-                    color: const Color(0xFFEC407A),
-                  ),
+                GameHeader(
+                  title: widget.level.isBoss
+                      ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
+                      : '${widget.level.chapter.emoji} ${widget.level.title}',
+                  countLabel: '${_current + 1} / ${_questions.length}',
+                  seconds: _elapsed,
+                  progress: progress,
+                  progressColor: const Color(0xFFEC407A),
                 ),
                 const Spacer(),
                 Text(_q.prompt,
@@ -177,6 +169,11 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   child: Column(
                     children: [
                       Text(_q.emoji, style: const TextStyle(fontSize: 72)),
+                      const SizedBox(height: 10),
+                      _SpeakerButton(
+                        enabled: widget.state.soundOn,
+                        onTap: _speakWord,
+                      ),
                       if (_q.display.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -226,6 +223,37 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   }
 }
 
+/// A big comic-style speaker button that reads the word aloud. Stays visible
+/// for a stable layout; when sound is off it is greyed out and inert.
+class _SpeakerButton extends StatelessWidget {
+  const _SpeakerButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: enabled ? AppTheme.sky : Colors.grey.shade400,
+          border: AppTheme.comicBorder,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.comicShadow(offset: 4),
+        ),
+        child: const Icon(
+          Icons.volume_up_rounded,
+          color: Colors.white,
+          size: 36,
+        ),
+      ),
+    );
+  }
+}
+
 class _ChoiceGrid extends StatelessWidget {
   const _ChoiceGrid({
     required this.question,
@@ -258,17 +286,32 @@ class _ChoiceGrid extends StatelessWidget {
           children: List.generate(question.choices.length, (index) {
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: question.choices[index],
-                fontSize: 22,
-                color: _bg(index),
-                textColor: answered &&
-                        (index == question.correctIndex ||
-                            index == selectedIndex)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: question.choices[index],
+                    fontSize: 22,
+                    color: _bg(index),
+                    textColor: answered &&
+                            (index == question.correctIndex ||
+                                index == selectedIndex)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered &&
+                          (index == question.correctIndex ||
+                              index == selectedIndex),
+                      correct: index == question.correctIndex,
+                    ),
+                  ),
+                ],
               ),
             );
           }),

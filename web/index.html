@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="BrainBuddies — a comic-book styled hub of friendly educational mini-games for kids in grades 1-3. Play math, shapes, spelling, time, money and memory games.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -112,6 +112,32 @@
     window.maPlaySound = function (name) {
       var fn = window.MAAudio && window.MAAudio[name];
       if (typeof fn === 'function') fn();
+    };
+
+    // Speak a word aloud with the browser's built-in text-to-speech. Guarded
+    // the same defensive way as maPlaySound so it is a safe no-op wherever
+    // SpeechSynthesis is unavailable (and never throws).
+    window.maSpeak = function (text) {
+      try {
+        if (typeof window.speechSynthesis === 'undefined') return;
+        if (typeof window.SpeechSynthesisUtterance === 'undefined') return;
+        if (typeof text !== 'string' || text.length === 0) return;
+        // Stop anything already being spoken so taps don't pile up.
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9;   // gentle, easy for young readers to follow
+        u.pitch = 1.1;  // slightly high, friendly for kids
+        u.lang = 'en-US';
+        window.speechSynthesis.speak(u);
+      } catch (e) { /* no-op: speech is a nice-to-have */ }
+    };
+
+    // Cancel any in-progress speech (also guarded).
+    window.maCancelSpeech = function () {
+      try {
+        if (typeof window.speechSynthesis === 'undefined') return;
+        window.speechSynthesis.cancel();
+      } catch (e) { /* no-op */ }
     };
 
     // Browsers block audio until a user gesture; unlock on first tap/key.

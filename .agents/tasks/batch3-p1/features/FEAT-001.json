@@ -1,0 +1,74 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Extract a shared GameProgressStore base (lib/core/services/game_progress_store.dart) and migrate the FIVE sibling game states onto it (shape_safari, word_wizard, clock_hero, money_math, memory_match), preserving every shared_preferences key byte-identically and every completeLevel signature/Outcome/coin formula/achievement id. Also namespace Number Quest's bare prefs keys to nq_* with a one-time migration (NQ is NOT folded onto the base). This is the highest-risk feature: saved progress must survive and no user-visible behavior may change. Do this first and reach a green build+test before FEAT-002/003. Independent of FEAT-002 and FEAT-003.",
+  "status": "completed",
+  "steps": [
+    "Create lib/core/services/game_progress_store.dart: an abstract class GameProgressStore extends ChangeNotifier. Fields: SharedPreferences? prefs; bool loaded=false; bool soundOn=true; final Map<String,int> levelStars={}; final Map<String,int> levelFastest={}. Abstract members a subclass supplies: String get keyPrefix; List<String> get orderedLevelIds. Getters: isLoaded, soundOn, stars(String id)=>levelStars[id]??0, totalStars=>fold sum, fastestSeconds(String id)=>levelFastest[id]??0, overallFastest (0 if empty else min), hasFastest (levelFastest not empty). isLevelUnlockedById(String id): pos=orderedLevelIds.indexOf(id); if pos<=0 return true; return stars(orderedLevelIds[pos-1])>0.",
+    "In GameProgressStore add Future<void> load(): prefs=await SharedPreferences.getInstance(); soundOn=p.getBool('${keyPrefix}_sound')??true; SoundBridge.enabled=soundOn; for each id in orderedLevelIds read '${keyPrefix}_level_$id' into levelStars and '${keyPrefix}_fastest_$id' into levelFastest when non-null; set loaded=true; notifyListeners(). NOTE: subclasses with extra fields (best/rounds/befriended) will override load() to call super.load() then read their extras. Also add setSoundOn(bool): sets soundOn, SoundBridge.enabled, persists '${keyPrefix}_sound', notifyListeners. Add reset(): clears maps, soundOn=true, SoundBridge.enabled=true, remove '${keyPrefix}_sound' and per-id '${keyPrefix}_level_$id'/'${keyPrefix}_fastest_$id', notifyListeners (subclasses override to also clear their extras).",
+    "In GameProgressStore add protected helpers composed by each subclass's completeLevel: int starsForPercent(int percent) => percent>=90?3:percent>=70?2:percent>=50?1:0. Future<int> keepBestStars(String id, int newStars): if newStars>stars(id){levelStars[id]=newStars; await prefs?.setInt('${keyPrefix}_level_$id', newStars);} return current stars(id). Future<bool> recordFastestIfBest(String id, int earnedStars, int elapsedSeconds): if earnedStars==3 && elapsedSeconds>0 { prev=fastestSeconds(id); if prev==0||elapsedSeconds<prev { levelFastest[id]=elapsedSeconds; await prefs?.setInt('${keyPrefix}_fastest_$id', elapsedSeconds); return true; } } return false. Import sound_bridge.dart.",
+    "Refactor lib/games/word_wizard/services/wizard_state.dart: WizardState extends GameProgressStore. keyPrefix='wizard'; orderedLevelIds=WizardMap.allLevels.map((l)=>l.id).toList(). Keep _bestCorrect/_roundsPlayed and _kBest='wizard_best'/_kRounds='wizard_rounds'; override load() to call super.load() then read best/rounds; override reset() to call super.reset() then clear/remove best+rounds. Remove the now-duplicated stars/fastest/sound/isLevelUnlocked/getters that the base provides (keep isLevelUnlocked(WizardLevel) as a thin wrapper calling isLevelUnlockedById(level.id)). Rewrite completeLevel to use starsForPercent, keepBestStars, recordFastestIfBest; keep EXACT coin formula correct*3+stars*5+(bossBeaten?20:0), bossBeaten=level.isBoss&&percent>=70, achievement ids (firstGame; perfectRound+spellMaster when correct==total&&total>0; threeStar when stars==3; speedster when isNewFastest), the WizardOutcome shape, and the profile.onRoundFinished call. Keep the Future<WizardOutcome> completeLevel signature identical.",
+    "Refactor lib/games/clock_hero/services/clock_state.dart the same way: keyPrefix='clock'; keep _bestCorrect/_roundsPlayed (clock_best/clock_rounds); ClockOutcome with guardianGreeted=level.isBoss&&percent>=70; coins correct*3+stars*5+(guardianGreeted?20:0); achievements firstGame; perfectRound+timeKeeper when correct==total; threeStar; speedster; onRoundFinished(bossBeaten: guardianGreeted). Keep signature + Outcome identical.",
+    "Refactor lib/games/money_math/services/money_state.dart: keyPrefix='money'; keep _bestCorrect/_roundsPlayed (money_best/money_rounds); MoneyOutcome with bossBeaten=level.isBoss&&percent>=70; coins correct*3+stars*5+(bossBeaten?20:0); achievements firstGame; perfectRound+moneyMaster when correct==total; threeStar; speedster. Keep signature + Outcome identical.",
+    "Refactor lib/games/shape_safari/services/safari_state.dart: keyPrefix='safari'; keep _bestCorrect/_roundsPlayed (safari_best/safari_rounds) AND the _befriended Set + _kBefriended='safari_befriended' StringList (override load() to also read it, reset() to also clear/remove it). completeLevel keeps its signature with required bool guardianBefriended and int elapsedSeconds=0; coins correct*3+stars*5+(guardianBefriended?20:0); achievements firstGame; perfectRound when correct==total; threeStar; speedster; guardianFriend when guardianBefriended; shapeExplorer when every level in SafariMap.trail(level.habitat).levels has stars>0; record befriended into the set + persist. SafariOutcome shape (stars/coinsEarned/isNewBest/guardianBefriended/elapsedSeconds/isNewFastest) unchanged. Keep onRoundFinished(bossBeaten: guardianBefriended).",
+    "Refactor lib/games/memory_match/services/memory_state.dart: MemoryState extends GameProgressStore; keyPrefix='memory'; keep _roundsPlayed (_kRounds='memory_rounds') but NO _best; override load()/reset() for rounds only. completeLevel keeps its signature (required int wrongFlips, required int elapsedSeconds). Memory computes its OWN stars (NOT starsForPercent): perfect=wrongFlips==0; stars = wrongFlips==0?3 : wrongFlips<=level.pairs?2 : wrongFlips<=level.pairs*2?1:1. Use keepBestStars(level.id, stars) and recordFastestIfBest(level.id, stars, elapsedSeconds). bossBeaten=level.isBoss; coins pairs*3+stars*5+(bossBeaten?20:0); achievements firstGame; perfectRound+memoryMaster when perfect; threeStar; speedster. onRoundFinished(correct: pairs, ...). MemoryOutcome shape unchanged.",
+    "Namespace Number Quest in lib/games/number_quest/services/game_state.dart. Change key constants: _kXp='nq_xp', _kSound='nq_sound_on', _kBestStreak='nq_best_answer_streak', _kMultCorrect='nq_mult_correct'. Change per-level reads/writes/removes to 'nq_level_$id'/'nq_fastest_$id'. Change per-skill reads/writes/removes to 'nq_${s.key}_correct'/'nq_${s.key}_attempts' (s.key is already 'skill_<name>', giving 'nq_skill_<name>_...'). Add private Future<void> _migrateLegacyKeys(SharedPreferences p) called at the START of load() BEFORE any reads: for the FIXED set of old bare keys {xp->nq_xp, sound_on->nq_sound_on, best_answer_streak->nq_best_answer_streak, mult_correct->nq_mult_correct, for each WorldMap.allLevels id: level_<id>->nq_level_<id> and fastest_<id>->nq_fastest_<id>, for each Skill.values: ${s.key}_correct->nq_${s.key}_correct and ${s.key}_attempts->nq_${s.key}_attempts}, if the nq_ key is absent (!p.containsKey(new)) and the old key exists (p.containsKey(old)) copy the value by its type (getInt/getBool) to the new key then p.remove(old). Migrate ONLY these exact keys; never touch other stores' keys. Update reset() to remove the new nq_ keys. Leave all other GameState logic (XP/level/SkillStat/completeLevel/onMap daily guard) UNCHANGED.",
+    "Add a unit test test/progress_store_test.dart. Case A (sibling load preservation): SharedPreferences.setMockInitialValues with legacy keys e.g. {'safari_level_<firstId>':2,'safari_fastest_<firstId>':10,'safari_sound':false,'safari_befriended':['<guardianId>'],'wizard_level_<id>':3,'memory_sound':false}; load each refactored store; assert stars/fastestSeconds/soundOn read identically and safari befriended preserved. Use SafariMap.allLevels.first.id etc. to compute ids. Case B (NQ migration): setMockInitialValues {'xp':100,'sound_on':false,'level_<nqFirstId>':3,'fastest_<nqFirstId>':12,'skill_addition_correct':7,'skill_addition_attempts':9,'safari_best':5}; load GameState; assert xp==100, soundOn==false, stars(nqFirstId)==3, fastestSeconds(nqFirstId)==12, skillStat(Skill.addition).correct==7; then via SharedPreferences.getInstance assert nq_xp/nq_level_<id>/nq_skill_addition_correct present, old bare xp/level_<id>/skill_addition_correct removed, and unrelated safari_best==5 untouched.",
+    "Run build web and flutter test; fix any compile errors (watch for missing extension-defining imports). Record in findings: the final key list confirmed byte-identical, the NQ migration key set, and the test results."
+  ],
+  "acceptance_criteria": [
+    "build web succeeds (output contains 'Built build\\web').",
+    "flutter test passes all tests, including the new test/progress_store_test.dart cases.",
+    "All five sibling stores extend GameProgressStore; their completeLevel signatures, *Outcome classes, coin formulas and achievement id sets are unchanged (game screens compile without edits).",
+    "Every sibling shared_preferences key is byte-identical to before (safari_*/wizard_*/clock_*/money_*/memory_* incl. safari_befriended and the four _best keys except Memory).",
+    "Number Quest reads/writes nq_* keys and migrates old bare keys (xp, sound_on, best_answer_streak, mult_correct, level_<id>, fastest_<id>, skill_<name>_correct/attempts) one time on load without touching other stores' keys; reset() removes nq_* keys."
+  ],
+  "verification": [
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web  (expect 'Built build\\web')",
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test  (expect all pass)"
+  ],
+  "blocked_reason": null,
+  "findings": {
+    "summary": "Created lib/core/services/game_progress_store.dart (abstract GameProgressStore extends ChangeNotifier) and migrated the five sibling states onto it: shape_safari, word_wizard, clock_hero, money_math, memory_match. Number Quest was NOT folded onto the base; its bare prefs keys were namespaced to nq_* with a one-time load-time migration. completeLevel signatures, every *Outcome class shape, coin formulas, and achievement id sets are unchanged, so no game screens needed edits.",
+    "base_class": {
+      "file": "lib/core/services/game_progress_store.dart",
+      "provides": [
+        "fields: prefs, loaded(private _loaded), soundOn(private _soundOn), levelStars{}, levelFastest{}",
+        "abstract: keyPrefix, orderedLevelIds",
+        "getters: isLoaded, soundOn, stars(id), totalStars, fastestSeconds(id), overallFastest, hasFastest",
+        "isLevelUnlockedById(id)",
+        "load() reads <prefix>_sound + per-level <prefix>_level_<id>/<prefix>_fastest_<id>, sets SoundBridge.enabled",
+        "setSoundOn(bool) persists <prefix>_sound",
+        "reset() clears maps + removes <prefix>_sound and per-id keys",
+        "protected helpers: starsForPercent(90/70/50), keepBestStars(id,newStars), recordFastestIfBest(id,earnedStars,elapsedSeconds)"
+      ]
+    },
+    "byte_identical_keys_confirmed": {
+      "shape_safari": ["safari_sound", "safari_best", "safari_rounds", "safari_befriended (StringList)", "safari_level_<id>", "safari_fastest_<id>"],
+      "word_wizard": ["wizard_sound", "wizard_best", "wizard_rounds", "wizard_level_<id>", "wizard_fastest_<id>"],
+      "clock_hero": ["clock_sound", "clock_best", "clock_rounds", "clock_level_<id>", "clock_fastest_<id>"],
+      "money_math": ["money_sound", "money_best", "money_rounds", "money_level_<id>", "money_fastest_<id>"],
+      "memory_match": ["memory_sound", "memory_rounds (NO _best)", "memory_level_<id>", "memory_fastest_<id>"]
+    },
+    "preserved_behavior": {
+      "coin_formulas": "safari/wizard/clock/money: correct*3 + stars*5 + (boss?20:0); memory: pairs*3 + stars*5 + (boss?20:0). (Number Quest unchanged: correct*2 + stars*5 + (boss?25:0).)",
+      "star_thresholds": "percent >=90/70/50 -> 3/2/1 via starsForPercent, EXCEPT memory keeps its own wrongFlips-based formula (0 flips=3; <=pairs=2; else 1).",
+      "fastest_rule": "recorded only on a 3-star run with elapsedSeconds>0 that beats prior (recordFastestIfBest).",
+      "boss_flags": "wizard bossBeaten, clock guardianGreeted, money bossBeaten = level.isBoss && percent>=70; safari uses guardianBefriended param; memory bossBeaten = level.isBoss.",
+      "achievement_ids": "firstGame always; perfectRound when correct==total&&total>0 (memory: perfect==wrongFlips0); game-specific master (spellMaster/timeKeeper/moneyMaster/memoryMaster) alongside perfectRound; threeStar when stars==3; speedster when isNewFastest; safari also guardianFriend + shapeExplorer(whole trail).",
+      "outcome_shapes": "WizardOutcome/ClockOutcome/MoneyOutcome/SafariOutcome/MemoryOutcome field sets unchanged.",
+      "completeLevel_signatures": "unchanged for all five (safari keeps required guardianBefriended + elapsedSeconds=0 default; memory keeps required wrongFlips + elapsedSeconds)."
+    },
+    "nq_migration": {
+      "note": "Number Quest keeps its own GameState (ChangeNotifier), NOT folded onto base.",
+      "new_keys": ["nq_xp", "nq_sound_on", "nq_best_answer_streak", "nq_mult_correct", "nq_level_<id>", "nq_fastest_<id>", "nq_skill_<name>_correct", "nq_skill_<name>_attempts (name in addition/subtraction/multiplication/division)"],
+      "old_bare_keys_migrated": ["xp", "sound_on", "best_answer_streak", "mult_correct", "level_<id>", "fastest_<id>", "skill_<name>_correct", "skill_<name>_attempts"],
+      "migration_logic": "_migrateLegacyKeys(prefs) runs at START of load() before any reads: for each FIXED old->new pair, if !containsKey(new) && containsKey(old): copy by type (getInt/getBool), then remove(old). sound_on is the only bool key. Only NQ's own keys are touched; other stores' keys (e.g. safari_best) are never read or removed. reset() removes the nq_* keys."
+    },
+    "new_test": "test/progress_store_test.dart — Case A (sibling legacy-key load preservation across all five stores incl. safari_befriended StringList) and Case B (NQ migration: in-memory values + nq_* present + old bare keys removed + unrelated safari_best untouched).",
+    "verification": {
+      "build_web": "SUCCESS — 'Built build\\web' present.",
+      "flutter_test": "ALL PASS — 12 tests (10 pre-existing + 2 new progress_store_test cases)."
+    }
+  }
+}

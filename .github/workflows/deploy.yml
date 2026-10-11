@@ -24,18 +24,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pin an exact Flutter version so deploys are reproducible. 3.47.2 is a
+          # real stable release (published 2026-08-27) and is the exact version
+          # this project is verified against locally — `flutter --version` reports
+          # "Flutter 3.47.2 • channel stable ... Tools • Dart 3.13.2". Dart 3.13.2
+          # satisfies the pubspec sdk constraint ">=3.0.0 <4.0.0", and the tag
+          # resolves on subosito/flutter-action@v2.
+          flutter-version: 3.47.2
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate platform folders (web)
-        run: flutter create . --platforms=web
+      # NOTE: no `flutter create . --platforms=web` here. The custom web/ folder
+      # (index.html with the synthesized-audio + TTS JS, manifest, icons) is
+      # committed to the repo, so regenerating it would risk clobbering that
+      # custom index.html. The committed web/ is complete for `flutter build web`.
 
       - name: Run tests
         run: flutter test
@@ -46,7 +55,7 @@ jobs:
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
 

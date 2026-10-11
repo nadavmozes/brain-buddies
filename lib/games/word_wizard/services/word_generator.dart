@@ -41,6 +41,13 @@ class WordQuestionGenerator {
     return questions;
   }
 
+  // Future work: a 4th "rhyme" or "first-sound" question type would be a nice
+  // addition (e.g. "Which word rhymes with cat?" or "Which word starts with the
+  // same sound as sun?"). It is intentionally NOT added here because it does not
+  // fit the current WordQuestion model / generator with zero churn: rhyme needs
+  // a rhyme-group field on WordEntry (or a phonetic grouping), and first-sound
+  // needs distractors chosen by initial letter. Both would require new model
+  // fields and a new type branch, so they are deferred.
   WordQuestion generateOne(double difficulty) {
     final types = <WordQuestionType>[
       WordQuestionType.namePicture,
@@ -74,6 +81,7 @@ class WordQuestionGenerator {
       display: '',
       choices: options,
       correctIndex: options.indexOf(answer.word),
+      word: answer.word,
     );
   }
 
@@ -100,6 +108,7 @@ class WordQuestionGenerator {
       display: shown,
       choices: options,
       correctIndex: options.indexOf(missing),
+      word: word,
     );
   }
 
@@ -127,6 +136,7 @@ class WordQuestionGenerator {
       display: '',
       choices: list,
       correctIndex: list.indexOf(correct),
+      word: correct,
     );
   }
 

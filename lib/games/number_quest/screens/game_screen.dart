@@ -5,6 +5,7 @@ import 'dart:async';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/answer_badge.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/timer_chip.dart';
@@ -382,7 +383,7 @@ class _BossBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ComicPanel(
-      color: const Color(0xFF4A3A6E),
+      color: AppTheme.bossBar,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -516,15 +517,28 @@ class _ChoiceGrid extends StatelessWidget {
 
             return SizedBox(
               width: tileWidth,
-              child: ComicButton(
-                label: '$value',
-                fontSize: 28,
-                color: bgColor,
-                textColor: answered && (isCorrect || isSelected)
-                    ? Colors.white
-                    : AppTheme.ink,
-                expand: true,
-                onPressed: answered ? null : () => onAnswer(index),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ComicButton(
+                    label: '$value',
+                    fontSize: 28,
+                    color: bgColor,
+                    textColor: answered && (isCorrect || isSelected)
+                        ? Colors.white
+                        : AppTheme.ink,
+                    expand: true,
+                    onPressed: answered ? null : () => onAnswer(index),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: AnswerBadge(
+                      show: answered && (isCorrect || isSelected),
+                      correct: isCorrect,
+                    ),
+                  ),
+                ],
               ),
             );
           }),

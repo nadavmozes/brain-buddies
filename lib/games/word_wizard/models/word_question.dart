@@ -19,6 +19,7 @@ class WordQuestion {
     required this.display,
     required this.choices,
     required this.correctIndex,
+    this.word,
   });
 
   final WordQuestionType type;
@@ -34,4 +35,17 @@ class WordQuestion {
 
   final List<String> choices;
   final int correctIndex;
+
+  /// The full target word for this question, used for text-to-speech. For
+  /// missing-letter questions the full word is not otherwise in the model
+  /// (only the masked [display] and single-letter [choices]). Optional for
+  /// backward compatibility; falls back to the correct choice.
+  final String? word;
+
+  /// The word to speak aloud for this question: always the full correct
+  /// answer word, never a distractor or the masked display.
+  String get spokenWord =>
+      word ?? (correctIndex >= 0 && correctIndex < choices.length
+          ? choices[correctIndex]
+          : '');
 }

@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Expand the Word Wizard word bank from ~30 to roughly 60-90 real, grade-appropriate words across the three difficulty tiers, each with a sensible emoji so the 'name the picture' type never shows a blank. Keep the WordEntry(word, emoji) shape and the easy/medium/hard + forDifficulty/allWords API unchanged so the generator and the Batch-2 TTS keep working. Independent of FEAT-003; depends on FEAT-001 only in that the generator structural tests must still pass against the larger bank.",
+  "status": "completed",
+  "steps": [
+    "Edit lib/games/word_wizard/models/word_bank.dart: grow easy (CVC / grade-1 sight words), medium (grade-2), and hard (grade-3) to ~20-30 entries each (~60-90 total). Real words only, no nonsense/placeholders, age-appropriate 6-9. Every word MUST have a fitting, reasonably distinct emoji; a word with no sensible emoji is left out rather than given a blank/duplicate-looking picture. Keep words plain lowercase letters (no spaces/punctuation) so missingLetter/correctSpelling/TTS all work and length >= 2.",
+    "Do NOT change WordQuestion or the generator's logic in this feature. Confirm _distinctWords can still fill 4 options per tier (each tier has >=4 entries — trivially satisfied) and that namePicture/missingLetter/correctSpelling still build.",
+    "OPTIONAL 4th question type (rhyme/first-sound): add ONLY if it fits the existing WordQuestion model with zero churn. If it would need new model fields or generator restructuring, do NOT add it — instead add a short `// Future work:` comment in lib/games/word_wizard/services/word_generator.dart describing the idea. Record the decision in findings.",
+    "Run build web and the full test suite (the FEAT-001 generator tests now exercise the larger bank). Commit on feature/review-improvements."
+  ],
+  "acceptance_criteria": [
+    "lib/games/word_wizard/models/word_bank.dart contains roughly 60-90 real words total across easy/medium/hard, each paired with a fitting emoji, with the public API (easy/medium/hard/forDifficulty/allWords) unchanged.",
+    "`& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web` prints `Built build\\web`.",
+    "`& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test` passes (including FEAT-001's generator tests against the expanded bank).",
+    "All three existing question types still work for the new words, and spokenWord (TTS target) resolves to the full correct word for new entries."
+  ],
+  "verification": [
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web",
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test"
+  ],
+  "blocked_reason": null,
+  "findings": "Expanded lib/games/word_wizard/models/word_bank.dart from 30 to 75 real, age-appropriate words (25 easy CVC/grade-1, 25 medium grade-2, 25 hard grade-3), each with a fitting, distinct emoji. All words are plain lowercase letters, length >= 2, no spaces/punctuation. The WordEntry(word, emoji) shape and the public API (easy/medium/hard/forDifficulty/allWords) are unchanged, and WordQuestion + the generator logic were NOT touched, so namePicture/missingLetter/correctSpelling and the TTS spokenWord target all keep working; each tier has 25 entries so _distinctWords trivially fills 4 options. OPTIONAL 4th question type: NOT added. A rhyme or first-sound type cannot be added with zero churn to the current WordQuestion model/generator (rhyme needs a rhyme-group field on WordEntry; first-sound needs initial-letter-aware distractors), so per the step it was deferred and documented as a `// Future work:` comment above generateOne() in word_generator.dart. Verification: `flutter build web` prints `Built build\\web`; `flutter test` passes all 45 tests (including FEAT-001's generators_test against the larger bank)."
+}

@@ -23,6 +23,9 @@ enum MoneyQuestionType {
 
   /// A target amount is given; pick the coin pile that makes it.
   makeAmount,
+
+  /// A price is paid with a bigger amount; pick the change owed (text choices).
+  makeChange,
 }
 
 /// A pile of coins (a multiset of denominations) with helpers.

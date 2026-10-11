@@ -1,0 +1,32 @@
+{
+  "project_type": "Flutter app (BrainBuddies) — a comic-styled hub of 6 educational mini-games for kids 6-9. Web is the primary play-test/verify target.",
+  "language": "Dart (SDK 3.0+), package name brain_buddies",
+  "build_system": "Flutter. Flutter lives at %USERPROFILE%\\flutter. Shell is PowerShell: use ';' not '&&', and $env:VAR not %VAR%. Always invoke flutter explicitly as & \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" <cmd>. The project path contains non-ASCII Hebrew characters (expected).",
+  "test_framework": "flutter_test (widget + unit tests under test/). Existing: test/widget_test.dart.",
+  "build_command": "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web",
+  "test_command": "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test",
+  "verification_instructions": "Run build web then test from the worktree root. Build success is confirmed by the presence of 'Built build\\web' in output; a trailing 'Exit Code: 1' from Select-String filtering (no matches after the Built line) is NOT a failure. DO NOT run `flutter analyze` — it crashes on the non-ASCII (Hebrew) path. Widget tests set a 430x900 phone surface via tester.view.physicalSize; new widget tests must do the same.",
+  "snapshot_or_generated_files": "None checked in from build; build\\web is a build artifact and is not committed.",
+  "environment_constraints": "flutter analyze CRASHES on this project (non-ASCII path) — never rely on it. The app is capped to a 430px phone frame; never size widgets from MediaQuery.of(context).size.width — use LayoutBuilder + constraints.maxWidth. Web audio unlocks on first user gesture (expected). This is a LIVE kids' app — keep everything friendly/non-scary.",
+  "contribution_requirements": "Shared state (coins, avatar, achievements, streak, pet, missions) lives ONLY in lib/core/services/player_profile.dart. Per-game progress lives in each game's own ChangeNotifier under lib/games/<game>/services/*_state.dart. Games report round end via profile.onRoundFinished(correct, coinsEarned, threeStars, bossBeaten); do NOT re-implement streak/pet/missions per game. Reusable UI goes in lib/core/widgets. Import depth game->core is ../../../core/... Extension methods need their defining file imported (common 'getter isn't defined' build failure). Prefer const constructors and the comic style (AppTheme.comicBorder, AppTheme.comicShadow, AppTheme.success/danger/ink).",
+  "key_patterns": "Each game screen computes answered-tile color via a helper: white when unanswered, AppTheme.success for the correct index, AppTheme.danger for the chosen-wrong index. Tiles are either ComicButton (text choices; no overlay slot) or a GestureDetector->Container (visual tiles: shapes, analog clocks, coin piles). Choice grids live inside LayoutBuilder with tileWidth = (constraints.maxWidth - 14)/2. PlayerProfile.onRoundFinished and recordGamePlayed are the single hub-wide hooks. The money question generator picks types from difficulty d and uses a seen-set + ~25-try dedupe loop (generateRound/generateOne), with _distinctAmounts producing distinct positive cent options.",
+  "relevant_files": [
+    "lib/core/services/player_profile.dart — shared profile; add optional AnalyticsSink seam here",
+    "lib/games/number_quest/services/game_state.dart — contains the DUPLICATE streak to delete",
+    "lib/games/number_quest/screens/number_quest_home_screen.dart — uses state.dailyStreak (~line 207); already has profile",
+    "lib/games/number_quest/screens/parent_screen.dart — uses state.dailyStreak (~line 42); needs profile passed in",
+    "lib/games/number_quest/screens/game_screen.dart — _ChoiceGrid ComicButton tiles",
+    "lib/games/shape_safari/screens/safari_game_screen.dart — _ChoiceGrid with shape Container tiles AND text ComicButton tiles",
+    "lib/games/word_wizard/screens/wizard_game_screen.dart — _ChoiceGrid ComicButton tiles",
+    "lib/games/clock_hero/screens/clock_game_screen.dart — _bgFor helper, _TextChoices ComicButton tiles AND clockChoices Container tiles",
+    "lib/games/money_math/screens/money_game_screen.dart — _bg helper, _TextChoices/_TwoPiles/_PileChoices; _buildBody switch to extend",
+    "lib/games/money_math/models/money_question.dart — MoneyQuestionType enum (countCoins/whichMore/makeAmount); reuse textChoices for makeChange",
+    "lib/games/money_math/models/money_level.dart — MoneyWorld enum (piggy/wallet/vault); Vault subtitle promises 'making change'",
+    "lib/games/money_math/services/money_generator.dart — forLevel + generateRound/generateOne + _distinctAmounts dedupe pattern",
+    "lib/app/game_hub_screen.dart — constructs PlayerProfile once in initState; _open* call recordGamePlayed; wire AnalyticsService here",
+    "lib/core/theme/app_theme.dart — success/danger/ink colors, comicBorder, comicShadow",
+    "lib/core/widgets/comic_button.dart — ComicButton (no overlay slot; wrap in Stack for the badge)",
+    "test/widget_test.dart — existing hub/game smoke tests; model new tests' phone surface on these"
+  ],
+  "directory_structure": "lib/app (hub shell: game_hub_screen, shop/achievements/missions/pet/avatar), lib/core/{models,services,theme,widgets} (shared), lib/games/<game>/{models,services,screens,widgets} for number_quest/shape_safari/word_wizard/clock_hero/money_math/memory_match. Tests in test/."
+}

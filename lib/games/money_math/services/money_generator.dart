@@ -15,6 +15,7 @@ class MoneyQuestionGenerator {
     return gen.generateRound(
       level.questionCount,
       difficulty: level.difficulty(MoneyMap.levelsPerTrail),
+      world: level.world,
     );
   }
 
@@ -43,7 +44,11 @@ class MoneyQuestionGenerator {
     return '${q.type}|${q.prompt}|$a|$b';
   }
 
-  List<MoneyQuestion> generateRound(int count, {double difficulty = 0.3}) {
+  List<MoneyQuestion> generateRound(
+    int count, {
+    double difficulty = 0.3,
+    MoneyWorld world = MoneyWorld.piggy,
+  }) {
     final questions = <MoneyQuestion>[];
     final seen = <String>{};
     for (var i = 0; i < count; i++) {
@@ -51,7 +56,7 @@ class MoneyQuestionGenerator {
       MoneyQuestion q;
       var guard = 0;
       do {
-        q = generateOne(dd);
+        q = generateOne(dd, world: world);
         guard++;
       } while (seen.contains(_signature(q)) && guard < 25);
       seen.add(_signature(q));
@@ -60,11 +65,12 @@ class MoneyQuestionGenerator {
     return questions;
   }
 
-  MoneyQuestion generateOne(double d) {
+  MoneyQuestion generateOne(double d, {MoneyWorld world = MoneyWorld.piggy}) {
     final types = <MoneyQuestionType>[
       MoneyQuestionType.countCoins,
       if (d >= 0.3) MoneyQuestionType.whichMore,
       if (d >= 0.5) MoneyQuestionType.makeAmount,
+      if (world == MoneyWorld.vault) MoneyQuestionType.makeChange,
     ];
     final type = types[_rng.nextInt(types.length)];
     switch (type) {
@@ -74,6 +80,8 @@ class MoneyQuestionGenerator {
         return _whichMore(d);
       case MoneyQuestionType.makeAmount:
         return _makeAmount(d);
+      case MoneyQuestionType.makeChange:
+        return _makeChange(d);
     }
   }
 
@@ -133,6 +141,26 @@ class MoneyQuestionGenerator {
       prompt: 'Which coins make ${_fmt(target.total)}?',
       pileChoices: piles,
       correctIndex: piles.indexWhere((p) => p.total == target.total),
+    );
+  }
+
+  // You pay more than a price; pick the change owed (shown as text amounts).
+  MoneyQuestion _makeChange(double d) {
+    // Difficulty-scaled whole-cent amounts, biased to multiples of 5 for
+    // kid-friendly mental math. maxUnit scales the pool of 5¢ steps.
+    final maxUnit = 4 + (d * 16).round(); // 4..20 units of 5¢ (20¢..100¢)
+    final priceUnits = 1 + _rng.nextInt(maxUnit); // >= 5¢
+    final price = priceUnits * 5;
+    // Payment is at least price + 5¢ so change is always positive.
+    final extraUnits = 1 + _rng.nextInt(maxUnit);
+    final pay = price + extraUnits * 5;
+    final answer = pay - price; // > 0 by construction
+    final options = _distinctAmounts(answer, 4, d);
+    return MoneyQuestion(
+      type: MoneyQuestionType.makeChange,
+      prompt: 'You pay ${_fmt(pay)} for a ${_fmt(price)} toy. How much change?',
+      textChoices: options.map(_fmt).toList(),
+      correctIndex: options.indexOf(answer),
     );
   }
 
