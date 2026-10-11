@@ -196,6 +196,15 @@ void main() {
     // The free starter avatar is equipped by default.
     expect(find.text('Equipped ✓'), findsOneWidget);
 
+    // A gated avatar shows its kid-facing requirement label while locked.
+    await tester.dragUntilVisible(
+      find.text('🔒 Play every game once'),
+      find.byType(GridView),
+      const Offset(0, -300),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('🔒 Play every game once'), findsOneWidget);
+
     // The premium avatar is last; scroll to reveal it, then check it shows
     // its price and a "Coming Soon" label.
     await tester.dragUntilVisible(

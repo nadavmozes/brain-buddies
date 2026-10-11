@@ -330,10 +330,84 @@ class PlayerProfile extends ChangeNotifier {
 
   // ---- avatars / shop ----
 
+  /// Whether a gated avatar's unlock requirement is satisfied. Avatars with no
+  /// [Avatar.unlock] are always considered unlocked.
+  bool isAvatarUnlocked(Avatar a) {
+    final u = a.unlock;
+    if (u == null) return true;
+    switch (u.kind) {
+      case AvatarUnlockKind.achievement:
+        return hasAchievement(u.achievementId!);
+      case AvatarUnlockKind.allAchievements:
+        return u.achievementIds!.every(hasAchievement);
+      case AvatarUnlockKind.petLevel:
+        return petLevel >= u.threshold;
+      case AvatarUnlockKind.dailyStreak:
+        return dailyStreak >= u.threshold;
+      case AvatarUnlockKind.ownedAvatars:
+        return ownedAvatarCount >= u.threshold;
+      case AvatarUnlockKind.lifetimeCoins:
+        return lifetimeCoins >= u.threshold;
+    }
+  }
+
+  /// Progress (0..1) toward a gated avatar's unlock requirement, for a hint UI.
+  /// Avatars with no [Avatar.unlock] return 1.
+  double avatarUnlockProgress(Avatar a) {
+    final u = a.unlock;
+    if (u == null) return 1;
+    double ratio(int current, int target) {
+      if (target <= 0) return 1;
+      return (current / target).clamp(0.0, 1.0);
+    }
+
+    switch (u.kind) {
+      case AvatarUnlockKind.achievement:
+        return hasAchievement(u.achievementId!) ? 1 : 0;
+      case AvatarUnlockKind.allAchievements:
+        final ids = u.achievementIds!;
+        if (ids.isEmpty) return 1;
+        final met = ids.where(hasAchievement).length;
+        return (met / ids.length).clamp(0.0, 1.0);
+      case AvatarUnlockKind.petLevel:
+        return ratio(petLevel, u.threshold);
+      case AvatarUnlockKind.dailyStreak:
+        return ratio(dailyStreak, u.threshold);
+      case AvatarUnlockKind.ownedAvatars:
+        return ratio(ownedAvatarCount, u.threshold);
+      case AvatarUnlockKind.lifetimeCoins:
+        return ratio(lifetimeCoins, u.threshold);
+    }
+  }
+
+  /// Claims a gated avatar once its requirement is met. Returns false if the
+  /// avatar is still locked or is premium/coming-soon; true if already owned.
+  /// If [Avatar.cost] > 0 the claim deducts coins (an "unlock then buy"
+  /// avatar); the same collector/wardrobe grants as [buyAvatar] run on success.
+  Future<bool> claimAvatar(Avatar avatar) async {
+    if (avatar.premium || avatar.comingSoon) return false;
+    if (!isAvatarUnlocked(avatar)) return false;
+    if (ownsAvatar(avatar.id)) return true;
+    if (avatar.cost > 0) {
+      if (_coins < avatar.cost) return false;
+      _coins -= avatar.cost;
+      await _prefs?.setInt(_kCoins, _coins);
+    }
+    _ownedAvatars.add(avatar.id);
+    await _prefs?.setStringList(_kOwned, _ownedAvatars.toList());
+    if (_ownedAvatars.length >= 3) _grant(Achievements.collector.id);
+    if (_ownedAvatars.length >= 6) _grant(Achievements.wardrobe.id);
+    await _persistAchievements();
+    notifyListeners();
+    return true;
+  }
+
   /// Buys an avatar with coins. Returns true on success. Premium/coming-soon
   /// avatars can never be bought here.
   Future<bool> buyAvatar(Avatar avatar) async {
     if (avatar.premium || avatar.comingSoon) return false;
+    // A gated avatar can't be bought behind its gate.
+    if (avatar.unlock != null && !isAvatarUnlocked(avatar)) return false;
     if (ownsAvatar(avatar.id)) return true;
     if (_coins < avatar.cost) return false;
     _coins -= avatar.cost;
