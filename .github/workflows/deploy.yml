@@ -30,9 +30,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # Pin an exact Flutter version so deploys are reproducible. This is
-          # the version the project is verified against locally (bundled Dart
-          # 3.13.2 satisfies the pubspec sdk constraint ">=3.0.0 <4.0.0").
+          # Pin an exact Flutter version so deploys are reproducible. 3.47.2 is a
+          # real stable release (published 2026-08-27) and is the exact version
+          # this project is verified against locally — `flutter --version` reports
+          # "Flutter 3.47.2 • channel stable ... Tools • Dart 3.13.2". Dart 3.13.2
+          # satisfies the pubspec sdk constraint ">=3.0.0 <4.0.0", and the tag
+          # resolves on subosito/flutter-action@v2.
           flutter-version: 3.47.2
 
       - name: Install dependencies
