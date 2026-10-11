@@ -274,7 +274,10 @@ class _TextChoices extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileWidth = (constraints.maxWidth - 14) / 2;
-        return Wrap(
+        // Coin/number amounts (e.g. "30¢") read left-to-right even in Hebrew.
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Wrap(
           spacing: 14,
           runSpacing: 14,
           alignment: WrapAlignment.center,
@@ -310,6 +313,7 @@ class _TextChoices extends StatelessWidget {
               ),
             );
           }),
+          ),
         );
       },
     );

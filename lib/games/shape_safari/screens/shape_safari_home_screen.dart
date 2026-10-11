@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/all_games_back_button.dart';
@@ -50,9 +51,10 @@ class ShapeSafariHome extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _TitleBanner(),
                 const SizedBox(height: 16),
-                const Text(
-                  'Pick a habitat to explore!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                Text(
+                  context.l10n.pickHabitat,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 for (final habitat in Habitat.values) ...[
@@ -116,7 +118,9 @@ class _HabitatCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${habitat.label} Trail',
+                  Text(
+                      context.l10n.trailLabel(context.tr(
+                          'ss.habitat.label', habitat.name, habitat.label)),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -126,7 +130,9 @@ class _HabitatCard extends StatelessWidget {
                         ],
                       )),
                   const SizedBox(height: 2),
-                  Text(habitat.subtitle,
+                  Text(
+                      context.tr('ss.habitat.subtitle', habitat.name,
+                          habitat.subtitle),
                       style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -149,8 +155,11 @@ class _HabitatCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.white, size: 34),
+            Transform.flip(
+              flipX: Directionality.of(context) == TextDirection.rtl,
+              child: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white, size: 34),
+            ),
           ],
         ),
       ),

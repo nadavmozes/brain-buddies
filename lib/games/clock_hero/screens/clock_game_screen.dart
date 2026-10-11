@@ -306,7 +306,11 @@ class _TextChoices extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileWidth = (constraints.maxWidth - 14) / 2;
-        return Wrap(
+        // Digital time read-outs (e.g. "3:30") must read left-to-right even in
+        // Hebrew (RTL); wrap the choice grid in an LTR island.
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Wrap(
           spacing: 14,
           runSpacing: 14,
           alignment: WrapAlignment.center,
@@ -342,6 +346,7 @@ class _TextChoices extends StatelessWidget {
               ),
             );
           }),
+          ),
         );
       },
     );

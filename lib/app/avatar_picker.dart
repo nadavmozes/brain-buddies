@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/avatar.dart';
 import '../core/services/feedback_service.dart';
 import '../core/services/player_profile.dart';
@@ -20,8 +21,8 @@ Future<void> showAvatarPicker(BuildContext context, PlayerProfile profile) {
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: AppTheme.ink, width: 3),
         ),
-        title: const Text('Choose your avatar',
-            style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text(dialogContext.l10n.chooseYourAvatar,
+            style: const TextStyle(fontWeight: FontWeight.w900)),
         content: SizedBox(
           width: double.maxFinite,
           child: AnimatedBuilder(
@@ -52,13 +53,13 @@ Future<void> showAvatarPicker(BuildContext context, PlayerProfile profile) {
                 MaterialPageRoute(builder: (_) => ShopScreen(profile: profile)),
               );
             },
-            child: const Text('Get more',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(dialogContext.l10n.getMore,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Done',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(dialogContext.l10n.done,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       );

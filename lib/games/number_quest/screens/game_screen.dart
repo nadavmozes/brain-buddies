@@ -459,14 +459,20 @@ class _QuestionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              problem.question,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 46,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.ink,
-                shadows: [Shadow(color: AppTheme.accent, offset: Offset(2, 2))],
+            // Math equations must read left-to-right even in Hebrew (RTL).
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                problem.question,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 46,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.ink,
+                  shadows: [
+                    Shadow(color: AppTheme.accent, offset: Offset(2, 2))
+                  ],
+                ),
               ),
             ),
           ],

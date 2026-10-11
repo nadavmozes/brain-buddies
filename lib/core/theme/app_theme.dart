@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../l10n/app_lang.dart';
+
 /// Comic-book inspired palette and theme for the whole app.
 class AppTheme {
   AppTheme._();
@@ -20,7 +22,14 @@ class AppTheme {
   static const Color bossBar = Color(0xFF4A3A6E); // Number Quest boss bar
   static const Color guardianBar = Color(0xFF3E4E63); // Shape Safari guardian
 
-  static ThemeData build() {
+  /// Builds the app theme for [lang].
+  ///
+  /// English keeps the original rounded display font (Baloo 2). Hebrew uses
+  /// **Fredoka** — a friendly, rounded Google Font that ships a Hebrew subset
+  /// (Baloo 2 does not reliably cover Hebrew and would render as tofu). In both
+  /// cases a Hebrew-capable fallback (Heebo) is set so mixed EN/HE text and any
+  /// stray glyphs degrade gracefully instead of showing boxes.
+  static ThemeData build([AppLang lang = AppLang.en]) {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
@@ -31,11 +40,24 @@ class AppTheme {
       scaffoldBackgroundColor: paper,
     );
 
+    // The Hebrew-capable fallback chain. Heebo covers Hebrew; Baloo 2 keeps the
+    // Latin/emoji feel consistent when a glyph is missing from the base family.
+    final hebrewFallback = <String>[
+      GoogleFonts.heebo().fontFamily!,
+      GoogleFonts.baloo2().fontFamily!,
+    ];
+
+    final baseTextTheme = lang == AppLang.he
+        ? GoogleFonts.fredokaTextTheme(base.textTheme)
+        : GoogleFonts.baloo2TextTheme(base.textTheme);
+
     return base.copyWith(
-      textTheme: GoogleFonts.baloo2TextTheme(base.textTheme).apply(
-        bodyColor: ink,
-        displayColor: ink,
-      ),
+      textTheme: baseTextTheme
+          .apply(
+            bodyColor: ink,
+            displayColor: ink,
+            fontFamilyFallback: hebrewFallback,
+          ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/comic_panel.dart';
@@ -19,8 +20,9 @@ class DifficultyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose Your World',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.chooseYourWorld,
+            style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
       ),
       body: SafeArea(
         child: ListView(
@@ -74,7 +76,9 @@ class _WorldCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${difficulty.label} World',
+                    context.l10n.worldLabel(context.tr(
+                        'nq.difficulty.label', difficulty.name,
+                        difficulty.label)),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
@@ -86,7 +90,8 @@ class _WorldCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    difficulty.subtitle,
+                    context.tr('nq.difficulty.subtitle', difficulty.name,
+                        difficulty.subtitle),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -115,8 +120,11 @@ class _WorldCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.white, size: 36),
+            Transform.flip(
+              flipX: Directionality.of(context) == TextDirection.rtl,
+              child: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white, size: 36),
+            ),
           ],
         ),
       ),

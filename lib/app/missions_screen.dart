@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/mission.dart';
 import '../core/services/feedback_service.dart';
 import '../core/services/player_profile.dart';
@@ -18,11 +19,12 @@ class MissionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Missions',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.dailyMissions,
+            style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsetsDirectional.only(end: 16),
             child: Center(
               child: AnimatedBuilder(
                 animation: profile,
@@ -46,7 +48,7 @@ class MissionsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Day streak: ${profile.dailyStreak}',
+                        context.l10n.dayStreak(profile.dailyStreak),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
@@ -58,16 +60,18 @@ class MissionsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Today\'s Missions',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(context.l10n.todaysMissions,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w900)),
               const SizedBox(height: 10),
               for (final m in profile.todaysMissions)
                 _MissionCard(profile: profile, mission: m),
               const SizedBox(height: 8),
-              const Text(
-                'New missions arrive every day. Come back tomorrow!',
+              Text(
+                context.l10n.newMissionsTomorrow,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -103,7 +107,7 @@ class _MissionCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    mission.title,
+                    context.tr('mission.title', mission.id, mission.title),
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w800),
                   ),
@@ -138,8 +142,8 @@ class _MissionCard extends StatelessWidget {
 
   Widget _rewardButton(BuildContext context, bool complete, bool claimed) {
     if (claimed) {
-      return const Text('Claimed ✓',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800));
+      return Text(context.l10n.claimed,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800));
     }
     final canClaim = complete;
     return GestureDetector(
@@ -149,7 +153,7 @@ class _MissionCard extends StatelessWidget {
               if (!context.mounted) return;
               FeedbackService(enabled: profile.soundOn).coin();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('+$coins coins! 🪙')),
+                SnackBar(content: Text(context.l10n.coinsGained(coins))),
               );
             }
           : null,
@@ -161,7 +165,9 @@ class _MissionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          canClaim ? 'Claim 🪙 ${mission.rewardCoins}' : '🪙 ${mission.rewardCoins}',
+          canClaim
+              ? context.l10n.claimReward(mission.rewardCoins)
+              : context.l10n.rewardCoins(mission.rewardCoins),
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
         ),
       ),

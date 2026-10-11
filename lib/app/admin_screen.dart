@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/achievement.dart';
 import '../core/models/pet.dart';
 import '../core/services/admin_reload.dart';
@@ -113,7 +114,7 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin / Dev Tools'),
+        title: Text(context.l10n.adminTitle),
         backgroundColor: AppTheme.ink,
         foregroundColor: Colors.white,
       ),
@@ -140,7 +141,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       const _SectionLabel('Danger zone'),
                       const SizedBox(height: 10),
                       ComicButton(
-                        label: 'Reset Everything',
+                        label: context.l10n.resetEverything,
                         icon: Icons.delete_forever_rounded,
                         color: AppTheme.danger,
                         onPressed: _busy ? null : _confirmReset,

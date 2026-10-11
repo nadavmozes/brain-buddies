@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/achievement.dart';
 import '../core/services/player_profile.dart';
 import '../core/theme/app_theme.dart';
@@ -15,8 +16,9 @@ class AchievementsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Achievements',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.achievements,
+            style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -28,7 +30,8 @@ class AchievementsScreen extends StatelessWidget {
                 child: ComicPanel(
                   color: AppTheme.accent,
                   child: Text(
-                    '${profile.achievementCount} / ${Achievements.all.length} earned',
+                    context.l10n.earnedCount(
+                        profile.achievementCount, Achievements.all.length),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.w900),
@@ -77,12 +80,14 @@ class _AchievementTile extends StatelessWidget {
             Text(earned ? achievement.emoji : '🔒',
                 style: const TextStyle(fontSize: 42)),
             const SizedBox(height: 6),
-            Text(achievement.name,
+            Text(context.tr('ach.name', achievement.id, achievement.name),
                 textAlign: TextAlign.center,
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
             const SizedBox(height: 4),
-            Text(achievement.description,
+            Text(
+                context.tr(
+                    'ach.desc', achievement.id, achievement.description),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w600)),

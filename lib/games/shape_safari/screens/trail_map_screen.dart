@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/star_row.dart';
+import '../../../core/widgets/trail_map.dart';
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../services/safari_state.dart';
@@ -24,9 +24,12 @@ class TrailMapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trail = SafariMap.trail(habitat);
+    final s = context.l10n;
+    final habitatLabel =
+        context.tr('ss.habitat.label', habitat.name, habitat.label);
     return Scaffold(
       appBar: AppBar(
-        title: Text('${habitat.emoji} ${habitat.label} Trail',
+        title: Text(s.trailTitle(habitat.emoji, habitatLabel),
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
       ),
       body: Container(
@@ -38,44 +41,30 @@ class TrailMapScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: state,
-            builder: (context, _) => ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              itemCount: trail.length,
-              itemBuilder: (context, i) => _TrailNode(
-                state: state,
-                profile: profile,
-                level: trail.levels[i],
-                alignLeft: i.isEven,
-              ),
-            ),
+          child: TrailMapView(
+            listenable: state,
+            pathColor: habitat.color,
+            nodes: [
+              for (final level in trail.levels)
+                _nodeFor(context, level),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
-class _TrailNode extends StatelessWidget {
-  const _TrailNode({
-    required this.state,
-    required this.profile,
-    required this.level,
-    required this.alignLeft,
-  });
-
-  final SafariState state;
-  final PlayerProfile profile;
-  final SafariLevel level;
-  final bool alignLeft;
-
-  @override
-  Widget build(BuildContext context) {
+  TrailNodeData _nodeFor(BuildContext context, SafariLevel level) {
     final unlocked = state.isLevelUnlocked(level);
-    final stars = state.stars(level.id);
-
-    final node = GestureDetector(
+    final s = context.l10n;
+    final title = level.isGuardian ? s.guardian : s.stopN(level.number);
+    return TrailNodeData(
+      label: level.isGuardian ? level.guardian.emoji : '${level.number}',
+      title: title,
+      color: level.isGuardian ? level.guardian.color : level.habitat.color,
+      unlocked: unlocked,
+      stars: state.stars(level.id),
+      isBoss: level.isGuardian,
       onTap: unlocked
           ? () {
               Navigator.of(context).push(
@@ -86,74 +75,6 @@ class _TrailNode extends StatelessWidget {
               );
             }
           : null,
-      child: Opacity(
-        opacity: unlocked ? 1 : 0.5,
-        child: ComicPanel(
-          color: level.isGuardian
-              ? level.guardian.color
-              : (unlocked ? level.habitat.color : Colors.grey),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                level.isGuardian
-                    ? level.guardian.emoji
-                    : (unlocked ? '${level.number}' : '🔒'),
-                style: TextStyle(
-                  fontSize: level.isGuardian ? 36 : 28,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  shadows: const [
-                    Shadow(color: AppTheme.ink, offset: Offset(2, 2)),
-                  ],
-                ),
-              ),
-              Text(
-                level.title,
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white),
-              ),
-              if (unlocked) ...[
-                const SizedBox(height: 4),
-                StarRow(earned: stars, size: 17),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: alignLeft ? 32 : 0,
-        right: alignLeft ? 0 : 32,
-        top: 6,
-        bottom: 6,
-      ),
-      child: Row(
-        mainAxisAlignment:
-            alignLeft ? MainAxisAlignment.start : MainAxisAlignment.end,
-        children: [
-          if (!alignLeft) const _Dots(),
-          node,
-          if (alignLeft) const _Dots(),
-        ],
-      ),
-    );
-  }
-}
-
-class _Dots extends StatelessWidget {
-  const _Dots();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 40,
-      child: Icon(Icons.more_horiz_rounded, color: AppTheme.ink),
     );
   }
 }

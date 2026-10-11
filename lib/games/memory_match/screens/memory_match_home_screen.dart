@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/all_games_back_button.dart';
@@ -49,9 +50,10 @@ class MemoryMatchHome extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _TitleBanner(),
                 const SizedBox(height: 16),
-                const Text(
-                  'Pick a deck and find the pairs!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                Text(
+                  context.l10n.pickDeck,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 for (final world in MemoryWorld.values) ...[
@@ -114,7 +116,9 @@ class _WorldCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${world.label} Deck',
+                  Text(
+                      context.l10n.deckLabel(context.tr(
+                          'mem.world.label', world.name, world.label)),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -124,7 +128,9 @@ class _WorldCard extends StatelessWidget {
                         ],
                       )),
                   const SizedBox(height: 2),
-                  Text(world.subtitle,
+                  Text(
+                      context.tr(
+                          'mem.world.subtitle', world.name, world.subtitle),
                       style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -147,8 +153,11 @@ class _WorldCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.white, size: 34),
+            Transform.flip(
+              flipX: Directionality.of(context) == TextDirection.rtl,
+              child: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white, size: 34),
+            ),
           ],
         ),
       ),

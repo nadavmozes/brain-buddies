@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/all_games_back_button.dart';
 import '../../../core/widgets/coin_pill.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
@@ -42,23 +44,11 @@ class NumberQuestHome extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.arrow_back_rounded, color: AppTheme.ink),
-                          Text('All Games',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.ink)),
-                        ],
-                      ),
-                    ),
+                const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 6),
+                    child: AllGamesBackButton(),
                   ),
                 ),
                 _Hud(state: state, profile: profile),
@@ -66,7 +56,7 @@ class NumberQuestHome extends StatelessWidget {
                 const _TitleBanner(),
                 const SizedBox(height: 20),
                 ComicButton(
-                  label: 'PLAY',
+                  label: context.l10n.play,
                   icon: Icons.play_arrow_rounded,
                   fontSize: 28,
                   onPressed: () => _push(
@@ -74,7 +64,7 @@ class NumberQuestHome extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 ComicButton(
-                  label: 'Daily Challenge',
+                  label: context.l10n.dailyChallenge,
                   icon: Icons.calendar_today_rounded,
                   color: AppTheme.accent,
                   textColor: AppTheme.ink,
@@ -97,7 +87,7 @@ class NumberQuestHome extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ComicButton(
-                        label: 'Progress',
+                        label: context.l10n.progress,
                         icon: Icons.insights_rounded,
                         color: Colors.white,
                         textColor: AppTheme.ink,
@@ -109,7 +99,7 @@ class NumberQuestHome extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(
                       child: ComicButton(
-                        label: 'Settings',
+                        label: context.l10n.settings,
                         icon: Icons.settings_rounded,
                         color: Colors.white,
                         textColor: AppTheme.ink,
@@ -123,8 +113,8 @@ class NumberQuestHome extends StatelessWidget {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => _showHowTo(context),
-                  child: const Text('How to Play',
-                      style: TextStyle(
+                  child: Text(context.l10n.howToPlay,
+                      style: const TextStyle(
                           fontWeight: FontWeight.w800, color: AppTheme.ink)),
                 ),
               ],
@@ -148,21 +138,17 @@ class NumberQuestHome extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: AppTheme.ink, width: 3),
         ),
-        title: const Text('How to Play',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-          '1. Pick a world and follow the level path.\n\n'
-          '2. Tap the right answer. Chain answers for a streak bonus!\n\n'
-          '3. Earn coins and XP. Beat the boss at the end of each world.\n\n'
-          '4. Spend coins in the hub Shop, collect awards, and play every day '
-          'to grow your streak!',
-          style: TextStyle(fontSize: 16),
+        title: Text(context.l10n.howToPlay,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          context.l10n.howToPlayBody,
+          style: const TextStyle(fontSize: 16),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it!',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(context.l10n.gotIt,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -193,7 +179,7 @@ class _Hud extends StatelessWidget {
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsetsDirectional.only(end: 8),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: AppTheme.ink, width: 2.5),
