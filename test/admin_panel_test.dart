@@ -34,8 +34,12 @@ void main() {
     // No visible admin button exists yet.
     expect(find.text('Admin / Dev Tools'), findsNothing);
 
-    // Long-press the hidden gesture target.
-    await tester.longPress(find.text('Made with AI 🤖'));
+    // Press and hold for >2s — the hidden gesture requires a deliberate hold,
+    // longer than the default ~500ms long-press, so kids won't trigger it.
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.text('Made with AI 🤖')));
+    await tester.pump(const Duration(seconds: 3));
+    await gesture.up();
     await tester.pumpAndSettle();
 
     // The admin panel is now open.

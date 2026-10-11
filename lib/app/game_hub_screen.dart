@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../core/models/game_catalog.dart';
@@ -506,10 +507,21 @@ class _Footer extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: GestureDetector(
-              // No visible hint — long-press is the hidden admin gesture.
-              onLongPress: onSecret,
+            child: RawGestureDetector(
+              // No visible hint — a deliberate ~2s press-and-hold is the hidden
+              // admin gesture, long enough that a child won't trigger it by
+              // accident (the default long-press is only ~500ms).
               behavior: HitTestBehavior.opaque,
+              gestures: <Type, GestureRecognizerFactory>{
+                LongPressGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<
+                        LongPressGestureRecognizer>(
+                  () => LongPressGestureRecognizer(
+                    duration: const Duration(seconds: 2),
+                  ),
+                  (recognizer) => recognizer.onLongPress = onSecret,
+                ),
+              },
               child: const Text(
                 'Made with AI 🤖',
                 style: TextStyle(
