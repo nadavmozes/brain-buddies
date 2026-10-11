@@ -196,6 +196,8 @@ class GameState extends ChangeNotifier {
 
   Future<void> setSoundOn(bool value) async {
     _soundOn = value;
+    // Writes the shared global flag directly (last writer wins). See the note
+    // on [SoundBridge.enabled] about the lack of a single hub-wide source.
     SoundBridge.enabled = value;
     await _prefs?.setBool(_kSound, value);
     notifyListeners();

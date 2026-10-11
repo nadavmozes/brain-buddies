@@ -184,6 +184,8 @@ class PlayerProfile extends ChangeNotifier {
 
   Future<void> setSoundOn(bool value) async {
     _soundOn = value;
+    // The profile and each per-game store all write this one global flag
+    // (last writer wins). See the note on [SoundBridge.enabled].
     SoundBridge.enabled = value;
     await _prefs?.setBool(_kSound, value);
     notifyListeners();

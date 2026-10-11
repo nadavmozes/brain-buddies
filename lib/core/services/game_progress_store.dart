@@ -83,6 +83,9 @@ abstract class GameProgressStore extends ChangeNotifier {
 
   Future<void> setSoundOn(bool value) async {
     _soundOn = value;
+    // Each store writes the shared global flag directly (last writer wins).
+    // See the note on [SoundBridge.enabled] about the lack of a single
+    // hub-wide source of truth.
     SoundBridge.enabled = value;
     await prefs?.setBool('${keyPrefix}_sound', value);
     notifyListeners();
