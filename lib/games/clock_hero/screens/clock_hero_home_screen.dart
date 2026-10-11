@@ -173,9 +173,12 @@ class _TitleBanner extends StatelessWidget {
                   fontSize: 46,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
-                  color: AppTheme.ink,
+                  // Match the other games' banner strategy: white text + ink
+                  // drop shadow. Legible on the orange panel (the "HERO" word
+                  // below already uses this same white-on-orange + ink shadow).
+                  color: Colors.white,
                   letterSpacing: 2,
-                  shadows: [Shadow(color: Colors.white, offset: Offset(2, 2))],
+                  shadows: [Shadow(color: AppTheme.ink, offset: Offset(3, 3))],
                 )),
             Text('HERO',
                 style: TextStyle(

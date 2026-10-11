@@ -14,6 +14,12 @@ class AppTheme {
   static const Color success = Color(0xFF43A047);
   static const Color sky = Color(0xFF4FC3F7);
 
+  // Boss/guardian "encounter bar" backgrounds. Kept as distinct per-game tones
+  // (purple for Number Quest's boss, blue-slate for Shape Safari's guardian)
+  // but named here so the values live in one place.
+  static const Color bossBar = Color(0xFF4A3A6E); // Number Quest boss bar
+  static const Color guardianBar = Color(0xFF3E4E63); // Shape Safari guardian
+
   static ThemeData build() {
     final base = ThemeData(
       useMaterial3: true,

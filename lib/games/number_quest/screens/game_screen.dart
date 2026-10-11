@@ -383,7 +383,7 @@ class _BossBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ComicPanel(
-      color: const Color(0xFF4A3A6E),
+      color: AppTheme.bossBar,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

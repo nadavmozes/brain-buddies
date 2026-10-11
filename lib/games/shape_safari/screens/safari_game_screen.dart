@@ -239,7 +239,7 @@ class _GuardianBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ComicPanel(
-      color: const Color(0xFF3E4E63),
+      color: AppTheme.guardianBar,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
