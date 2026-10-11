@@ -1,7 +1,5 @@
 import 'dart:math';
 
-import 'dart:math';
-
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../models/shape_kind.dart';
@@ -122,6 +120,10 @@ class ShapeQuestionGenerator {
   ShapeQuestion _countSides(double difficulty) {
     final straight =
         _pool(difficulty).where((s) => s.hasStraightSides).toList();
+    // Guard: every current pool has straight-sided shapes, but if a future
+    // pool had none we must not index an empty list — fall back to a simpler
+    // question type instead.
+    if (straight.isEmpty) return _identify(difficulty);
     final answer = straight[_rng.nextInt(straight.length)];
     final correctSides = answer.sides;
     final numbers = <int>{correctSides};

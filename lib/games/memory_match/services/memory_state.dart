@@ -65,9 +65,7 @@ class MemoryState extends GameProgressStore {
         ? 3
         : wrongFlips <= pairs
             ? 2
-            : wrongFlips <= pairs * 2
-                ? 1
-                : 1; // always at least 1 for finishing
+            : 1; // always at least 1 for finishing
 
     await keepBestStars(level.id, stars);
 
