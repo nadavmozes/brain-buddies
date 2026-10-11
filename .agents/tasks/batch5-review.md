@@ -1,183 +1,211 @@
-# Batch 5 (P2 polish / latent risks) — Semantic Review
+# Batch 5 (P2 polish / latent risks) — Semantic Review (pass 2)
 
-Batch 5 is five commits on `feature/review-improvements` (`ba2472e` → `01b2a53`,
+Batch 5 is six commits on `feature/review-improvements` (`ba2472e` → `429681f`,
 base `cb6dc4f`): trivial P2 cleanups, a CI hardening pass, schema-version
-future-proofing of the three persistence stores, theme-token extraction plus a
-Clock Hero banner unification, and documentation of the multi-source sound
-toggle. The diff is small (12 files, +80/-17) and the code-level changes are, with
-one exception, exactly what the tasks asked for and behavior-preserving where
-required.
+future-proofing of the three persistence stores, encounter-bar theme-token
+extraction plus a Clock Hero banner unification, and documentation of the
+multi-source sound toggle. The sixth commit (`429681f`) addresses the two
+blocking findings from pass 1 — it corrects the Flutter-pin comment and records
+the build/test evidence. The diff is small (12 code/CI/web files, +80/-17) and
+every change is either exactly what the task asked for or behavior-preserving
+where required.
 
-Two things block approval. First, the CI change pins `flutter-version: 3.47.2`,
-which is **not a real Flutter release** and whose accompanying comment is
-internally inconsistent (it claims this version "bundles Dart 3.13.2", but Dart
-3.13.2 does not ship with any 3.4x Flutter — Flutter 3.13.x bundles Dart 3.1.x).
-Task 4 explicitly says to flag a version that was guessed without sound reasoning;
-this reads as a fabricated pin that would make the deploy fail to resolve the
-toolchain. Second, there is **no recorded build/test evidence** for Batch 5
-anywhere in `.agents/` (no `batch5` task dir, no coder report, no review JSON with
-a `Built build\web` / `flutter test` result). The review brief says to READ that
-evidence and, if it is missing entirely, to reject with a finding rather than
-re-running the suites. It is missing.
+The pass-1 review rejected on two findings: a "fabricated" Flutter pin and
+missing build/test evidence. Both are now resolved. The pin value `3.47.2` is a
+**real** stable release — `flutter --version` on this machine reports
+`Flutter 3.47.2 • channel stable … Tools • Dart 3.13.2`, which is the exact
+toolchain the project is verified against locally; Dart 3.13.2 satisfies the
+pubspec constraint `>=3.0.0 <4.0.0`. The pass-1 claim that no such release exists
+was stale knowledge, not an environment check. Evidence is now recorded in
+`batch5-report.md`: `Built build\web` and `00:02 +47: All tests passed!`.
 
-**Watch for:** fabricated Flutter version pin (confirmed); missing Batch 5
-build/test evidence (confirmed).
+**Watch for:** CI tag resolution — `3.47.2` matches the locally-verified toolchain
+and is documented, but whether `subosito/flutter-action@v2` can resolve that exact
+stable tag will only be proven on the first CI run (possible). This is a reasonable
+documented choice, not a guess, so it does not block.
 
-**Verdict**: CHANGES_REQUESTED
+**Verdict**: APPROVED
+
+## High-level view
+
+The CI pin controversy from pass 1 is settled by checking the machine rather than
+memory: `3.47.2` is installed, stable, bundles Dart 3.13.2, and satisfies the
+pubspec SDK floor. The comment was rewritten to state the real release, the local
+`flutter --version` output, and the resolver note, so the pin is now a documented,
+defensible choice tied to the verified-against toolchain.
+
+The deploy workflow's structural invariants are untouched: `--base-href`, the
+`flutter test` gate before build, and the `concurrency: pages` + `cancel-in-progress`
+group all survive unchanged. The deprecated-action bumps that matter are present
+(checkout v4→v5, upload-pages-artifact v3→v4); deploy-pages was already v4, and
+there is no `configure-pages`/`setup-*` to bump. Dropping `flutter create` is safe
+because `git ls-files web/` shows the full platform folder is committed, so the
+custom audio/TTS `index.html` cannot be clobbered.
+
+The three persistence stores gain an additive `schema_version` key (default 1,
+re-stamped on load, removed on reset) with no migration branch yet. The Number
+Quest read is correctly sequenced after the Batch 3 legacy-key migration, so no
+existing key or prior migration is disturbed.
+
+The theme-token extraction and banner unification carry no visual change for the
+two encounter bars (same hex values moved behind `AppTheme.bossBar` /
+`AppTheme.guardianBar`); the Clock Hero "CLOCK" word is unified to the
+white-text + ink-shadow strategy already used by "HERO" on the same panel. The
+sound-toggle work is documentation-only — it names the last-writer-wins coupling
+across stores without re-architecting anything, so no test was put at risk.
+
+Build and test evidence is present and green, and the batch stayed on
+`feature/review-improvements` — committed in logical chunks, not merged, not
+pushed.
 
 <details>
-<summary>Issues (2)</summary>
+<summary>Issues (0)</summary>
 
-1. **Fabricated Flutter version pin** — `deploy.yml` pins `flutter-version: 3.47.2`, which is not a real stable release, and its comment's "bundles Dart 3.13.2" claim is impossible for that version. Repin to a real stable Flutter whose bundled Dart ≥ 3.0.0 and correct the comment.
-2. **Missing Batch 5 build/test evidence** — no coder report / `Built build\web` or `flutter test` result is recorded anywhere in `.agents/` for this batch. Record the green build + test evidence (the brief forbids re-running the suites here).
+No blocking, major, or minor findings. The two pass-1 blocking findings (Flutter
+pin, missing evidence) are resolved. One informational watch item: first-CI-run
+proof that `subosito/flutter-action@v2` resolves the `3.47.2` stable tag.
 
 </details>
 
----
+<details>
+<summary>Details</summary>
 
 ## Task 1 — duplicate `dart:math` import removed
 
-Intent met (confirmed). `lib/games/shape_safari/services/question_generator.dart`
-previously opened with `import 'dart:math';` twice; the diff removes the second
-line, leaving a single `import 'dart:math';` at the top and no new duplicate
-introduced elsewhere in the file. No behavioral impact.
+Intent met (confirmed). The file previously opened with `import 'dart:math';`
+twice; the diff removes the second line, leaving a single import and no new
+duplicate anywhere in the file.
 
 ## Task 2 — `_countSides` empty-pool guard
 
-Intent met (confirmed). The guard `if (straight.isEmpty) return _identify(difficulty);`
-is inserted immediately after `straight` is built and before the
-`straight[_rng.nextInt(straight.length)]` index. When the pool is non-empty the
-guard is skipped and the original code path runs unchanged, so behavior is
-identical for every current pool (all of which contain straight-sided shapes).
-The fallback to `_identify` is a sensible same-signature question type. No finding.
+Intent met (confirmed). `if (straight.isEmpty) return _identify(difficulty);` is
+inserted immediately after `straight` is built and before the
+`straight[_rng.nextInt(straight.length)]` index. The guard is skipped whenever the
+pool is non-empty — which is every current pool — so behavior is identical today;
+the fallback only engages for a hypothetical future all-curved pool, where it
+avoids an empty-list range error by returning a same-signature `_identify`
+question.
 
 ## Task 3 — memory_match stars dead-branch collapse
 
-Intent met (confirmed). The old expression ended
-`... : wrongFlips <= pairs*2 ? 1 : 1` — both arms of the inner ternary returned
-`1`, so it always evaluated to `1`. The diff collapses it to a single trailing
-`: 1 // always at least 1 for finishing`. The `== 0 → 3` and `<= pairs → 2` arms
-are untouched, so the scoring result is identical for all inputs. No finding.
+Intent met (confirmed). The old tail was
+`… : wrongFlips <= pairs*2 ? 1 : 1` — both inner arms returned `1`, so it was
+dead. The diff collapses it to a single trailing `: 1`. The `== 0 → 3` and
+`<= pairs → 2` arms are untouched, so the computed star count is identical for
+every input.
 
-## Task 4 — CI workflow (deploy.yml) — BLOCKING
+## Task 4 — CI workflow (deploy.yml)
 
-Several sub-parts are correct, but the Flutter pin is a blocking defect.
+Intent met (confirmed). The pass-1 blocking concern on the pin is resolved.
 
-- **Flutter version pin (BLOCKING, confirmed).** The pin is `flutter-version: 3.47.2`.
-  No such stable Flutter release exists (stable Flutter is in the ~3.0–3.3x range;
-  there is no 3.4x line). The justifying comment states this version "bundles
-  Dart 3.13.2 [which] satisfies the pubspec sdk constraint '>=3.0.0 <4.0.0'", but
-  that pairing is impossible — Dart 3.13.2 would ship with Flutter ~3.13.x, not
-  3.4x. The pubspec constraint `>=3.0.0 <4.0.0` is wide, so almost any Flutter 3.x
-  would satisfy it, but a non-existent version string will cause
-  `subosito/flutter-action@v2` to fail resolving the toolchain and break the
-  deploy. This is exactly the "guessed without reasoning" case Task 4 says to
-  flag. Fix: pin a real stable version whose bundled Dart ≥ 3.0.0 (e.g. a current
-  stable like 3.24.x / 3.27.x), and correct the comment to state that version's
-  actual bundled Dart. Pinning itself is the right call; the value is wrong.
-- **Node-20-deprecated action bumps (met, confirmed).** `actions/checkout` v4→v5 and
-  `actions/upload-pages-artifact` v3→v4 are bumped. `actions/deploy-pages` was
-  already at v4 (no change needed). There is no `configure-pages` or any `setup-*`
-  action in this workflow, so those parts of the checklist are N/A — nothing was
-  missed.
-- **`flutter create` removal (met, confirmed).** The `flutter create . --platforms=web`
-  step is replaced with a NOTE explaining the committed `web/` is used instead.
-  `git ls-files web/` confirms the folder is fully committed: `index.html`,
-  `manifest.json`, `favicon.png`, and four icons. So `flutter build web` has
-  everything it needs and the custom audio/TTS `index.html` cannot be clobbered.
-  Sound decision. (The brief asked that the coder confirm this via `git ls-files web/`;
-  I verified it directly since no coder report records it.)
-- **Audio/TTS survival (met, confirmed).** Because the custom `web/index.html` is
-  committed and the build no longer regenerates it, the synthesized-audio + TTS
-  JS survives CI.
-- **Unchanged invariants (met, confirmed).** `--base-href "/${{ github.event.repository.name }}/"`,
-  the `concurrency: pages` + `cancel-in-progress` group, and the `flutter test`
-  gate before build are all present and unchanged.
+The pin is `flutter-version: 3.47.2`. Checked against this environment,
+`flutter --version` reports `Flutter 3.47.2 • channel stable … Framework …
+2026-08-26 … Tools • Dart 3.13.2`. It is a real stable release and the exact
+toolchain the project is verified against locally (steering places Flutter at
+`%USERPROFILE%\flutter`). Dart 3.13.2 satisfies pubspec `sdk: ">=3.0.0 <4.0.0"`.
+The accompanying comment now states the real release date, the local
+`flutter --version` output, the SDK-constraint compatibility, and the resolver
+note — a documented, defensible choice rather than a guess. The pass-1 assertion
+that "no 3.4x stable exists" and "Dart 3.13.2 can't pair with it" was stale
+version-timeline knowledge and is contradicted by the installed toolchain.
+
+Residual (non-blocking, possible): whether `subosito/flutter-action@v2` can
+resolve the exact `3.47.2` stable tag in CI is only provable on the first run.
+Because the value matches the verified-against local toolchain and is documented,
+this is an informational watch item, not a defect.
+
+Node-20-deprecated action bumps (met, confirmed): `actions/checkout` v4→v5 and
+`actions/upload-pages-artifact` v3→v4. `actions/deploy-pages` was already v4. There
+is no `configure-pages` or any `setup-*` action in this workflow, so those checklist
+items are genuinely N/A — nothing was missed.
+
+`flutter create` removal (met, confirmed): the `flutter create . --platforms=web`
+step is replaced with a NOTE explaining the committed `web/` is used instead.
+`git ls-files web/` confirms the folder is fully committed (`index.html`,
+`manifest.json`, `favicon.png`, four icons), so `flutter build web` has everything
+it needs and the custom audio/TTS `index.html` cannot be clobbered — the audio/TTS
+JS survives CI.
+
+Unchanged invariants (met, confirmed): `--base-href "/${{ github.event.repository.name }}/"`,
+the `concurrency: pages` + `cancel-in-progress` group, and the `flutter test` gate
+before build are all present and unchanged.
 
 ## Task 5 — web/index.html meta description
 
 Intent met (confirmed). `<meta name="description">` changes from the default
-"A new Flutter project." to a real friendly description naming BrainBuddies and
-the six game topics for grades 1-3. It is the only line changed in the file, so
-the audio/TTS `<script>` block is left intact. No finding.
+"A new Flutter project." to a friendly description naming BrainBuddies and the six
+game topics for grades 1-3. It is the only line changed in the file, so the
+audio/TTS `<script>` block is left intact.
 
 ## Task 6 — schema_version future-proofing
 
-Intent met (confirmed). All three stores — `PlayerProfile`
-(`profile_schema_version`), the shared `GameProgressStore` base
-(`${keyPrefix}_schema_version`), and Number Quest `GameState`
-(`nq_schema_version`) — add `static const int schemaVersion = 1`, read the key
-with `?? schemaVersion` (default 1 when absent), and re-stamp it on load. Each
-also removes its schema key on reset. In `GameState.load`, the schema read is
-placed AFTER `_migrateLegacyKeys(p)`, so the Batch 3 legacy-key migration runs
-first and is undisturbed. No existing keys are touched; the change is additive and
-non-breaking. The `final _ = p.getInt(...)` pattern discards the read value (no
-migration branch yet), which is fine for pure future-proofing. No finding.
+Intent met (confirmed). `PlayerProfile` (`profile_schema_version`), the shared
+`GameProgressStore` base (`${keyPrefix}_schema_version`), and Number Quest
+`GameState` (`nq_schema_version`) each add `static const int schemaVersion = 1`,
+read with `?? schemaVersion` (default 1 when absent), re-stamp on load, and remove
+the key on reset. In `GameState.load` the read is placed AFTER
+`_migrateLegacyKeys(p)`, so the Batch 3 legacy-key migration runs first and is
+undisturbed. The change is additive — no existing key is touched — and the
+`final _ = p.getInt(...)` discards the read value, which is correct for pure
+future-proofing with no migration branch yet. Non-breaking.
 
 ## Task 7 — encounter-bar theme tokens + Clock Hero banner
 
 Intent met (confirmed). `AppTheme.bossBar = Color(0xFF4A3A6E)` and
 `AppTheme.guardianBar = Color(0xFF3E4E63)` are added with the SAME values as the
-previous inline literals. Number Quest's `_BossBar` and Shape Safari's
-`_GuardianBar` are repointed to the tokens, so there is no visual change for those
-two bars. The Clock Hero banner is unified to the documented
-white-text + ink-drop-shadow strategy: "CLOCK" switches from `ink` text / white
-`offset(2,2)` shadow to `white` text / `AppTheme.ink` `offset(3,3)` shadow,
-matching the "HERO" word directly below it (which already used that exact
-treatment on the same orange panel). This is the "unify to white-text + ink-shadow"
-option the task allows, and the comment documents the legibility reasoning. No
-finding.
+former inline literals; Number Quest `_BossBar` and Shape Safari `_GuardianBar`
+are repointed, so there is no visual change for either bar. The Clock Hero "CLOCK"
+word is unified to the documented white-text + ink-drop-shadow strategy (from `ink`
+text / white `offset(2,2)` shadow to `Colors.white` text / `AppTheme.ink`
+`offset(3,3)` shadow), matching the "HERO" word directly below it on the same
+orange panel. This is the "unify to white-text + ink-shadow" option the task
+allows, with the legibility reasoning documented in the comment.
 
 ## Task 8 — multi-source sound-toggle documentation
 
-Intent met (confirmed). `SoundBridge.enabled` gains a substantial doc comment
-spelling out that the single global flag is written from several independent
-`sound_on` booleans (`PlayerProfile.soundOn`, each `GameProgressStore`, and NQ's
-`GameState`), that the effective state is "last writer wins", why that is
-acceptable in practice (any toggle updates the flag immediately), and that unifying
-to a single hub-wide source is future work. Matching short notes are added at each
-`setSoundOn` write site and the base-store load. No code was re-architected, so no
-behavior changed and no tests were put at risk. This is the conservative,
-documentation-only approach the task preferred. No finding.
+Intent met (confirmed). `SoundBridge.enabled` gains a doc comment spelling out that
+the single global flag is written from several independent `sound_on` booleans
+(`PlayerProfile.soundOn`, each `GameProgressStore`, NQ's `GameState`), that the
+effective state is last-writer-wins, why that is acceptable (any toggle updates the
+flag immediately), and that unifying to one hub-wide source is future work.
+Matching short notes are added at each `setSoundOn` write site and the base-store
+load. No code was re-architected, so no behavior changed and no test was put at
+risk — the conservative, documentation-only approach the task preferred.
 
-## Build / test evidence — BLOCKING
+## Build / test evidence
 
-No Batch 5 build or test evidence exists (confirmed). There is no `batch5` task
-directory under `.agents/tasks/`, no coder report file, and no review JSON
-recording a `flutter build web` → `Built build\web` result or a `flutter test`
-pass count for this batch. The review brief requires reading the coder's recorded
-evidence and, if it is missing entirely, rejecting with a finding rather than
-re-running the suites. The evidence is absent, so this is a blocking gap on its
-own. (The changes are small and look compilable — the theme-token repoints and
-the `_countSides` guard are the only code paths that could affect compilation, and
-both reference symbols that exist — but "looks compilable" is not the recorded
-green build/test the gate requires.)
+Present and green (confirmed). `batch5-report.md` records, run from the worktree
+with the machine-local Flutter 3.47.2: `flutter build web` → `Built build\web`
+(success) and `flutter test` → `00:02 +47: All tests passed!` (47/47). Per the
+brief I read this recorded evidence rather than re-running the suites. The pass-1
+gap (no recorded evidence) is resolved.
 
 ## Branch / merge safety
 
-Confirmed clean. `git status` shows a clean working tree on
-`feature/review-improvements`. `git branch -a --contains ba2472e` lists only
-`feature/review-improvements`, and `origin/main` / `main` sit at `0f10ec2`
-(pre-batch), so Batch 5 was committed in logical chunks on the feature branch and
-was NOT merged or pushed.
+Confirmed clean. `git status -s` is empty (all work committed),
+`git branch -a --contains ba2472e` lists only `feature/review-improvements`, and
+`origin/main` / `main` sit at the pre-batch `0f10ec2`. Batch 5 was committed in
+logical chunks on the feature branch and was NOT merged or pushed.
 
 ---
 
 <details>
 <summary>File map</summary>
 
-- `.github/workflows/deploy.yml` — Flutter pin (WRONG value 3.47.2), checkout v5 / upload-pages-artifact v4 bumps, flutter-create dropped with web/ note.
+- `.github/workflows/deploy.yml` — Flutter pin `3.47.2` (verified real, documented), checkout v5 / upload-pages-artifact v4 bumps, flutter-create dropped with web/ note; base-href, test gate, concurrency unchanged.
 - `lib/core/services/game_progress_store.dart` — schema_version const + load re-stamp + reset removal; sound last-writer-wins note.
 - `lib/core/services/player_profile.dart` — same schema_version pattern + reset removal; sound note.
 - `lib/core/services/sound_bridge.dart` — multi-source "last writer wins" doc on `enabled`.
-- `lib/core/theme/app_theme.dart` — `bossBar` / `guardianBar` tokens.
+- `lib/core/theme/app_theme.dart` — `bossBar` / `guardianBar` tokens (same hex).
 - `lib/games/clock_hero/screens/clock_hero_home_screen.dart` — "CLOCK" banner unified to white + ink shadow.
 - `lib/games/memory_match/services/memory_state.dart` — stars dead-branch collapsed to `: 1`.
 - `lib/games/number_quest/screens/game_screen.dart` — `_BossBar` repointed to `AppTheme.bossBar`.
 - `lib/games/number_quest/services/game_state.dart` — schema_version pattern after legacy migration.
 - `lib/games/shape_safari/screens/safari_game_screen.dart` — `_GuardianBar` repointed to `AppTheme.guardianBar`.
 - `lib/games/shape_safari/services/question_generator.dart` — duplicate import removed; `_countSides` empty-pool guard.
-- `web/index.html` — real BrainBuddies meta description.
+- `web/index.html` — real BrainBuddies meta description; audio/TTS script intact.
 
-Full diff: `git -C <worktree> diff cb6dc4f..01b2a53`
+Full diff: `git -C <worktree> diff cb6dc4f..429681f`
+</details>
+
 </details>
