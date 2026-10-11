@@ -29,3 +29,6 @@ ios/Flutter/Flutter.podspec
 
 # Unrelated tooling metadata
 .sf/
+
+# Git worktrees (local only; may linger if the OS holds a file lock)
+.worktrees/
