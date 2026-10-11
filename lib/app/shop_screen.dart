@@ -40,7 +40,7 @@ class ShopScreen extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
-            childAspectRatio: 0.82,
+            childAspectRatio: 0.78,
             children: [
               for (final avatar in Avatars.all)
                 _AvatarCard(profile: profile, avatar: avatar),
@@ -62,10 +62,15 @@ class _AvatarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final owned = profile.ownsAvatar(avatar.id);
     final selected = profile.selectedAvatarId == avatar.id;
-    final locked = avatar.comingSoon;
+    final comingSoon = avatar.comingSoon;
+    final gated = avatar.unlock != null;
+    final gatedLocked = gated && !owned && !profile.isAvatarUnlocked(avatar);
+
+    // Grey out both premium "coming soon" and gated-but-still-locked avatars.
+    final dimmed = comingSoon || gatedLocked;
 
     return Opacity(
-      opacity: locked ? 0.55 : 1,
+      opacity: dimmed ? 0.6 : 1,
       child: ComicPanel(
         color: avatar.color,
         padding: const EdgeInsets.all(10),
@@ -76,6 +81,8 @@ class _AvatarCard extends StatelessWidget {
             Text(
               avatar.name,
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
@@ -83,7 +90,7 @@ class _AvatarCard extends StatelessWidget {
                 shadows: [Shadow(color: AppTheme.ink, offset: Offset(1.5, 1.5))],
               ),
             ),
-            _action(context, owned, selected, locked),
+            _action(context, owned, selected, comingSoon),
           ],
         ),
       ),
@@ -91,8 +98,8 @@ class _AvatarCard extends StatelessWidget {
   }
 
   Widget _action(
-      BuildContext context, bool owned, bool selected, bool locked) {
-    if (locked) {
+      BuildContext context, bool owned, bool selected, bool comingSoon) {
+    if (comingSoon) {
       // Premium / coming soon: show real-money price + "Coming Soon".
       return Column(
         children: [
@@ -116,27 +123,116 @@ class _AvatarCard extends StatelessWidget {
         child: _pill('Equip', AppTheme.ink, Colors.white),
       );
     }
+
+    // Gated avatars: either still locked (show requirement + progress) or
+    // unlocked-not-owned (claim, free or with coins).
+    final unlock = avatar.unlock;
+    if (unlock != null) {
+      final unlocked = profile.isAvatarUnlocked(avatar);
+      if (!unlocked) return _lockedHint(unlock);
+      return _claimAction(context);
+    }
+
+    // Plain coin-buy avatar.
     final canAfford = profile.coins >= avatar.cost;
     return GestureDetector(
-      onTap: () async {
-        final ok = await profile.buyAvatar(avatar);
-        if (!context.mounted) return;
-        final fb = FeedbackService(enabled: profile.soundOn);
-        if (ok) {
-          fb.celebrate();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unlocked ${avatar.name}! 🎉')),
-          );
-        } else {
-          fb.wrong();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Not enough coins yet!')),
-          );
-        }
-      },
+      onTap: () => _buy(context),
       child: _pill('🪙 ${avatar.cost}',
           canAfford ? AppTheme.accent : Colors.grey.shade300, AppTheme.ink),
     );
+  }
+
+  /// The locked state for a gated avatar: a tiny progress bar plus the kid-
+  /// facing requirement label. Sized via [LayoutBuilder] so it never grows the
+  /// tile from the screen width (per coding conventions) and wraps if needed.
+  Widget _lockedHint(AvatarUnlock unlock) {
+    final progress = profile.avatarUnlockProgress(avatar).clamp(0.0, 1.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: constraints.maxWidth,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: Colors.white24,
+                  valueColor: const AlwaysStoppedAnimation(Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '🔒 ${unlock.label}',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10.5,
+                height: 1.1,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                shadows: [
+                  Shadow(color: AppTheme.ink, offset: Offset(1, 1)),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// The claimable state for a gated avatar whose requirement is met.
+  Widget _claimAction(BuildContext context) {
+    final free = avatar.cost == 0;
+    final canAfford = free || profile.coins >= avatar.cost;
+    final label = free ? 'CLAIM 🎁' : '🔓 🪙${avatar.cost}';
+    return GestureDetector(
+      onTap: () => _claim(context),
+      child: _pill(
+        label,
+        canAfford ? AppTheme.accent : Colors.grey.shade300,
+        AppTheme.ink,
+      ),
+    );
+  }
+
+  Future<void> _buy(BuildContext context) async {
+    final ok = await profile.buyAvatar(avatar);
+    if (!context.mounted) return;
+    final fb = FeedbackService(enabled: profile.soundOn);
+    if (ok) {
+      fb.celebrate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unlocked ${avatar.name}! 🎉')),
+      );
+    } else {
+      fb.wrong();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not enough coins yet!')),
+      );
+    }
+  }
+
+  Future<void> _claim(BuildContext context) async {
+    final ok = await profile.claimAvatar(avatar);
+    if (!context.mounted) return;
+    final fb = FeedbackService(enabled: profile.soundOn);
+    if (ok) {
+      fb.celebrate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unlocked ${avatar.name}! 🎉')),
+      );
+    } else {
+      fb.wrong();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not enough coins yet!')),
+      );
+    }
   }
 
   Widget _pill(String text, Color bg, Color fg) {
