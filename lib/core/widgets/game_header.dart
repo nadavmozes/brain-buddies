@@ -30,10 +30,15 @@ class GameHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(
-              title,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
             ),
             const Spacer(),
             TimerChip(seconds: seconds),

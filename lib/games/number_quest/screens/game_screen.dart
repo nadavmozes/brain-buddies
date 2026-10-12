@@ -231,7 +231,7 @@ class _GameScreenState extends State<GameScreen>
   /// byte-identical; only the Times Tables campaign (`level.mult != null`) is
   /// localized.
   String _headerTitle(BuildContext context) {
-    if (widget.isDaily) return '📅 Daily';
+    if (widget.isDaily) return context.l10n.nqDailyHeader;
     final level = widget.level;
     final isCampaign = level.mult != null;
     if (_isBoss) {

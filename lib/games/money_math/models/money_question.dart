@@ -74,8 +74,9 @@ class Coin {
   // ---- Israeli (ILS) set: 10a, ½₪ (50a), ₪1, ₪2, ₪5, ₪10 ----
   // Values in agorot (₪1 = 100 agorot). Israel's smallest circulating coin is
   // 10 agorot; there is no 1-agora coin.
+  // The chip prints "10א" (10 + an agora mark) so it never reads as ₪10.
   static const agora10 = Coin(10, '🟤', '10 אג׳',
-      currency: Currency.ils, chipLabel: '10', color: Color(0xFFB87333));
+      currency: Currency.ils, chipLabel: '10א', color: Color(0xFFB87333));
   static const halfShekel = Coin(50, '⚪', 'חצי שקל',
       currency: Currency.ils, chipLabel: '½₪', color: Color(0xFFBFC1C2));
   static const shekel1 = Coin(100, '⚪', '₪1',

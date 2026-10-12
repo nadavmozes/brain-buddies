@@ -200,8 +200,7 @@ class HebrewWordBank {
     WordEntry('אוטובוס', '🚌', translation: 'bus', promptForm: 'אוֹטוֹבּוּס'),
     WordEntry('מטוס', '✈️', translation: 'airplane', promptForm: 'מָטוֹס'),
     WordEntry('אמבטיה', '🛁', translation: 'bathtub', promptForm: 'אַמְבַּטְיָה'),
-    // TODO(user): confirm refrigerator emoji 🧊 placeholder — no clean single glyph
-    WordEntry('מקרר', '🧊', translation: 'refrigerator', promptForm: 'מְקָרֵר'),
+    WordEntry('מזלג', '🍴', translation: 'fork', promptForm: 'מַזְלֵג'),
     WordEntry('מחברת', '📓', translation: 'notebook', promptForm: 'מַחְבֶּרֶת'),
     WordEntry('עפרון', '✏️', translation: 'pencil', promptForm: 'עִפָּרוֹן'),
     WordEntry('קשת', '🌈', translation: 'rainbow', promptForm: 'קֶשֶׁת'),

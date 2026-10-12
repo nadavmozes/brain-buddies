@@ -298,7 +298,7 @@ class _ResultScreenState extends State<ResultScreen> {
         border: Border.all(color: AppTheme.ink, width: 2.5),
       ),
       child: Text(
-        '🎉 LEVEL UP!  You are now Level ${outcome.newLevel}',
+        context.l10n.nqLevelUp(outcome.newLevel),
         textAlign: TextAlign.center,
         style: const TextStyle(
             color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),

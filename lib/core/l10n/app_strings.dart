@@ -142,6 +142,10 @@ abstract class AppStrings {
   String get nqTimesTablesSubtitle; // short world blurb
   String get nqMultArrayHint; // "Count the dots!" / "ספרו את הנקודות!"
 
+  // ---- Number Quest misc (Phase 5 i18n polish) ----
+  String get nqDailyHeader; // "📅 Daily"
+  String nqLevelUp(int level); // "🎉 LEVEL UP!  You are now Level <level>"
+
   // ---- Number Quest (FEAT-002) ----
   String nqWrongFeedback(int a); // "The answer was <a>. You got this!"
   List<String> get nqPraise; // ['Nice!','Great!','Boom!','Yes!','Awesome!','Pow!']
@@ -152,6 +156,7 @@ abstract class AppStrings {
 
   // ---- Shape Safari (FEAT-002) ----
   List<String> get safariPraise; // ['Nice!','Great!','Yes!','Awesome!','Wow!']
+  String get safariSnap; // "📸 Snap!" (guardian photo feedback)
   String safariWrong(String label); // "It was <label>. Keep going!"
   String get safariTitleBefriended; // "GUARDIAN BEFRIENDED!"
   String get safariTitleAlmost; // "ALMOST! TRY AGAIN"
@@ -444,6 +449,11 @@ class EnStrings extends AppStrings {
   @override
   String get nqMultArrayHint => 'Count the dots!';
 
+  @override
+  String get nqDailyHeader => '📅 Daily';
+  @override
+  String nqLevelUp(int level) => '🎉 LEVEL UP!  You are now Level $level';
+
   // ---- Number Quest (FEAT-002) ----
   @override
   String nqWrongFeedback(int a) => 'The answer was $a. You got this!';
@@ -463,6 +473,8 @@ class EnStrings extends AppStrings {
   @override
   List<String> get safariPraise =>
       const ['Nice!', 'Great!', 'Yes!', 'Awesome!', 'Wow!'];
+  @override
+  String get safariSnap => '📸 Snap!';
   @override
   String safariWrong(String label) => 'It was $label. Keep going!';
   @override
@@ -813,6 +825,11 @@ class HeStrings extends AppStrings {
   @override
   String get nqMultArrayHint => 'ספרו את הנקודות!';
 
+  @override
+  String get nqDailyHeader => '📅 יומי';
+  @override
+  String nqLevelUp(int level) => '🎉 עליתם רמה!  אתם עכשיו רמה $level';
+
   // ---- Number Quest (FEAT-002) ----
   @override
   String nqWrongFeedback(int a) => 'התשובה הייתה $a. אתם מסוגלים!';
@@ -832,6 +849,8 @@ class HeStrings extends AppStrings {
   @override
   List<String> get safariPraise =>
       const ['יופי!', 'מעולה!', 'כן!', 'מדהים!', 'וואו!'];
+  @override
+  String get safariSnap => '📸 קליק!';
   @override
   String safariWrong(String label) => 'זה היה $label. ממשיכים!';
   @override

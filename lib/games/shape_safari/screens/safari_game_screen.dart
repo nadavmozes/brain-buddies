@@ -86,7 +86,7 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
       if (isRight) {
         _correct++;
         if (_isGuardian) _photos++;
-        _feedback = _isGuardian ? '📸 Snap!' : _praise(l);
+        _feedback = _isGuardian ? l.safariSnap : _praise(l);
         fb.correct();
       } else {
         _feedback = _correctAnswerText(l);
