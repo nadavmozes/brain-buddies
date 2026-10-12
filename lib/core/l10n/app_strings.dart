@@ -119,6 +119,66 @@ abstract class AppStrings {
   // ---- Admin ----
   String get adminTitle; // "Admin / Dev Tools"
   String get resetEverything; // "Reset Everything"
+
+  // ---- Shared in-round / result chrome (FEAT-002) ----
+  String get yourTime; // "Your time"
+  String get coinsEarned; // "Coins earned"
+  String get xpEarned; // "XP earned"
+  String get newAward; // "New Award!"
+  String correctOfTotal(int c, int n); // "<c> / <n> correct"
+  String get newFastestTime; // "⚡ NEW FASTEST TIME!"
+  String get newBestScore; // "🏆 NEW BEST SCORE!"
+
+  // ---- Word Wizard (FEAT-002) ----
+  String get wwCorrectFeedback; // "Magic! ✨"
+  String wwWrongFeedback(String answer); // "It was "<answer>""
+  String get wwTitleMastered; // "SPELL MASTER!"
+  String get wwTitleGood; // "GOOD MAGIC!"
+  String get nextLesson; // "Next Lesson"
+  String get backToPath; // "Back to Path"
+
+  // ---- Number Quest (FEAT-002) ----
+  String nqWrongFeedback(int a); // "The answer was <a>. You got this!"
+  List<String> get nqPraise; // ['Nice!','Great!','Boom!','Yes!','Awesome!','Pow!']
+  String get nqTitleBossBeaten; // "BOSS DEFEATED!"
+  String get nqTitleBossEscaped; // "THE BOSS ESCAPED!"
+  String get nqTitleComplete; // "QUEST COMPLETE!"
+  String get nqTitleOver; // "QUEST OVER!"
+
+  // ---- Shape Safari (FEAT-002) ----
+  List<String> get safariPraise; // ['Nice!','Great!','Yes!','Awesome!','Wow!']
+  String safariWrong(String label); // "It was <label>. Keep going!"
+  String get safariTitleBefriended; // "GUARDIAN BEFRIENDED!"
+  String get safariTitleAlmost; // "ALMOST! TRY AGAIN"
+  String get safariTitleGreat; // "GREAT EXPLORING!"
+  String get safariTitleDone; // "TRAIL DONE!"
+  String safariFriendBanner(String name); // "🤝 <name> is now your friend!"
+
+  // ---- Clock Hero (FEAT-002) ----
+  String get clockCorrect; // "Right on time! ⏰"
+  String clockWasText(String v); // "It was <v>"
+  String get clockCheck; // "Check"
+  String get clockChecked; // "Checked"
+  String get clockTitleGuardian; // "GUARDIAN GREETED!"
+  String get clockTitleAlmost; // "ALMOST! TRY AGAIN"
+  String get clockTitleMaster; // "TIME MASTER!"
+  String get clockTitleGood; // "GOOD TIMING!"
+  String get nextStop; // "Next Stop"
+
+  // ---- Money Math (FEAT-002) ----
+  String get moneyCorrect; // "Cha-ching! 💰"
+  String get moneyWrong; // "Not quite!"
+  String get moneyTitleGuardianPaid; // "GUARDIAN PAID!"
+  String get moneyTitleAlmost; // "ALMOST! TRY AGAIN"
+  String get moneyTitleMaster; // "MONEY MASTER!"
+  String get moneyTitleNice; // "NICE SAVING!"
+
+  // ---- Memory Match (FEAT-002) ----
+  String get memoryTitleGuardian; // "GUARDIAN MATCHED!"
+  String get memoryTitlePerfect; // "PERFECT MEMORY!"
+  String get memoryTitleWell; // "WELL MATCHED!"
+  String get memoryNoMistakes; // "No mistakes!"
+  String get memoryBoardCleared; // "Board cleared!"
 }
 
 /// English chrome strings. Values here MUST equal the previously hard-coded
@@ -331,6 +391,114 @@ class EnStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+
+  // ---- Shared in-round / result chrome (FEAT-002) ----
+  @override
+  String get yourTime => 'Your time';
+  @override
+  String get coinsEarned => 'Coins earned';
+  @override
+  String get xpEarned => 'XP earned';
+  @override
+  String get newAward => 'New Award!';
+  @override
+  String correctOfTotal(int c, int n) => '$c / $n correct';
+  @override
+  String get newFastestTime => '⚡ NEW FASTEST TIME!';
+  @override
+  String get newBestScore => '🏆 NEW BEST SCORE!';
+
+  // ---- Word Wizard (FEAT-002) ----
+  @override
+  String get wwCorrectFeedback => 'Magic! ✨';
+  @override
+  String wwWrongFeedback(String answer) => 'It was "$answer"';
+  @override
+  String get wwTitleMastered => 'SPELL MASTER!';
+  @override
+  String get wwTitleGood => 'GOOD MAGIC!';
+  @override
+  String get nextLesson => 'Next Lesson';
+  @override
+  String get backToPath => 'Back to Path';
+
+  // ---- Number Quest (FEAT-002) ----
+  @override
+  String nqWrongFeedback(int a) => 'The answer was $a. You got this!';
+  @override
+  List<String> get nqPraise =>
+      const ['Nice!', 'Great!', 'Boom!', 'Yes!', 'Awesome!', 'Pow!'];
+  @override
+  String get nqTitleBossBeaten => 'BOSS DEFEATED!';
+  @override
+  String get nqTitleBossEscaped => 'THE BOSS ESCAPED!';
+  @override
+  String get nqTitleComplete => 'QUEST COMPLETE!';
+  @override
+  String get nqTitleOver => 'QUEST OVER!';
+
+  // ---- Shape Safari (FEAT-002) ----
+  @override
+  List<String> get safariPraise =>
+      const ['Nice!', 'Great!', 'Yes!', 'Awesome!', 'Wow!'];
+  @override
+  String safariWrong(String label) => 'It was $label. Keep going!';
+  @override
+  String get safariTitleBefriended => 'GUARDIAN BEFRIENDED!';
+  @override
+  String get safariTitleAlmost => 'ALMOST! TRY AGAIN';
+  @override
+  String get safariTitleGreat => 'GREAT EXPLORING!';
+  @override
+  String get safariTitleDone => 'TRAIL DONE!';
+  @override
+  String safariFriendBanner(String name) => '🤝 $name is now your friend!';
+
+  // ---- Clock Hero (FEAT-002) ----
+  @override
+  String get clockCorrect => 'Right on time! ⏰';
+  @override
+  String clockWasText(String v) => 'It was $v';
+  @override
+  String get clockCheck => 'Check';
+  @override
+  String get clockChecked => 'Checked';
+  @override
+  String get clockTitleGuardian => 'GUARDIAN GREETED!';
+  @override
+  String get clockTitleAlmost => 'ALMOST! TRY AGAIN';
+  @override
+  String get clockTitleMaster => 'TIME MASTER!';
+  @override
+  String get clockTitleGood => 'GOOD TIMING!';
+  @override
+  String get nextStop => 'Next Stop';
+
+  // ---- Money Math (FEAT-002) ----
+  @override
+  String get moneyCorrect => 'Cha-ching! 💰';
+  @override
+  String get moneyWrong => 'Not quite!';
+  @override
+  String get moneyTitleGuardianPaid => 'GUARDIAN PAID!';
+  @override
+  String get moneyTitleAlmost => 'ALMOST! TRY AGAIN';
+  @override
+  String get moneyTitleMaster => 'MONEY MASTER!';
+  @override
+  String get moneyTitleNice => 'NICE SAVING!';
+
+  // ---- Memory Match (FEAT-002) ----
+  @override
+  String get memoryTitleGuardian => 'GUARDIAN MATCHED!';
+  @override
+  String get memoryTitlePerfect => 'PERFECT MEMORY!';
+  @override
+  String get memoryTitleWell => 'WELL MATCHED!';
+  @override
+  String get memoryNoMistakes => 'No mistakes!';
+  @override
+  String get memoryBoardCleared => 'Board cleared!';
 }
 
 /// Hebrew chrome strings. Emoji are kept (language-neutral); numerals stay
@@ -542,6 +710,114 @@ class HeStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+
+  // ---- Shared in-round / result chrome (FEAT-002) ----
+  @override
+  String get yourTime => 'הזמן שלכם';
+  @override
+  String get coinsEarned => 'מטבעות שהרווחתם';
+  @override
+  String get xpEarned => 'נקודות ניסיון';
+  @override
+  String get newAward => 'פרס חדש!';
+  @override
+  String correctOfTotal(int c, int n) => '$c / $n נכונות';
+  @override
+  String get newFastestTime => '⚡ שיא זמן חדש!';
+  @override
+  String get newBestScore => '🏆 שיא ניקוד חדש!';
+
+  // ---- Word Wizard (FEAT-002) ----
+  @override
+  String get wwCorrectFeedback => 'קסם! ✨';
+  @override
+  String wwWrongFeedback(String answer) => 'זה היה "$answer"';
+  @override
+  String get wwTitleMastered => 'אשף הכישוף!';
+  @override
+  String get wwTitleGood => 'קסם טוב!';
+  @override
+  String get nextLesson => 'השיעור הבא';
+  @override
+  String get backToPath => 'חזרה לשביל';
+
+  // ---- Number Quest (FEAT-002) ----
+  @override
+  String nqWrongFeedback(int a) => 'התשובה הייתה $a. אתם מסוגלים!';
+  @override
+  List<String> get nqPraise =>
+      const ['יופי!', 'מעולה!', 'בום!', 'כן!', 'מדהים!', 'וואו!'];
+  @override
+  String get nqTitleBossBeaten => 'הבוס הובס!';
+  @override
+  String get nqTitleBossEscaped => 'הבוס ברח!';
+  @override
+  String get nqTitleComplete => 'המשימה הושלמה!';
+  @override
+  String get nqTitleOver => 'המשימה נגמרה!';
+
+  // ---- Shape Safari (FEAT-002) ----
+  @override
+  List<String> get safariPraise =>
+      const ['יופי!', 'מעולה!', 'כן!', 'מדהים!', 'וואו!'];
+  @override
+  String safariWrong(String label) => 'זה היה $label. ממשיכים!';
+  @override
+  String get safariTitleBefriended => 'התיידדתם עם השומר!';
+  @override
+  String get safariTitleAlmost => 'כמעט! נסו שוב';
+  @override
+  String get safariTitleGreat => 'חקירה מעולה!';
+  @override
+  String get safariTitleDone => 'סיימתם את השביל!';
+  @override
+  String safariFriendBanner(String name) => '🤝 $name הוא עכשיו חבר שלכם!';
+
+  // ---- Clock Hero (FEAT-002) ----
+  @override
+  String get clockCorrect => 'בדיוק בזמן! ⏰';
+  @override
+  String clockWasText(String v) => 'זה היה $v';
+  @override
+  String get clockCheck => 'בדיקה';
+  @override
+  String get clockChecked => 'נבדק';
+  @override
+  String get clockTitleGuardian => 'בירכתם את השומר!';
+  @override
+  String get clockTitleAlmost => 'כמעט! נסו שוב';
+  @override
+  String get clockTitleMaster => 'אלופי הזמן!';
+  @override
+  String get clockTitleGood => 'תזמון טוב!';
+  @override
+  String get nextStop => 'התחנה הבאה';
+
+  // ---- Money Math (FEAT-002) ----
+  @override
+  String get moneyCorrect => 'צ׳אקינג! 💰';
+  @override
+  String get moneyWrong => 'לא בדיוק!';
+  @override
+  String get moneyTitleGuardianPaid => 'שילמתם לשומר!';
+  @override
+  String get moneyTitleAlmost => 'כמעט! נסו שוב';
+  @override
+  String get moneyTitleMaster => 'אלופי הכסף!';
+  @override
+  String get moneyTitleNice => 'חיסכון יפה!';
+
+  // ---- Memory Match (FEAT-002) ----
+  @override
+  String get memoryTitleGuardian => 'התאמתם לשומר!';
+  @override
+  String get memoryTitlePerfect => 'זיכרון מושלם!';
+  @override
+  String get memoryTitleWell => 'התאמה יפה!';
+  @override
+  String get memoryNoMistakes => 'בלי טעויות!';
+  @override
+  String get memoryBoardCleared => 'הלוח נוקה!';
 }
 
 /// Resolves the [AppStrings] implementation for a language code.

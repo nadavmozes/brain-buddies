@@ -91,12 +91,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     setState(() {
       _selectedIndex = index;
       _answered = true;
+      final l = context.l10n;
       if (isRight) {
         _correct++;
-        _feedback = 'Magic! ✨';
+        _feedback = l.wwCorrectFeedback;
         fb.correct();
       } else {
-        _feedback = 'It was "${_q.choices[_q.correctIndex]}"';
+        _feedback = l.wwWrongFeedback(_q.choices[_q.correctIndex]);
         fb.wrong();
       }
     });

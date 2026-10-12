@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/player_profile.dart';
@@ -83,15 +84,16 @@ class _ResultScreenState extends State<ResultScreen> {
 
   int get _percent => total == 0 ? 0 : ((correct / total) * 100).round();
 
-  String get _title {
+  String _titleFor(AppStrings l) {
     if (level.isBoss) {
-      return bossDefeated ? 'BOSS DEFEATED!' : 'THE BOSS ESCAPED!';
+      return bossDefeated ? l.nqTitleBossBeaten : l.nqTitleBossEscaped;
     }
-    return outcome.stars == 3 ? 'QUEST COMPLETE!' : 'QUEST OVER!';
+    return outcome.stars == 3 ? l.nqTitleComplete : l.nqTitleOver;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
       body: Stack(
         children: [
@@ -117,7 +119,7 @@ class _ResultScreenState extends State<ResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           child: Text(
-                            _title,
+                            _titleFor(l),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 28,
@@ -135,7 +137,7 @@ class _ResultScreenState extends State<ResultScreen> {
                           children: [
                             StarRow(earned: outcome.stars, size: 46),
                             const SizedBox(height: 14),
-                            Text('$correct / $total correct',
+                            Text(l.correctOfTotal(correct, total),
                                 style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900)),
@@ -145,18 +147,18 @@ class _ResultScreenState extends State<ResultScreen> {
                                     fontWeight: FontWeight.w700,
                                     color: level.world.color)),
                             const Divider(height: 26, thickness: 2),
-                            _rewardRow('🪙', 'Coins earned',
+                            _rewardRow('🪙', l.coinsEarned,
                                 '+${outcome.coinsEarned}'),
                             const SizedBox(height: 8),
-                            _rewardRow('⚡', 'XP earned', '+${outcome.xpEarned}'),
+                            _rewardRow('⚡', l.xpEarned, '+${outcome.xpEarned}'),
                             if (outcome.elapsedSeconds > 0) ...[
                               const SizedBox(height: 8),
                               Row(
                                 children: [
                                   const Icon(Icons.timer_outlined, size: 22),
                                   const SizedBox(width: 10),
-                                  const Text('Your time',
-                                      style: TextStyle(
+                                  Text(l.yourTime,
+                                      style: const TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w700)),
                                   const Spacer(),
@@ -166,7 +168,7 @@ class _ResultScreenState extends State<ResultScreen> {
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              _recordBanner('⚡ NEW FASTEST TIME!'),
+                              _recordBanner(l.newFastestTime),
                             ],
                             if (outcome.leveledUp) ...[
                               const SizedBox(height: 12),
@@ -198,6 +200,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildActions(BuildContext context) {
+    final l = context.l10n;
     final next = _nextLevelAfter(level);
     // Next level is available once this one is cleared (earned a star). Boss
     // levels must be defeated to progress.
@@ -208,7 +211,7 @@ class _ResultScreenState extends State<ResultScreen> {
       children: [
         if (showNext)
           ComicButton(
-            label: 'Next Level',
+            label: l.nextLevel,
             icon: Icons.arrow_forward_rounded,
             onPressed: () {
               Navigator.of(context).pushReplacement(
@@ -221,7 +224,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         if (showNext) const SizedBox(height: 12),
         ComicButton(
-          label: 'Back to Map',
+          label: l.backToMap,
           icon: Icons.map_rounded,
           color: showNext ? Colors.white : AppTheme.primary,
           textColor: showNext ? AppTheme.ink : Colors.white,
@@ -231,7 +234,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ),
         const SizedBox(height: 12),
         ComicButton(
-          label: 'Play Again',
+          label: l.playAgain,
           icon: Icons.replay_rounded,
           color: Colors.white,
           textColor: AppTheme.ink,
@@ -304,8 +307,9 @@ class _ResultScreenState extends State<ResultScreen> {
       color: Colors.white,
       child: Column(
         children: [
-          const Text('New Award!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(context.l10n.newAward,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 16,

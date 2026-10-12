@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'dart:async';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -76,6 +77,7 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
 
   void _onAnswer(int index) {
     if (_answered) return;
+    final l = context.l10n;
     final isRight = index == _q.correctIndex;
     final fb = FeedbackService(enabled: widget.state.soundOn);
     setState(() {
@@ -84,25 +86,25 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
       if (isRight) {
         _correct++;
         if (_isGuardian) _photos++;
-        _feedback = _isGuardian ? '📸 Snap!' : _praise();
+        _feedback = _isGuardian ? '📸 Snap!' : _praise(l);
         fb.correct();
       } else {
-        _feedback = _correctAnswerText();
+        _feedback = _correctAnswerText(l);
         fb.wrong();
       }
     });
     Future.delayed(const Duration(milliseconds: 1000), _advance);
   }
 
-  String _praise() {
-    const lines = ['Nice!', 'Great!', 'Yes!', 'Awesome!', 'Wow!'];
+  String _praise(AppStrings l) {
+    final lines = l.safariPraise;
     return lines[_correct % lines.length];
   }
 
-  String _correctAnswerText() {
+  String _correctAnswerText(AppStrings l) {
     final c = _q.choices[_q.correctIndex];
     final label = c.isShape ? c.shape!.label : c.text!;
-    return 'It was $label. Keep going!';
+    return l.safariWrong(label);
   }
 
   Future<void> _advance() async {

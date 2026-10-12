@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -86,13 +87,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
   }
 
   void _registerResult(bool isRight, String rightText) {
+    final l = context.l10n;
     final fb = FeedbackService(enabled: widget.state.soundOn);
     setState(() {
       _answered = true;
       _lastWasRight = isRight;
       if (isRight) {
         _correct++;
-        _feedback = 'Right on time! ⏰';
+        _feedback = l.clockCorrect;
         fb.correct();
       } else {
         _feedback = rightText;
@@ -109,14 +111,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
     final right = _q.textChoices != null
         ? _q.textChoices![_q.correctIndex]
         : _q.clockChoices![_q.correctIndex].label;
-    _registerResult(isRight, 'It was $right');
+    _registerResult(isRight, context.l10n.clockWasText(right));
   }
 
   void _onCheckSetClock() {
     if (_answered) return;
     final target = _q.targetTime!;
     final isRight = _setValue == target;
-    _registerResult(isRight, 'It was ${target.label}');
+    _registerResult(isRight, context.l10n.clockWasText(target.label));
   }
 
   Future<void> _advance() async {
@@ -270,7 +272,7 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
             ),
             const SizedBox(height: 14),
             ComicButton(
-              label: _answered ? 'Checked' : 'Check',
+              label: _answered ? context.l10n.clockChecked : context.l10n.clockCheck,
               icon: Icons.check_rounded,
               fontSize: 22,
               onPressed: _answered ? null : _onCheckSetClock,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -56,13 +57,13 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
       widget.outcome.isNewFastest ||
       widget.outcome.guardianGreeted;
 
-  String get _title {
+  String _titleFor(AppStrings l) {
     if (widget.level.isBoss) {
       return widget.outcome.guardianGreeted
-          ? 'GUARDIAN GREETED!'
-          : 'ALMOST! TRY AGAIN';
+          ? l.clockTitleGuardian
+          : l.clockTitleAlmost;
     }
-    return widget.outcome.stars == 3 ? 'TIME MASTER!' : 'GOOD TIMING!';
+    return widget.outcome.stars == 3 ? l.clockTitleMaster : l.clockTitleGood;
   }
 
   @override
@@ -77,6 +78,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
   @override
   Widget build(BuildContext context) {
     final outcome = widget.outcome;
+    final l = context.l10n;
     return Scaffold(
       body: Stack(
         children: [
@@ -102,7 +104,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           child: Text(
-                            _title,
+                            _titleFor(l),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 24,
@@ -120,7 +122,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                           children: [
                             StarRow(earned: outcome.stars, size: 44),
                             const SizedBox(height: 14),
-                            Text('${widget.correct} / ${widget.total} correct',
+                            Text(l.correctOfTotal(widget.correct, widget.total),
                                 style: const TextStyle(
                                     fontSize: 24, fontWeight: FontWeight.w900)),
                             Text('$_percent%',
@@ -132,7 +134,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                             RewardRow(
                               leading: const Text('🪙',
                                   style: TextStyle(fontSize: 22)),
-                              label: 'Coins earned',
+                              label: l.coinsEarned,
                               value: '+${outcome.coinsEarned}',
                             ),
                             const SizedBox(height: 10),
@@ -140,8 +142,8 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                               children: [
                                 const Icon(Icons.timer_outlined, size: 22),
                                 const SizedBox(width: 8),
-                                const Text('Your time',
-                                    style: TextStyle(
+                                Text(l.yourTime,
+                                    style: const TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w700)),
                                 const Spacer(),
@@ -150,10 +152,10 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
                             ),
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              const ResultBanner('⚡ NEW FASTEST TIME!'),
+                              ResultBanner(l.newFastestTime),
                             ] else if (outcome.isNewBestScore) ...[
                               const SizedBox(height: 12),
-                              const ResultBanner('🏆 NEW BEST SCORE!'),
+                              ResultBanner(l.newBestScore),
                             ],
                           ],
                         ),
@@ -177,6 +179,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
   }
 
   Widget _buildActions(BuildContext context) {
+    final l = context.l10n;
     final level = widget.level;
     final next = _nextLevelAfter(level);
     final canAdvance = widget.outcome.stars > 0 &&
@@ -187,7 +190,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
       children: [
         if (showNext)
           ComicButton(
-            label: 'Next Stop',
+            label: l.nextStop,
             icon: Icons.arrow_forward_rounded,
             onPressed: () {
               Navigator.of(context).pushReplacement(
@@ -202,7 +205,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
           ),
         if (showNext) const SizedBox(height: 12),
         ComicButton(
-          label: 'Back to Trail',
+          label: l.backToTrail,
           icon: Icons.map_rounded,
           color: showNext ? Colors.white : AppTheme.primary,
           textColor: showNext ? AppTheme.ink : Colors.white,
@@ -211,7 +214,7 @@ class _ClockResultScreenState extends State<ClockResultScreen> {
         ),
         const SizedBox(height: 12),
         ComicButton(
-          label: 'Play Again',
+          label: l.playAgain,
           icon: Icons.replay_rounded,
           color: Colors.white,
           textColor: AppTheme.ink,

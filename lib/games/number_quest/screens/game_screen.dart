@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'dart:async';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -113,6 +114,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _onAnswer(int index) {
     if (_answered) return;
+    final l = context.l10n;
     final chosen = _problem.choices[index];
     final isRight = chosen == _problem.answer;
     final feedback = FeedbackService(enabled: widget.state.soundOn);
@@ -129,14 +131,14 @@ class _GameScreenState extends State<GameScreen>
         _lastGain = 10 + (_streak - 1) * 5;
         _score += _lastGain;
         _mood = BuddyMood.happy;
-        _feedbackText = _praise();
+        _feedbackText = _praise(l);
         if (_isBoss && _bossHearts > 0) _bossHearts--;
         feedback.correct();
       } else {
         _streak = 0;
         _lastGain = 0;
         _mood = BuddyMood.sad;
-        _feedbackText = 'The answer was ${_problem.answer}. You got this!';
+        _feedbackText = l.nqWrongFeedback(_problem.answer);
         if (_isBoss && _heroHearts > 0) _heroHearts--;
         _shakeController.forward(from: 0);
         feedback.wrong();
@@ -146,8 +148,8 @@ class _GameScreenState extends State<GameScreen>
     Future.delayed(const Duration(milliseconds: 1000), _advance);
   }
 
-  String _praise() {
-    const lines = ['Nice!', 'Great!', 'Boom!', 'Yes!', 'Awesome!', 'Pow!'];
+  String _praise(AppStrings l) {
+    final lines = l.nqPraise;
     return lines[_correct % lines.length];
   }
 

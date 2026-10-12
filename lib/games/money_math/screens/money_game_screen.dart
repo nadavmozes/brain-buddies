@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -66,6 +67,7 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
 
   void _onAnswer(int index) {
     if (_answered) return;
+    final l = context.l10n;
     final isRight = index == _q.correctIndex;
     final fb = FeedbackService(enabled: widget.state.soundOn);
     setState(() {
@@ -74,10 +76,10 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
       _lastRight = isRight;
       if (isRight) {
         _correct++;
-        _feedback = 'Cha-ching! 💰';
+        _feedback = l.moneyCorrect;
         fb.correct();
       } else {
-        _feedback = 'Not quite!';
+        _feedback = l.moneyWrong;
         fb.wrong();
       }
     });
