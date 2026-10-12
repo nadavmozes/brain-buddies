@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/all_games_back_button.dart';
@@ -47,11 +48,12 @@ class WordWizardHome extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _TitleBanner(),
+                _TitleBanner(),
                 const SizedBox(height: 16),
-                const Text(
-                  'Pick a chapter to cast spells!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                Text(
+                  context.l10n.pickChapter,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 for (final chapter in WizardChapter.values) ...[
@@ -115,7 +117,9 @@ class _ChapterCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${chapter.label} Chapter',
+                  Text(
+                      context.l10n.chapterLabel(context.tr(
+                          'ww.chapter.label', chapter.name, chapter.label)),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -125,7 +129,9 @@ class _ChapterCard extends StatelessWidget {
                         ],
                       )),
                   const SizedBox(height: 2),
-                  Text(chapter.subtitle,
+                  Text(
+                      context.tr('ww.chapter.subtitle', chapter.name,
+                          chapter.subtitle),
                       style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -148,8 +154,11 @@ class _ChapterCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.white, size: 34),
+            Transform.flip(
+              flipX: Directionality.of(context) == TextDirection.rtl,
+              child: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white, size: 34),
+            ),
           ],
         ),
       ),
@@ -158,7 +167,7 @@ class _ChapterCard extends StatelessWidget {
 }
 
 class _TitleBanner extends StatelessWidget {
-  const _TitleBanner();
+  _TitleBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -168,9 +177,9 @@ class _TitleBanner extends StatelessWidget {
         color: const Color(0xFFEC407A),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
-          children: const [
-            Text('WORD',
-                style: TextStyle(
+          children: [
+            Text(context.l10n.wwLogoLine1,
+                style: const TextStyle(
                   fontSize: 46,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
@@ -178,8 +187,8 @@ class _TitleBanner extends StatelessWidget {
                   letterSpacing: 2,
                   shadows: [Shadow(color: AppTheme.ink, offset: Offset(3, 3))],
                 )),
-            Text('WIZARD',
-                style: TextStyle(
+            Text(context.l10n.wwLogoLine2,
+                style: const TextStyle(
                   fontSize: 40,
                   height: 1.0,
                   fontWeight: FontWeight.w900,

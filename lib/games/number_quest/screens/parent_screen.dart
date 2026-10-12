@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/comic_panel.dart';
@@ -25,8 +26,8 @@ class ParentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progress',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.progress,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -39,16 +40,17 @@ class ParentScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _stat('Hero Level', '${state.level}'),
-                    _stat('Total Stars', '${state.totalStars}'),
-                    _stat('Day Streak', '${profile.dailyStreak}'),
+                    _stat(context.l10n.nqHeroLevel, '${state.level}'),
+                    _stat(context.l10n.nqTotalStars, '${state.totalStars}'),
+                    _stat(context.l10n.nqDayStreakLabel,
+                        '${profile.dailyStreak}'),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('Skills',
-                  style:
-                      TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              Text(context.l10n.nqSkills,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.w900)),
               const SizedBox(height: 10),
               for (final skill in Skill.values)
                 _SkillRow(
@@ -65,12 +67,12 @@ class ParentScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Tip for grown-ups',
-                        style: TextStyle(
+                    Text(context.l10n.nqGrownupTip,
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 6),
                     Text(
-                      _tip(state),
+                      _tip(context, state),
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
@@ -101,7 +103,7 @@ class ParentScreen extends StatelessWidget {
     );
   }
 
-  String _tip(GameState state) {
+  String _tip(BuildContext context, GameState state) {
     // Suggest the weakest practiced skill.
     Skill? weakest;
     var worst = 101;
@@ -113,11 +115,13 @@ class ParentScreen extends StatelessWidget {
       }
     }
     if (weakest == null) {
-      return 'Keep playing a few quests so we can spot which skills need '
-          'the most practice.';
+      return context.l10n.nqTipDefault;
     }
-    return 'Right now ${weakest.label.toLowerCase()} could use the most '
-        'practice. Try a few short sessions focused on that skill.';
+    return context.l10n.nqTipWeakest(
+      context
+          .tr('nq.skill.label', weakest.name, weakest.label)
+          .toLowerCase(),
+    );
   }
 }
 
@@ -131,6 +135,17 @@ class _SkillRow extends StatelessWidget {
   final Skill skill;
   final SkillStat stat;
   final Color color;
+
+  /// Localized mirror of [SkillStat.masteryLabel]'s thresholds. The model
+  /// getter is kept as an English fallback and is not changed.
+  String _mastery(BuildContext context, SkillStat stat) {
+    final l = context.l10n;
+    if (stat.attempts < 5) return l.masteryJustStarting;
+    if (stat.percent >= 90) return l.masteryMastered;
+    if (stat.percent >= 70) return l.masteryStrong;
+    if (stat.percent >= 50) return l.masteryPracticing;
+    return l.masteryNeedsPractice;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,11 +163,11 @@ class _SkillRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(skill.label,
+                      Text(context.tr('nq.skill.label', skill.name, skill.label),
                           style: const TextStyle(
                               fontSize: 17, fontWeight: FontWeight.w800)),
                       const Spacer(),
-                      Text(stat.masteryLabel,
+                      Text(_mastery(context, stat),
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -172,8 +187,9 @@ class _SkillRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     stat.attempts == 0
-                        ? 'No questions yet'
-                        : '${stat.correct} / ${stat.attempts} correct',
+                        ? context.l10n.nqNoQuestionsYet
+                        : context.l10n
+                            .correctOfTotal(stat.correct, stat.attempts),
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600),
                   ),

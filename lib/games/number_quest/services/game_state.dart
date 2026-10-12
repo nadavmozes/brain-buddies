@@ -115,10 +115,14 @@ class GameState extends ChangeNotifier {
 
   SkillStat skillStat(Skill s) => _skills[s] ?? SkillStat();
 
-  /// A level is unlocked if it's the first level of the easy world, or the
-  /// previous level in play order has at least 1 star.
+  /// A level is unlocked if it's the first level of its world/campaign, or the
+  /// previous level in that same play order has at least 1 star. Times Tables
+  /// campaign levels use their own independent order; the three difficulty
+  /// worlds use [WorldMap.allLevels] exactly as before.
   bool isLevelUnlocked(GameLevel level) {
-    final order = WorldMap.allLevels;
+    final order = level.mult != null
+        ? TimesTablesMap.allLevels
+        : WorldMap.allLevels;
     final pos = order.indexWhere((l) => l.id == level.id);
     if (pos <= 0) return true;
     final prev = order[pos - 1];
@@ -140,7 +144,7 @@ class GameState extends ChangeNotifier {
     _bestAnswerStreak = p.getInt(_kBestStreak) ?? 0;
     _multCorrect = p.getInt(_kMultCorrect) ?? 0;
 
-    for (final lvl in WorldMap.allLevels) {
+    for (final lvl in [...WorldMap.allLevels, ...TimesTablesMap.allLevels]) {
       final s = p.getInt('nq_level_${lvl.id}');
       if (s != null) _levelStars[lvl.id] = s;
       final f = p.getInt('nq_fastest_${lvl.id}');
@@ -260,7 +264,8 @@ class GameState extends ChangeNotifier {
     // Fastest time: only count a perfect 3-star run (skip the daily challenge,
     // which isn't on the map).
     var isNewFastest = false;
-    final onMap = WorldMap.allLevels.any((l) => l.id == level.id);
+    final onMap = WorldMap.allLevels.any((l) => l.id == level.id) ||
+        TimesTablesMap.allLevels.any((l) => l.id == level.id);
     if (onMap && earnedStars == 3 && elapsedSeconds > 0) {
       final prevFastest = fastestSeconds(level.id);
       if (prevFastest == 0 || elapsedSeconds < prevFastest) {
@@ -335,7 +340,7 @@ class GameState extends ChangeNotifier {
     await _prefs?.remove(_kMultCorrect);
     await _prefs?.remove(_kSound);
     _levelFastest.clear();
-    for (final lvl in WorldMap.allLevels) {
+    for (final lvl in [...WorldMap.allLevels, ...TimesTablesMap.allLevels]) {
       await _prefs?.remove('nq_level_${lvl.id}');
       await _prefs?.remove('nq_fastest_${lvl.id}');
     }

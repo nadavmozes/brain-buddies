@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Formats a duration in seconds as m:ss (or s if under a minute).
+/// Formats a duration as m:ss, or 0:ss when under a minute. Purely numeric so
+/// it is language-neutral (no Latin "s" suffix to leak in Hebrew/RTL).
 String formatSeconds(int seconds) {
-  if (seconds < 60) return '${seconds}s';
   final m = seconds ~/ 60;
   final s = (seconds % 60).toString().padLeft(2, '0');
   return '$m:$s';

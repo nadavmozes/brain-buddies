@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/avatar.dart';
 import '../core/services/feedback_service.dart';
 import '../core/services/player_profile.dart';
@@ -18,11 +19,12 @@ class ShopScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Avatar Shop',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.avatarShop,
+            style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsetsDirectional.only(end: 16),
             child: Center(
               child: AnimatedBuilder(
                 animation: profile,
@@ -79,7 +81,7 @@ class _AvatarCard extends StatelessWidget {
           children: [
             Text(avatar.emoji, style: const TextStyle(fontSize: 40)),
             Text(
-              avatar.name,
+              context.tr('avatar.name', avatar.id, avatar.name),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -105,22 +107,24 @@ class _AvatarCard extends StatelessWidget {
         children: [
           _pill(avatar.priceLabel ?? '\$1.99', Colors.white, AppTheme.ink),
           const SizedBox(height: 4),
-          const Text('Coming Soon',
-              style: TextStyle(
+          Text(context.l10n.comingSoon,
+              style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: Colors.white)),
         ],
       );
     }
-    if (selected) return _pill('Equipped ✓', Colors.white, AppTheme.ink);
+    if (selected) {
+      return _pill(context.l10n.equipped, Colors.white, AppTheme.ink);
+    }
     if (owned) {
       return GestureDetector(
         onTap: () {
           profile.selectAvatar(avatar.id);
           FeedbackService(enabled: profile.soundOn).correct();
         },
-        child: _pill('Equip', AppTheme.ink, Colors.white),
+        child: _pill(context.l10n.equip, AppTheme.ink, Colors.white),
       );
     }
 
@@ -137,7 +141,7 @@ class _AvatarCard extends StatelessWidget {
     final canAfford = profile.coins >= avatar.cost;
     return GestureDetector(
       onTap: () => _buy(context),
-      child: _pill('🪙 ${avatar.cost}',
+      child: _pill(context.l10n.coinCost(avatar.cost),
           canAfford ? AppTheme.accent : Colors.grey.shade300, AppTheme.ink),
     );
   }
@@ -166,7 +170,8 @@ class _AvatarCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '🔒 ${unlock.label}',
+              context.l10n.lockedRequirement(
+                  context.tr('avatar.unlock', avatar.id, unlock.label)),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -190,7 +195,8 @@ class _AvatarCard extends StatelessWidget {
   Widget _claimAction(BuildContext context) {
     final free = avatar.cost == 0;
     final canAfford = free || profile.coins >= avatar.cost;
-    final label = free ? 'CLAIM 🎁' : '🔓 🪙${avatar.cost}';
+    final label =
+        free ? context.l10n.claimGift : context.l10n.claimCost(avatar.cost);
     return GestureDetector(
       onTap: () => _claim(context),
       child: _pill(
@@ -205,15 +211,16 @@ class _AvatarCard extends StatelessWidget {
     final ok = await profile.buyAvatar(avatar);
     if (!context.mounted) return;
     final fb = FeedbackService(enabled: profile.soundOn);
+    final name = context.tr('avatar.name', avatar.id, avatar.name);
     if (ok) {
       fb.celebrate();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unlocked ${avatar.name}! 🎉')),
+        SnackBar(content: Text(context.l10n.unlockedAvatar(name))),
       );
     } else {
       fb.wrong();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough coins yet!')),
+        SnackBar(content: Text(context.l10n.notEnoughCoins)),
       );
     }
   }
@@ -222,15 +229,16 @@ class _AvatarCard extends StatelessWidget {
     final ok = await profile.claimAvatar(avatar);
     if (!context.mounted) return;
     final fb = FeedbackService(enabled: profile.soundOn);
+    final name = context.tr('avatar.name', avatar.id, avatar.name);
     if (ok) {
       fb.celebrate();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unlocked ${avatar.name}! 🎉')),
+        SnackBar(content: Text(context.l10n.unlockedAvatar(name))),
       );
     } else {
       fb.wrong();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough coins yet!')),
+        SnackBar(content: Text(context.l10n.notEnoughCoins)),
       );
     }
   }

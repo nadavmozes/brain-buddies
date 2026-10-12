@@ -1,5 +1,8 @@
 import 'dart:math';
 
+import '../../../core/l10n/app_lang.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/localized_catalog.dart';
 import '../models/habitat.dart';
 import '../models/safari_level.dart';
 import '../models/shape_kind.dart';
@@ -8,20 +11,40 @@ import '../models/shape_question.dart';
 /// Generates Shape Safari questions. [difficulty] 0..1 widens the shape pool
 /// and mixes in harder question types as it rises. An optional [habitatPool]
 /// pins the available shapes to a habitat.
+///
+/// [lang] selects the prompt + shape-name language. It is passed in explicitly
+/// because the generator is static/stateless (the screen resolves it via
+/// `L10n.read` in `initState`, matching the Money Math pattern). English is
+/// byte-identical to the original behavior.
 class ShapeQuestionGenerator {
-  ShapeQuestionGenerator({Random? random, List<ShapeKind>? habitatPool})
+  ShapeQuestionGenerator(
+      {Random? random, List<ShapeKind>? habitatPool, this.lang = AppLang.en})
       : _rng = random ?? Random(),
         _habitatPool = habitatPool;
 
   final Random _rng;
   final List<ShapeKind>? _habitatPool;
+  final AppLang lang;
+
+  /// Resolved chrome strings for the current language.
+  AppStrings get _s => stringsFor(lang == AppLang.he);
+
+  /// The localized name of a shape (Hebrew via `ss.shape.label`, English via
+  /// the existing [ShapeKindInfo.label] fallback).
+  String _shapeLabel(ShapeKind sh) =>
+      LocalizedCatalog.resolve('ss.shape.label', sh.name, sh.label, lang: lang);
 
   /// Builds a round for a specific trail level, using the habitat's shape pool
   /// and the level's difficulty.
-  static List<ShapeQuestion> forLevel(SafariLevel level, {Random? random}) {
+  static List<ShapeQuestion> forLevel(
+    SafariLevel level, {
+    Random? random,
+    AppLang lang = AppLang.en,
+  }) {
     final gen = ShapeQuestionGenerator(
       random: random,
       habitatPool: level.habitat.shapePool,
+      lang: lang,
     );
     return gen.generateRound(
       level.questionCount,
@@ -93,9 +116,9 @@ class ShapeQuestionGenerator {
     final correctIndex = options.indexOf(answer);
     return ShapeQuestion(
       type: ShapeQuestionType.identify,
-      prompt: 'What shape is this?',
+      prompt: _s.ssPromptIdentify,
       promptShape: answer,
-      choices: [for (final s in options) ShapeChoice.text(s.label)],
+      choices: [for (final s in options) ShapeChoice.text(_shapeLabel(s))],
       correctIndex: correctIndex,
       skillLabel: 'Identify',
     );
@@ -109,7 +132,7 @@ class ShapeQuestionGenerator {
     final correctIndex = options.indexOf(answer);
     return ShapeQuestion(
       type: ShapeQuestionType.find,
-      prompt: 'Which one is a ${answer.label}?',
+      prompt: _s.ssPromptFind(_shapeLabel(answer)),
       choices: [for (final s in options) ShapeChoice.shape(s)],
       correctIndex: correctIndex,
       skillLabel: 'Find',
@@ -134,7 +157,7 @@ class ShapeQuestionGenerator {
     final list = numbers.toList()..shuffle(_rng);
     return ShapeQuestion(
       type: ShapeQuestionType.countSides,
-      prompt: 'How many sides does this shape have?',
+      prompt: _s.ssPromptSides,
       promptShape: answer,
       choices: [for (final n in list) ShapeChoice.text('$n')],
       correctIndex: list.indexOf(correctSides),
@@ -164,7 +187,7 @@ class ShapeQuestionGenerator {
     final options = _distinctShapes(pool, next, 4);
     return ShapeQuestion(
       type: ShapeQuestionType.pattern,
-      prompt: 'What comes next?',
+      prompt: _s.ssPromptPattern,
       patternSequence: seq,
       choices: [for (final s in options) ShapeChoice.shape(s)],
       correctIndex: options.indexOf(next),

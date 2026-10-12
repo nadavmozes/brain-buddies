@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -48,9 +49,9 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
       widget.outcome.isNewFastest ||
       widget.outcome.perfect;
 
-  String get _title {
-    if (widget.level.isBoss) return 'GUARDIAN MATCHED!';
-    return widget.outcome.perfect ? 'PERFECT MEMORY!' : 'WELL MATCHED!';
+  String _titleFor(AppStrings l) {
+    if (widget.level.isBoss) return l.memoryTitleGuardian;
+    return widget.outcome.perfect ? l.memoryTitlePerfect : l.memoryTitleWell;
   }
 
   @override
@@ -66,6 +67,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
   Widget build(BuildContext context) {
     final outcome = widget.outcome;
     final level = widget.level;
+    final l = context.l10n;
     return Scaffold(
       body: Stack(
         children: [
@@ -94,7 +96,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 22, vertical: 12),
                           child: Text(
-                            _title,
+                            _titleFor(l),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 24,
@@ -114,8 +116,8 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                             const SizedBox(height: 14),
                             Text(
                               outcome.perfect
-                                  ? 'No mistakes!'
-                                  : 'Board cleared!',
+                                  ? l.memoryNoMistakes
+                                  : l.memoryBoardCleared,
                               style: const TextStyle(
                                   fontSize: 22, fontWeight: FontWeight.w900),
                             ),
@@ -123,7 +125,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                             RewardRow(
                               leading: const Text('🪙',
                                   style: TextStyle(fontSize: 22)),
-                              label: 'Coins earned',
+                              label: l.coinsEarned,
                               value: '+${outcome.coinsEarned}',
                             ),
                             const SizedBox(height: 10),
@@ -131,8 +133,8 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                               children: [
                                 const Icon(Icons.timer_outlined, size: 22),
                                 const SizedBox(width: 8),
-                                const Text('Your time',
-                                    style: TextStyle(
+                                Text(l.yourTime,
+                                    style: const TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w700)),
                                 const Spacer(),
@@ -141,7 +143,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                             ),
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              const ResultBanner('⚡ NEW FASTEST TIME!'),
+                              ResultBanner(l.newFastestTime),
                             ],
                           ],
                         ),
@@ -170,12 +172,13 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
     // Memory Match always awards at least 1 star for finishing, so any finish
     // unlocks the next stop.
     final showNext = next != null && widget.outcome.stars > 0;
+    final l = context.l10n;
 
     return Column(
       children: [
         if (showNext)
           ComicButton(
-            label: 'Next Stop',
+            label: l.nextStop,
             icon: Icons.arrow_forward_rounded,
             onPressed: () {
               Navigator.of(context).pushReplacement(
@@ -190,7 +193,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
           ),
         if (showNext) const SizedBox(height: 12),
         ComicButton(
-          label: 'Back to Trail',
+          label: l.backToTrail,
           icon: Icons.map_rounded,
           color: showNext ? Colors.white : AppTheme.primary,
           textColor: showNext ? AppTheme.ink : Colors.white,
@@ -199,7 +202,7 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
         ),
         const SizedBox(height: 12),
         ComicButton(
-          label: 'Play Again',
+          label: l.playAgain,
           icon: Icons.replay_rounded,
           color: Colors.white,
           textColor: AppTheme.ink,

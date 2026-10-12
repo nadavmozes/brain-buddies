@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -34,6 +35,9 @@ class WizardGameScreen extends StatefulWidget {
 
 class _WizardGameScreenState extends State<WizardGameScreen> {
   late final List<WordQuestion> _questions;
+  // The language resolved once in initState; drives Hebrew vs English question
+  // generation.
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -50,7 +54,10 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = WordQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists.
+    _lang = L10n.read(context).lang;
+    _questions = WordQuestionGenerator.forLevel(widget.level, lang: _lang);
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed = _stopwatch.elapsed.inSeconds);
@@ -64,15 +71,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     super.dispose();
   }
 
-  // Reads the current question's correct word aloud. Routes through
-  // FeedbackService so it respects the sound toggle; a no-op where
-  // text-to-speech is unavailable.
-  void _speakWord() {
-    final word = _q.spokenWord;
-    if (word.isEmpty) return;
-    FeedbackService(enabled: widget.state.soundOn).speak(word);
-  }
-
   void _onAnswer(int index) {
     if (_answered) return;
     final isRight = index == _q.correctIndex;
@@ -80,12 +78,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     setState(() {
       _selectedIndex = index;
       _answered = true;
+      final l = context.l10n;
       if (isRight) {
         _correct++;
-        _feedback = 'Magic! ✨';
+        _feedback = l.wwCorrectFeedback;
         fb.correct();
       } else {
-        _feedback = 'It was "${_q.choices[_q.correctIndex]}"';
+        _feedback = l.wwWrongFeedback(_q.choices[_q.correctIndex]);
         fb.wrong();
       }
     });
@@ -149,8 +148,8 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
-                      : '${widget.level.chapter.emoji} ${widget.level.title}',
+                      ? '${widget.level.boss.emoji} ${context.tr('ww.boss.name', widget.level.chapter.name, widget.level.boss.name)}'
+                      : '${widget.level.chapter.emoji} ${widget.level.isBoss ? context.l10n.spellMaster : context.l10n.lessonN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,
@@ -169,11 +168,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   child: Column(
                     children: [
                       Text(_q.emoji, style: const TextStyle(fontSize: 72)),
-                      const SizedBox(height: 10),
-                      _SpeakerButton(
-                        enabled: widget.state.soundOn,
-                        onTap: _speakWord,
-                      ),
                       if (_q.display.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -185,6 +179,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                           ),
                         ),
                       ],
+                      // NOTE: the English translation is intentionally NOT
+                      // shown here. On namePicture/missingLetter it would leak
+                      // the answer (the child could just read the English and
+                      // pick the Hebrew word), and on matchTranslation the
+                      // translations are the answer choices themselves. The
+                      // Hebrew<->English pairing is taught via the
+                      // matchTranslation question type, not a giveaway label.
                     ],
                   ),
                 ),
@@ -223,37 +224,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   }
 }
 
-/// A big comic-style speaker button that reads the word aloud. Stays visible
-/// for a stable layout; when sound is off it is greyed out and inert.
-class _SpeakerButton extends StatelessWidget {
-  const _SpeakerButton({required this.enabled, required this.onTap});
-
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: enabled ? AppTheme.sky : Colors.grey.shade400,
-          border: AppTheme.comicBorder,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.comicShadow(offset: 4),
-        ),
-        child: const Icon(
-          Icons.volume_up_rounded,
-          color: Colors.white,
-          size: 36,
-        ),
-      ),
-    );
-  }
-}
-
 class _ChoiceGrid extends StatelessWidget {
   const _ChoiceGrid({
     required this.question,
@@ -276,6 +246,20 @@ class _ChoiceGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Shrink the label font for long Hebrew words so RTL choices (which can be
+    // 6-7 letters) never overflow the 2-column tiles. English rendering is
+    // left untouched (always 22pt) so the English game stays byte-identical.
+    final isHebrew =
+        question.choices.any((c) => RegExp(r'[\u0590-\u05FF]').hasMatch(c));
+    final longest = question.choices.fold<int>(
+      0,
+      (max, c) => c.length > max ? c.length : max,
+    );
+    final fontSize = !isHebrew || longest <= 5
+        ? 22.0
+        : longest <= 7
+            ? 19.0
+            : 17.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileWidth = (constraints.maxWidth - 14) / 2;
@@ -291,7 +275,7 @@ class _ChoiceGrid extends StatelessWidget {
                 children: [
                   ComicButton(
                     label: question.choices[index],
-                    fontSize: 22,
+                    fontSize: fontSize,
                     color: _bg(index),
                     textColor: answered &&
                             (index == question.correctIndex ||

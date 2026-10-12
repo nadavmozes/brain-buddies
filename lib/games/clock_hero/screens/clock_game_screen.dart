@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -38,6 +39,9 @@ class ClockGameScreen extends StatefulWidget {
 
 class _ClockGameScreenState extends State<ClockGameScreen> {
   late final List<ClockQuestion> _questions;
+  // The language resolved once in initState; drives Hebrew vs English question
+  // generation.
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -65,7 +69,10 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = ClockQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists (matches the Money Math pattern).
+    _lang = L10n.read(context).lang;
+    _questions = ClockQuestionGenerator.forLevel(widget.level, lang: _lang);
     _resetSetValue();
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -86,13 +93,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
   }
 
   void _registerResult(bool isRight, String rightText) {
+    final l = context.l10n;
     final fb = FeedbackService(enabled: widget.state.soundOn);
     setState(() {
       _answered = true;
       _lastWasRight = isRight;
       if (isRight) {
         _correct++;
-        _feedback = 'Right on time! ⏰';
+        _feedback = l.clockCorrect;
         fb.correct();
       } else {
         _feedback = rightText;
@@ -109,14 +117,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
     final right = _q.textChoices != null
         ? _q.textChoices![_q.correctIndex]
         : _q.clockChoices![_q.correctIndex].label;
-    _registerResult(isRight, 'It was $right');
+    _registerResult(isRight, context.l10n.clockWasText(right));
   }
 
   void _onCheckSetClock() {
     if (_answered) return;
     final target = _q.targetTime!;
     final isRight = _setValue == target;
-    _registerResult(isRight, 'It was ${target.label}');
+    _registerResult(isRight, context.l10n.clockWasText(target.label));
   }
 
   Future<void> _advance() async {
@@ -178,8 +186,8 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                      : '${world.emoji} ${widget.level.title}',
+                      ? '${widget.level.guardian.emoji} ${context.tr('ch.guardian.name', world.name, widget.level.guardian.name)}'
+                      : '${world.emoji} ${context.l10n.stopN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,
@@ -265,12 +273,14 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
                 value: _setValue,
                 minuteStep: _minuteStep,
                 enabled: !_answered,
+                hourLabel: context.l10n.clockHour,
+                minuteLabel: context.l10n.clockMinute,
                 onChanged: (t) => setState(() => _setValue = t),
               ),
             ),
             const SizedBox(height: 14),
             ComicButton(
-              label: _answered ? 'Checked' : 'Check',
+              label: _answered ? context.l10n.clockChecked : context.l10n.clockCheck,
               icon: Icons.check_rounded,
               fontSize: 22,
               onPressed: _answered ? null : _onCheckSetClock,
@@ -306,7 +316,11 @@ class _TextChoices extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileWidth = (constraints.maxWidth - 14) / 2;
-        return Wrap(
+        // Digital time read-outs (e.g. "3:30") must read left-to-right even in
+        // Hebrew (RTL); wrap the choice grid in an LTR island.
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Wrap(
           spacing: 14,
           runSpacing: 14,
           alignment: WrapAlignment.center,
@@ -342,6 +356,7 @@ class _TextChoices extends StatelessWidget {
               ),
             );
           }),
+          ),
         );
       },
     );

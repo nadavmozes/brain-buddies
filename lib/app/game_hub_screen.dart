@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/game_catalog.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/feedback_email.dart';
@@ -9,6 +10,7 @@ import '../core/services/sound_bridge.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_panel.dart';
+import '../core/widgets/stat_chip.dart';
 import '../games/clock_hero/screens/clock_hero_home_screen.dart';
 import '../games/clock_hero/services/clock_state.dart';
 import '../games/memory_match/screens/memory_match_home_screen.dart';
@@ -33,18 +35,25 @@ import 'shop_screen.dart';
 /// The BrainBuddies home: a shared profile bar, a grid of games, and hub-level
 /// actions (Shop, Achievements) that use the shared [PlayerProfile].
 class GameHubScreen extends StatefulWidget {
-  const GameHubScreen({super.key});
+  const GameHubScreen({
+    super.key,
+    required this.profile,
+    required this.analytics,
+  });
+
+  /// The shared player profile, created + loaded by [BrainBuddiesApp].
+  final PlayerProfile profile;
+
+  /// The local-only analytics sink, already attached to [profile].
+  final AnalyticsService analytics;
 
   @override
   State<GameHubScreen> createState() => _GameHubScreenState();
 }
 
 class _GameHubScreenState extends State<GameHubScreen> {
-  // Shared across all games. Created and loaded once here.
-  final PlayerProfile _profile = PlayerProfile();
-  // Local-only analytics sink, attached to the profile once at startup.
-  final AnalyticsService _analytics = AnalyticsService();
-  bool _profileReady = false;
+  // Shared across all games — now owned by BrainBuddiesApp and passed in.
+  PlayerProfile get _profile => widget.profile;
 
   // Each game's per-game progress state, loaded lazily on first open.
   GameState? _numberQuestState;
@@ -53,18 +62,6 @@ class _GameHubScreenState extends State<GameHubScreen> {
   ClockState? _clockState;
   MoneyState? _moneyState;
   MemoryState? _memoryState;
-
-  @override
-  void initState() {
-    super.initState();
-    _profile.load().then((_) async {
-      // Load the local-only analytics store and attach it before any game open
-      // or round so opens and round-ends are always counted.
-      await _analytics.load();
-      _profile.attachAnalytics(_analytics);
-      if (mounted) setState(() => _profileReady = true);
-    });
-  }
 
   Future<void> _openNumberQuest() async {
     _numberQuestState ??= GameState();
@@ -266,8 +263,9 @@ class _GameHubScreenState extends State<GameHubScreen> {
 
   void _onTap(GameEntry game) {
     if (!game.available) {
+      final title = L10n.of(context).tr('game.title', game.id, game.title);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${game.title} is coming soon! 🚧')),
+        SnackBar(content: Text(context.l10n.comingSoonGame(title))),
       );
       return;
     }
@@ -304,17 +302,17 @@ class _GameHubScreenState extends State<GameHubScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 12),
-                if (_profileReady)
-                  _ProfileBar(
-                    profile: _profile,
-                    onTapAvatar: () => showAvatarPicker(context, _profile),
-                  ),
+                _ProfileBar(
+                  profile: _profile,
+                  onTapAvatar: () => showAvatarPicker(context, _profile),
+                ),
                 const SizedBox(height: 12),
                 const _HubTitle(),
                 const SizedBox(height: 6),
-                const Text(
-                  'Pick a game and start learning!',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                Text(
+                  context.l10n.hubTagline,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 GridView.count(
@@ -332,7 +330,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (_profileReady) _hubActions(),
+                _hubActions(),
                 const SizedBox(height: 8),
                 _Footer(
                   onFeedback: () => FeedbackEmail.open(context),
@@ -352,7 +350,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
       child: Column(
         children: [
           _ActionButton(
-            label: 'Daily',
+            label: context.l10n.daily,
             emoji: '📅',
             onTap: _openDailyChallenge,
           ),
@@ -361,7 +359,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Missions',
+                  label: context.l10n.missions,
                   emoji: '📋',
                   onTap: _openMissions,
                   // Nudge the child when a reward is ready to claim.
@@ -371,7 +369,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
               const SizedBox(width: 14),
               Expanded(
                 child: _ActionButton(
-                  label: 'Buddy',
+                  label: context.l10n.buddy,
                   emoji: _profile.petStage.emoji,
                   onTap: _openPet,
                 ),
@@ -383,7 +381,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Shop',
+                  label: context.l10n.shop,
                   emoji: '🛍️',
                   onTap: _openShop,
                 ),
@@ -391,7 +389,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
               const SizedBox(width: 14),
               Expanded(
                 child: _ActionButton(
-                  label: 'Awards',
+                  label: context.l10n.awards,
                   emoji: '🏆',
                   onTap: _openAchievements,
                 ),
@@ -437,8 +435,8 @@ class _ProfileBar extends StatelessWidget {
                         style: const TextStyle(fontSize: 24)),
                   ),
                   // Small edit badge hinting the avatar is tappable.
-                  Positioned(
-                    right: -2,
+                  PositionedDirectional(
+                    end: -2,
                     bottom: -2,
                     child: Container(
                       padding: const EdgeInsets.all(2),
@@ -455,31 +453,20 @@ class _ProfileBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(profile.selectedAvatar.name,
+            Text(
+                L10n.of(context).tr('avatar.name',
+                    profile.selectedAvatarId, profile.selectedAvatar.name),
                 style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w800)),
             const Spacer(),
+            _LangToggle(profile: profile),
+            const SizedBox(width: 8),
             if (profile.dailyStreak > 0) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppTheme.ink, width: 2.5),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 3),
-                    Text('${profile.dailyStreak}',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ),
+              StatChip(
+                  leading: '🔥',
+                  value: '${profile.dailyStreak}',
+                  fontSize: 15),
+              const SizedBox(width: 8),
             ],
             CoinPill(amount: profile.coins),
           ],
@@ -522,9 +509,9 @@ class _Footer extends StatelessWidget {
                   (recognizer) => recognizer.onLongPress = onSecret,
                 ),
               },
-              child: const Text(
-                'Made with AI 🤖',
-                style: TextStyle(
+              child: Text(
+                context.l10n.madeWithAi,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.ink,
@@ -542,14 +529,14 @@ class _Footer extends StatelessWidget {
                 border: Border.all(color: AppTheme.ink, width: 2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.mail_outline_rounded,
+                  const Icon(Icons.mail_outline_rounded,
                       size: 16, color: AppTheme.ink),
-                  SizedBox(width: 6),
-                  Text('Feedback',
-                      style: TextStyle(
+                  const SizedBox(width: 6),
+                  Text(context.l10n.feedback,
+                      style: const TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -598,8 +585,8 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
           if (badge)
-            Positioned(
-              right: -4,
+            PositionedDirectional(
+              end: -4,
               top: -4,
               child: Container(
                 width: 20,
@@ -644,7 +631,7 @@ class _GameCard extends StatelessWidget {
               Text(game.emoji, style: const TextStyle(fontSize: 44)),
               const SizedBox(height: 6),
               Text(
-                game.title,
+                L10n.of(context).tr('game.title', game.id, game.title),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
@@ -656,7 +643,7 @@ class _GameCard extends StatelessWidget {
               const SizedBox(height: 4),
               Flexible(
                 child: Text(
-                  game.tagline,
+                  L10n.of(context).tr('game.tagline', game.id, game.tagline),
                   textAlign: TextAlign.center,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
@@ -677,7 +664,7 @@ class _GameCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  game.available ? 'PLAY' : 'SOON',
+                  game.available ? context.l10n.play : context.l10n.soon,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -687,6 +674,38 @@ class _GameCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A small comic-style pill in the profile bar that switches EN ⇄ עב. It shows
+/// the OTHER language's short code (tap to switch) and persists the choice via
+/// [PlayerProfile.setLang], which rebuilds the app live.
+class _LangToggle extends StatelessWidget {
+  const _LangToggle({required this.profile});
+
+  final PlayerProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final toHebrew = profile.lang == AppLang.en;
+    return GestureDetector(
+      onTap: () => profile.setLang(toHebrew ? AppLang.he : AppLang.en),
+      child: Container(
+        // Big enough to tap (>=44px wide) per steering.
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 32),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.accent,
+          border: Border.all(color: AppTheme.ink, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          context.l10n.languageToggleLabel,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
         ),
       ),
     );

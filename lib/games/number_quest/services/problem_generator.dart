@@ -3,6 +3,7 @@ import 'dart:math';
 import '../models/difficulty.dart';
 import '../models/level.dart';
 import '../models/math_problem.dart';
+import '../models/mult_level.dart';
 
 /// Generates age-appropriate math problems for each difficulty tier.
 ///
@@ -46,6 +47,14 @@ class ProblemGenerator {
     double recentAccuracy = 0.7,
     Random? random,
   }) {
+    // Times Tables campaign levels emit multiplication-only facts drawn from
+    // the level's fixed factor window (no difficulty/adaptive scaling — the
+    // ramp is encoded in the per-level MultLevelSpec itself).
+    final spec = level.mult;
+    if (spec != null) {
+      final gen = ProblemGenerator(random: random);
+      return gen.generateMultRound(spec, count: level.questionCount);
+    }
     // Base ramps from ~0.8 at level 1 to ~1.2 at the boss.
     final ramp = 0.8 + (level.index / (WorldMap.levelsPerWorld - 1)) * 0.4;
     // Adaptive nudge: high accuracy -> harder, low -> easier.
@@ -53,6 +62,36 @@ class ProblemGenerator {
     final challenge = ramp + adaptive;
     final gen = ProblemGenerator(random: random, challenge: challenge);
     return gen.generateRound(level.world, count: level.questionCount);
+  }
+
+  /// Builds a round of multiplication-only problems for a Times Tables level,
+  /// de-duplicating within the round the same way [generateRound] does.
+  List<MathProblem> generateMultRound(MultLevelSpec spec, {required int count}) {
+    final problems = <MathProblem>[];
+    final seen = <String>{};
+    for (var i = 0; i < count; i++) {
+      MathProblem p;
+      var guard = 0;
+      do {
+        p = _multProblem(spec);
+        guard++;
+      } while (seen.contains(p.question) && guard < 25);
+      seen.add(p.question);
+      problems.add(p);
+    }
+    return problems;
+  }
+
+  /// A single multiplication fact `a × b` with factors inside the spec window.
+  /// Choices are strictly positive (minChoice: 1): a 1-12 campaign never offers
+  /// 0 as a distractor, unlike the shared worlds which allow 0.
+  MathProblem _multProblem(MultLevelSpec spec) {
+    final lo = spec.minFactor.clamp(1, 12);
+    final hi = spec.maxFactor.clamp(lo, 12);
+    final span = hi - lo + 1;
+    final a = _rng.nextInt(span) + lo;
+    final b = _rng.nextInt(span) + lo;
+    return _build('$a × $b', a * b, 'Multiplication', minChoice: 1);
   }
 
   /// Generates a single problem tuned to the difficulty tier.
@@ -124,8 +163,14 @@ class ProblemGenerator {
   }
 
   /// Wraps a question with a set of plausible multiple-choice options.
-  MathProblem _build(String question, int answer, String label) {
-    final choices = _buildChoices(answer);
+  ///
+  /// [minChoice] is the smallest value any distractor may take. The three
+  /// difficulty worlds call this with the default (0) so their behavior is
+  /// byte-identical; the Times Tables campaign passes 1 so a 1-12 fact never
+  /// shows 0 as an option.
+  MathProblem _build(String question, int answer, String label,
+      {int minChoice = 0}) {
+    final choices = _buildChoices(answer, minChoice: minChoice);
     return MathProblem(
       question: question,
       answer: answer,
@@ -136,7 +181,8 @@ class ProblemGenerator {
 
   /// Produces 4 unique options including the correct answer, with
   /// distractors that stay close to the answer so guesses feel real.
-  List<int> _buildChoices(int answer) {
+  /// [minChoice] floors the allowed distractor values (default 0).
+  List<int> _buildChoices(int answer, {int minChoice = 0}) {
     final options = <int>{answer};
     var guard = 0;
     while (options.length < 4 && guard < 50) {
@@ -145,14 +191,14 @@ class ProblemGenerator {
       var delta = _rng.nextInt(spread * 2 + 1) - spread; // -spread..spread
       if (delta == 0) delta = _rng.nextBool() ? 1 : -1;
       final candidate = answer + delta;
-      if (candidate >= 0) {
+      if (candidate >= minChoice) {
         options.add(candidate);
       }
     }
     // Fallback in case the loop could not find enough distinct values.
     var filler = answer + 1;
     while (options.length < 4) {
-      if (filler >= 0) options.add(filler);
+      if (filler >= minChoice) options.add(filler);
       filler++;
     }
     final list = options.toList()..shuffle(_rng);

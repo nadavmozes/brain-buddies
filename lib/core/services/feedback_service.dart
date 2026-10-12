@@ -52,10 +52,12 @@ class FeedbackService {
     HapticFeedback.mediumImpact();
   }
 
-  /// Reads [text] aloud with text-to-speech (e.g. a Word Wizard answer word).
-  /// Routes through the same sound-respecting layer as effects; no haptics.
-  void speak(String text) {
+  /// Reads [text] aloud with text-to-speech (e.g. a Word Wizard answer word)
+  /// in the given BCP-47 [lang] (e.g. 'en-US', 'he-IL'). Routes through the
+  /// same sound-respecting layer as effects; no haptics. A missing voice for
+  /// [lang] is a silent no-op (never throws, never gates correctness).
+  void speak(String text, {String lang = 'en-US'}) {
     if (!enabled) return;
-    SoundBridge.speak(text);
+    SoundBridge.speak(text, lang: lang);
   }
 }

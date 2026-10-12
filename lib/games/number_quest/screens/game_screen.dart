@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'dart:async';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -15,6 +16,7 @@ import '../models/skill.dart';
 import '../services/game_state.dart';
 import '../services/problem_generator.dart';
 import '../widgets/hero_buddy.dart';
+import '../widgets/mult_array_view.dart';
 import 'result_screen.dart';
 
 /// The core gameplay loop. Handles both regular levels and boss battles.
@@ -71,6 +73,19 @@ class _GameScreenState extends State<GameScreen>
 
   MathProblem get _problem => _problems[_current];
 
+  /// Whether this level teaches with the visual dot array (early Times Tables
+  /// levels). The boss and later recall levels fall back to the question card.
+  bool get _showArray => widget.level.mult?.useArray == true;
+
+  /// Parses the two factors out of the generator's `a × b` question string.
+  /// The generator fully controls this format for multiplication problems.
+  (int, int) get _arrayFactors {
+    final parts = _problem.question.split('×');
+    final a = int.tryParse(parts[0].trim()) ?? 1;
+    final b = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 1) : 1;
+    return (a, b);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +128,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _onAnswer(int index) {
     if (_answered) return;
+    final l = context.l10n;
     final chosen = _problem.choices[index];
     final isRight = chosen == _problem.answer;
     final feedback = FeedbackService(enabled: widget.state.soundOn);
@@ -129,14 +145,14 @@ class _GameScreenState extends State<GameScreen>
         _lastGain = 10 + (_streak - 1) * 5;
         _score += _lastGain;
         _mood = BuddyMood.happy;
-        _feedbackText = _praise();
+        _feedbackText = _praise(l);
         if (_isBoss && _bossHearts > 0) _bossHearts--;
         feedback.correct();
       } else {
         _streak = 0;
         _lastGain = 0;
         _mood = BuddyMood.sad;
-        _feedbackText = 'The answer was ${_problem.answer}. You got this!';
+        _feedbackText = l.nqWrongFeedback(_problem.answer);
         if (_isBoss && _heroHearts > 0) _heroHearts--;
         _shakeController.forward(from: 0);
         feedback.wrong();
@@ -146,8 +162,8 @@ class _GameScreenState extends State<GameScreen>
     Future.delayed(const Duration(milliseconds: 1000), _advance);
   }
 
-  String _praise() {
-    const lines = ['Nice!', 'Great!', 'Boom!', 'Yes!', 'Awesome!', 'Pow!'];
+  String _praise(AppStrings l) {
+    final lines = l.nqPraise;
     return lines[_correct % lines.length];
   }
 
@@ -210,6 +226,18 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
+  /// Builds the header title, localized for all worlds (the model getters keep
+  /// their English fallback; only this display site is localized).
+  String _headerTitle(BuildContext context) {
+    if (widget.isDaily) return context.l10n.nqDailyHeader;
+    final level = widget.level;
+    if (_isBoss) {
+      final name = context.tr('nq.boss.name', level.bossId, level.boss.name);
+      return '${level.boss.emoji} $name';
+    }
+    return context.l10n.levelN(level.number);
+  }
+
   @override
   Widget build(BuildContext context) {
     final progress = (_current + 1) / _problems.length;
@@ -232,11 +260,7 @@ class _GameScreenState extends State<GameScreen>
             child: Column(
               children: [
                 _Header(
-                  title: widget.isDaily
-                      ? '📅 Daily'
-                      : (_isBoss
-                          ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
-                          : widget.level.title),
+                  title: _headerTitle(context),
                   world: widget.level.world,
                   current: _current + 1,
                   total: _problems.length,
@@ -288,10 +312,23 @@ class _GameScreenState extends State<GameScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                _QuestionCard(
-                  problem: _problem,
-                  shakeController: _shakeController,
-                ),
+                if (_showArray)
+                  MultArrayView(
+                    a: _arrayFactors.$1,
+                    b: _arrayFactors.$2,
+                    hint: context.l10n.nqMultArrayHint,
+                  )
+                else
+                  _QuestionCard(
+                    problem: _problem,
+                    shakeController: _shakeController,
+                    // Localize the skill label for all worlds (the English
+                    // MathProblem.operatorLabel stays as the fallback).
+                    labelOverride: context.tr(
+                        'nq.skill.label',
+                        SkillInfo.fromLabel(_problem.operatorLabel).name,
+                        _problem.operatorLabel),
+                  ),
                 const SizedBox(height: 20),
                 _ChoiceGrid(
                   problem: _problem,
@@ -423,10 +460,18 @@ class _BossBar extends StatelessWidget {
 }
 
 class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({required this.problem, required this.shakeController});
+  const _QuestionCard({
+    required this.problem,
+    required this.shakeController,
+    this.labelOverride,
+  });
 
   final MathProblem problem;
   final AnimationController shakeController;
+
+  /// The already-localized operator label, shown uppercased. Falls back to the
+  /// English [MathProblem.operatorLabel] when null.
+  final String? labelOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +495,7 @@ class _QuestionCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              problem.operatorLabel.toUpperCase(),
+              (labelOverride ?? problem.operatorLabel).toUpperCase(),
               style: TextStyle(
                 color: AppTheme.primary.withOpacity(0.7),
                 fontSize: 16,
@@ -459,14 +504,20 @@ class _QuestionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              problem.question,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 46,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.ink,
-                shadows: [Shadow(color: AppTheme.accent, offset: Offset(2, 2))],
+            // Math equations must read left-to-right even in Hebrew (RTL).
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                problem.question,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 46,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.ink,
+                  shadows: [
+                    Shadow(color: AppTheme.accent, offset: Offset(2, 2))
+                  ],
+                ),
               ),
             ),
           ],

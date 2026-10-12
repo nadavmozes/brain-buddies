@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/l10n/l10n.dart';
 import '../core/models/pet.dart';
 import '../core/services/player_profile.dart';
 import '../core/theme/app_theme.dart';
@@ -16,8 +17,9 @@ class PetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Buddy',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+        title: Text(context.l10n.myBuddy,
+            style:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -58,7 +60,7 @@ class PetScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            stage.name,
+                            context.tr('pet.stage', stage.name, stage.name),
                             style: const TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
@@ -69,7 +71,7 @@ class PetScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Level $level',
+                            context.l10n.levelN(level),
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -85,8 +87,8 @@ class PetScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Growth',
-                              style: TextStyle(
+                          Text(context.l10n.growth,
+                              style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 8),
                           ClipRRect(
@@ -101,9 +103,12 @@ class PetScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             nextStage == null
-                                ? 'Your buddy is fully grown! 🎉'
-                                : 'Keep playing to reach ${nextStage.name} '
-                                    '${nextStage.emoji} at level ${nextStage.minLevel}',
+                                ? context.l10n.fullyGrown
+                                : context.l10n.reachStage(
+                                    context.tr('pet.stage', nextStage.name,
+                                        nextStage.name),
+                                    nextStage.emoji,
+                                    nextStage.minLevel),
                             style: const TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.w600),
                           ),
@@ -116,8 +121,8 @@ class PetScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Growth Stages',
-                              style: TextStyle(
+                          Text(context.l10n.growthStages,
+                              style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 10),
                           Wrap(
@@ -136,10 +141,11 @@ class PetScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Your buddy grows as you earn stars and coins in any game.',
+                    Text(
+                      context.l10n.buddyGrowsHint,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -187,7 +193,7 @@ class _StageChip extends StatelessWidget {
           children: [
             Text(reached ? stage.emoji : '🔒',
                 style: const TextStyle(fontSize: 26)),
-            Text('Lv ${stage.minLevel}',
+            Text(context.l10n.levelAbbrev(stage.minLevel),
                 style:
                     const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
           ],

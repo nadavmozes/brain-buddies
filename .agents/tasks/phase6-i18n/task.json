@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase6-i18n",
+  "task_description": "Fix remaining English i18n leaks in BrainBuddies (game-screen headers, Clock Hero & Shape Safari Hebrew paths, chrome literals, two-line game logos), remove the Word Wizard speaker button, and apply two UI-consistency fixes (shared streak StatChip, remove NQ-only hero XP/level bar). All work in the feature/i18n-foundation worktree; keep build web green and all tests passing.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

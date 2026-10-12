@@ -6,6 +6,10 @@ A comic-book styled **hub of educational mini-games** for kids in **grades 1–3
 
 **▶️ Play it live:** https://nadavmozes.github.io/brain-buddies/
 
+Fully **bilingual — English and Hebrew (עברית)** with complete right-to-left (RTL)
+support. The app auto-detects the device/browser language on first launch and can be
+switched any time with an in-app **EN ⇄ עב** toggle.
+
 All six games are playable, and the hub ties them together with a shared coin
 economy, avatars, achievements, a daily streak, a growing pet companion, and daily
 missions.
@@ -20,10 +24,13 @@ ending in a friendly boss/guardian** (befriended, never "defeated"), with per-le
 |------|---------|
 | 🔢 **Number Quest** | Addition, subtraction, multiplication, division |
 | 🔺 **Shape Safari** | Identify shapes, count sides, finish patterns |
-| 🔤 **Word Wizard** | Spelling & vocabulary (with tap-to-hear pronunciation) |
+| 🔤 **Word Wizard** | Spelling & vocabulary — English words, or a dedicated **Hebrew** word set in Hebrew mode |
 | 🕒 **Clock Hero** | Telling time — read, set, and elapsed time |
-| 💰 **Money Math** | Counting coins, making amounts, comparing money, making change |
+| 💰 **Money Math** | Counting coins, making amounts, comparing money, making change — **US cents (¢)** in English, **Israeli shekels/agorot (₪)** in Hebrew, with a tap-open coin info map |
 | 🧠 **Memory Match** | Flip-and-pair card matching |
+
+**Number Quest** also includes a **Times Tables** campaign (multiplication 1–12) with a
+visual "build-the-fact" array that shows `a × b` as a grid to count.
 
 ## ✨ Hub-wide systems (shared across all games)
 
@@ -42,9 +49,22 @@ Games report a round with a single hook — `profile.onRoundFinished(correct,
 coinsEarned, threeStars, bossBeaten)` — which advances the streak, feeds the pet, and
 ticks missions. Per-game progress (stars, fastest times) stays local to each game.
 
+## 🌍 Languages (English + Hebrew)
+
+- **Two languages:** English (`en`) and Hebrew (`he`/עברית), selectable with an in-app
+  toggle; the first-launch default follows the device/browser locale.
+- **Full RTL:** in Hebrew the whole UI mirrors right-to-left — hub, trail maps, headers,
+  and dialogs — while numbers, math equations (`3 × 4`), clock readouts, and money
+  amounts stay left-to-right so they read naturally.
+- **Localized content, not just chrome:** game names, world/level/boss names,
+  achievements, missions, avatars, pet stages, and every in-game prompt are translated.
+  Word Wizard uses a separate **Hebrew word set** (Hebrew-only questions in Hebrew mode),
+  and Money Math switches to **₪ currency** with Hebrew coin names.
+- **Hebrew-capable font** applied per locale (Fredoka + Heebo fallback); English keeps
+  Baloo 2.
+
 ## ♿ Accessibility & audience
 
-- **Tap-to-hear** word pronunciation in Word Wizard (browser speech) for pre-readers.
 - Answer feedback is **not color-only** — correct/wrong tiles also show a check/cross
   icon, so it works for red-green color-blind kids.
 - Big tap targets, minimal text, friendly non-scary tone, capped to a phone-width frame.
@@ -52,9 +72,13 @@ ticks missions. Per-game progress (stars, fastest times) stays local to each gam
 ## 🛠️ Tech
 
 - **Flutter** (Dart SDK **3.0+**), package name `brain_buddies`.
-- Dependencies: `shared_preferences` (local persistence), `google_fonts` (Baloo 2).
-- **No audio assets** — sound effects are **synthesized in JS** (Web Audio) and speech
-  uses the browser's `SpeechSynthesis`, both called through a `SoundBridge` web/stub split.
+- Dependencies: `shared_preferences` (local persistence), `google_fonts` (Baloo 2 for
+  English, a Hebrew-capable font for Hebrew), `flutter_localizations` + `intl` (locale
+  wiring/RTL), `url_launcher`.
+- Localization uses a lightweight in-repo string table (`lib/core/l10n/`) so both UI
+  chrome and game *content* are translatable; language is stored in the shared profile.
+- **No audio assets** — sound effects are **synthesized in JS** (Web Audio) through a
+  `SoundBridge` web/stub split.
 - All progress is stored **locally** on the device (web uses the browser's storage).
   There is no account or cloud sync.
 

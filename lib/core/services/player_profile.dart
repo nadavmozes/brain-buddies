@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter/widgets.dart';
+import '../l10n/app_lang.dart';
 import '../models/achievement.dart';
 import '../models/avatar.dart';
 import '../models/mission.dart';
@@ -53,6 +55,11 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _missionClaimed = {};
   String _missionDay = '';
 
+  // UI language (English / Hebrew). Persisted additively under [_kLang]. First
+  // launch (key absent) defaults from the platform locale: Hebrew device => he,
+  // everything else (incl. the en_US test env) => en.
+  AppLang _lang = AppLang.en;
+
   /// Current persistence schema version. Bump (and add migration logic in
   /// [load]) if the profile key layout ever changes. Read + re-stamped on
   /// load; no migration needed yet.
@@ -72,8 +79,13 @@ class PlayerProfile extends ChangeNotifier {
   static const _kMissionDay = 'profile_mission_day';
   static const _kMissionProgress = 'profile_mission_progress';
   static const _kMissionClaimed = 'profile_mission_claimed';
+  static const _kLang = 'profile_lang';
 
   bool get isLoaded => _loaded;
+
+  /// The current UI language.
+  AppLang get lang => _lang;
+
   int get coins => _coins;
   int get lifetimeCoins => _lifetimeCoins;
   bool get soundOn => _soundOn;
@@ -135,6 +147,17 @@ class PlayerProfile extends ChangeNotifier {
     _lastPlayedDay = p.getString(_kLastDay) ?? '';
     _petXp = p.getInt(_kPetXp) ?? 0;
 
+    // Language: if the key is absent (new/existing player) auto-detect from the
+    // platform locale — Hebrew device => he, everything else => en. The test
+    // env reports en_US, so existing English-asserting tests stay on English.
+    final storedLang = p.getString(_kLang);
+    if (storedLang != null) {
+      _lang = AppLang.fromCode(storedLang);
+    } else {
+      _lang = AppLang.fromLocale(
+          WidgetsBinding.instance.platformDispatcher.locale);
+    }
+
     // Load missions, resetting progress if the stored day is not today.
     _missionDay = p.getString(_kMissionDay) ?? '';
     final today = _todayKey();
@@ -181,6 +204,15 @@ class PlayerProfile extends ChangeNotifier {
   String _todayKey() => _dayKey(DateTime.now());
   String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Switches the UI language and persists it (additive key). Rebuilds the app
+  /// via [notifyListeners] so the toggle flips strings + RTL live.
+  Future<void> setLang(AppLang value) async {
+    if (_lang == value) return;
+    _lang = value;
+    await _prefs?.setString(_kLang, value.code);
+    notifyListeners();
+  }
 
   Future<void> setSoundOn(bool value) async {
     _soundOn = value;
@@ -499,6 +531,7 @@ class PlayerProfile extends ChangeNotifier {
     _missionProgress.clear();
     _missionClaimed.clear();
     _missionDay = '';
+    _lang = AppLang.en;
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -513,6 +546,7 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kMissionDay);
     await _prefs?.remove(_kMissionProgress);
     await _prefs?.remove(_kMissionClaimed);
+    await _prefs?.remove(_kLang);
     notifyListeners();
   }
 }

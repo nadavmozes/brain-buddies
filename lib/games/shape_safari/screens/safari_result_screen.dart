@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -61,11 +62,11 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
       widget.outcome.isNewFastest ||
       _befriended;
 
-  String get _title {
+  String _titleFor(AppStrings l) {
     if (widget.level.isGuardian) {
-      return _befriended ? 'GUARDIAN BEFRIENDED!' : 'ALMOST! TRY AGAIN';
+      return _befriended ? l.safariTitleBefriended : l.safariTitleAlmost;
     }
-    return widget.outcome.stars == 3 ? 'GREAT EXPLORING!' : 'TRAIL DONE!';
+    return widget.outcome.stars == 3 ? l.safariTitleGreat : l.safariTitleDone;
   }
 
   @override
@@ -81,6 +82,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
   Widget build(BuildContext context) {
     final outcome = widget.outcome;
     final level = widget.level;
+    final l = context.l10n;
     return Scaffold(
       body: Stack(
         children: [
@@ -109,7 +111,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 22, vertical: 12),
                           child: Text(
-                            _title,
+                            _titleFor(l),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 24,
@@ -127,7 +129,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                           children: [
                             StarRow(earned: outcome.stars, size: 44),
                             const SizedBox(height: 14),
-                            Text('${widget.correct} / ${widget.total} correct',
+                            Text(l.correctOfTotal(widget.correct, widget.total),
                                 style: const TextStyle(
                                     fontSize: 24, fontWeight: FontWeight.w900)),
                             Text('$_percent%',
@@ -139,7 +141,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                             RewardRow(
                               leading: const Text('🪙',
                                   style: TextStyle(fontSize: 22)),
-                              label: 'Coins earned',
+                              label: l.coinsEarned,
                               value: '+${outcome.coinsEarned}',
                             ),
                             if (outcome.elapsedSeconds > 0) ...[
@@ -148,8 +150,8 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                                 children: [
                                   const Icon(Icons.timer_outlined, size: 22),
                                   const SizedBox(width: 8),
-                                  const Text('Your time',
-                                      style: TextStyle(
+                                  Text(l.yourTime,
+                                      style: const TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w700)),
                                   const Spacer(),
@@ -159,15 +161,17 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                             ],
                             if (_befriended) ...[
                               const SizedBox(height: 12),
-                              ResultBanner('🤝 ${level.guardian.name} is now '
-                                  'your friend!'),
+                              ResultBanner(l.safariFriendBanner(context.tr(
+                                  'ss.guardian.name',
+                                  level.habitat.name,
+                                  level.guardian.name))),
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              const ResultBanner('⚡ NEW FASTEST TIME!'),
+                              ResultBanner(l.newFastestTime),
                             ] else if (outcome.isNewBest && !_befriended) ...[
                               const SizedBox(height: 12),
-                              const ResultBanner('🏆 NEW BEST SCORE!'),
+                              ResultBanner(l.newBestScore),
                             ],
                           ],
                         ),
@@ -191,6 +195,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
   }
 
   Widget _buildActions(BuildContext context) {
+    final l = context.l10n;
     final level = widget.level;
     final next = _nextLevelAfter(level);
     // Advance once this stop is cleared (earned a star). Guardian stops must
@@ -203,7 +208,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
       children: [
         if (showNext)
           ComicButton(
-            label: 'Next Stop',
+            label: l.nextStop,
             icon: Icons.arrow_forward_rounded,
             onPressed: () {
               Navigator.of(context).pushReplacement(
@@ -218,7 +223,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
           ),
         if (showNext) const SizedBox(height: 12),
         ComicButton(
-          label: 'Back to Trail',
+          label: l.backToTrail,
           icon: Icons.map_rounded,
           color: showNext ? Colors.white : AppTheme.primary,
           textColor: showNext ? AppTheme.ink : Colors.white,
@@ -228,7 +233,7 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
         ),
         const SizedBox(height: 12),
         ComicButton(
-          label: 'Play Again',
+          label: l.playAgain,
           icon: Icons.replay_rounded,
           color: Colors.white,
           textColor: AppTheme.ink,

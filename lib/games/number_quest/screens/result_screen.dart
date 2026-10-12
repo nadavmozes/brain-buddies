@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/player_profile.dart';
@@ -16,8 +17,12 @@ import '../services/game_state.dart';
 import 'game_screen.dart';
 
 /// The next level in play order after [level], or null if it's the last one.
-GameLevel? _nextLevelAfter(GameLevel level) {
-  final order = WorldMap.allLevels;
+///
+/// The Times Tables campaign walks its own ordered list so "Next Level" never
+/// leaks into (or out of) the three difficulty worlds. Exposed for tests.
+GameLevel? nqNextLevelAfter(GameLevel level) {
+  final order =
+      level.mult != null ? TimesTablesMap.allLevels : WorldMap.allLevels;
   final pos = order.indexWhere((l) => l.id == level.id);
   if (pos < 0 || pos + 1 >= order.length) return null;
   return order[pos + 1];
@@ -83,15 +88,16 @@ class _ResultScreenState extends State<ResultScreen> {
 
   int get _percent => total == 0 ? 0 : ((correct / total) * 100).round();
 
-  String get _title {
+  String _titleFor(AppStrings l) {
     if (level.isBoss) {
-      return bossDefeated ? 'BOSS DEFEATED!' : 'THE BOSS ESCAPED!';
+      return bossDefeated ? l.nqTitleBossBeaten : l.nqTitleBossEscaped;
     }
-    return outcome.stars == 3 ? 'QUEST COMPLETE!' : 'QUEST OVER!';
+    return outcome.stars == 3 ? l.nqTitleComplete : l.nqTitleOver;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
       body: Stack(
         children: [
@@ -100,7 +106,7 @@ class _ResultScreenState extends State<ResultScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [level.world.color, AppTheme.paper],
+                colors: [level.worldColor, AppTheme.paper],
               ),
             ),
             child: SafeArea(
@@ -117,7 +123,7 @@ class _ResultScreenState extends State<ResultScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           child: Text(
-                            _title,
+                            _titleFor(l),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 28,
@@ -135,7 +141,7 @@ class _ResultScreenState extends State<ResultScreen> {
                           children: [
                             StarRow(earned: outcome.stars, size: 46),
                             const SizedBox(height: 14),
-                            Text('$correct / $total correct',
+                            Text(l.correctOfTotal(correct, total),
                                 style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900)),
@@ -143,20 +149,20 @@ class _ResultScreenState extends State<ResultScreen> {
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: level.world.color)),
+                                    color: level.worldColor)),
                             const Divider(height: 26, thickness: 2),
-                            _rewardRow('🪙', 'Coins earned',
+                            _rewardRow('🪙', l.coinsEarned,
                                 '+${outcome.coinsEarned}'),
                             const SizedBox(height: 8),
-                            _rewardRow('⚡', 'XP earned', '+${outcome.xpEarned}'),
+                            _rewardRow('⚡', l.xpEarned, '+${outcome.xpEarned}'),
                             if (outcome.elapsedSeconds > 0) ...[
                               const SizedBox(height: 8),
                               Row(
                                 children: [
                                   const Icon(Icons.timer_outlined, size: 22),
                                   const SizedBox(width: 10),
-                                  const Text('Your time',
-                                      style: TextStyle(
+                                  Text(l.yourTime,
+                                      style: const TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w700)),
                                   const Spacer(),
@@ -166,7 +172,7 @@ class _ResultScreenState extends State<ResultScreen> {
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
-                              _recordBanner('⚡ NEW FASTEST TIME!'),
+                              _recordBanner(l.newFastestTime),
                             ],
                             if (outcome.leveledUp) ...[
                               const SizedBox(height: 12),
@@ -198,7 +204,8 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildActions(BuildContext context) {
-    final next = _nextLevelAfter(level);
+    final l = context.l10n;
+    final next = nqNextLevelAfter(level);
     // Next level is available once this one is cleared (earned a star). Boss
     // levels must be defeated to progress.
     final canAdvance = outcome.stars > 0 && (!level.isBoss || bossDefeated);
@@ -208,7 +215,7 @@ class _ResultScreenState extends State<ResultScreen> {
       children: [
         if (showNext)
           ComicButton(
-            label: 'Next Level',
+            label: l.nextLevel,
             icon: Icons.arrow_forward_rounded,
             onPressed: () {
               Navigator.of(context).pushReplacement(
@@ -221,7 +228,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         if (showNext) const SizedBox(height: 12),
         ComicButton(
-          label: 'Back to Map',
+          label: l.backToMap,
           icon: Icons.map_rounded,
           color: showNext ? Colors.white : AppTheme.primary,
           textColor: showNext ? AppTheme.ink : Colors.white,
@@ -231,7 +238,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ),
         const SizedBox(height: 12),
         ComicButton(
-          label: 'Play Again',
+          label: l.playAgain,
           icon: Icons.replay_rounded,
           color: Colors.white,
           textColor: AppTheme.ink,
@@ -291,7 +298,7 @@ class _ResultScreenState extends State<ResultScreen> {
         border: Border.all(color: AppTheme.ink, width: 2.5),
       ),
       child: Text(
-        '🎉 LEVEL UP!  You are now Level ${outcome.newLevel}',
+        context.l10n.nqLevelUp(outcome.newLevel),
         textAlign: TextAlign.center,
         style: const TextStyle(
             color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
@@ -304,8 +311,9 @@ class _ResultScreenState extends State<ResultScreen> {
       color: Colors.white,
       child: Column(
         children: [
-          const Text('New Award!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(context.l10n.newAward,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 16,
@@ -316,7 +324,8 @@ class _ResultScreenState extends State<ResultScreen> {
                 Column(
                   children: [
                     Text(a.emoji, style: const TextStyle(fontSize: 40)),
-                    Text(a.name,
+                    Text(context.tr('ach.name', a.id, a.name),
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w800)),
                   ],
