@@ -173,6 +173,15 @@ abstract class AppStrings {
   String get moneyTitleMaster; // "MONEY MASTER!"
   String get moneyTitleNice; // "NICE SAVING!"
 
+  // ---- Money Math coin info map (Phase 3) ----
+  String get coinsButton; // "Coins" — opens the coin legend
+  String get coinInfoTitle; // "Meet the Coins" / "הכירו את המטבעות"
+  String get coinInfoClose; // "Got it!"
+  /// Kid-friendly name for a USD coin by its value in cents (1/5/10/25).
+  String usdCoinName(int cents);
+  /// Kid-friendly Hebrew name for an ILS coin by its value in agorot.
+  String ilsCoinName(int agorot);
+
   // ---- Memory Match (FEAT-002) ----
   String get memoryTitleGuardian; // "GUARDIAN MATCHED!"
   String get memoryTitlePerfect; // "PERFECT MEMORY!"
@@ -487,6 +496,48 @@ class EnStrings extends AppStrings {
   String get moneyTitleMaster => 'MONEY MASTER!';
   @override
   String get moneyTitleNice => 'NICE SAVING!';
+
+  @override
+  String get coinsButton => 'Coins';
+  @override
+  String get coinInfoTitle => 'Meet the Coins';
+  @override
+  String get coinInfoClose => 'Got it!';
+  @override
+  String usdCoinName(int cents) {
+    switch (cents) {
+      case 1:
+        return 'Penny';
+      case 5:
+        return 'Nickel';
+      case 10:
+        return 'Dime';
+      case 25:
+        return 'Quarter';
+      default:
+        return '$cents¢';
+    }
+  }
+
+  @override
+  String ilsCoinName(int agorot) {
+    switch (agorot) {
+      case 10:
+        return 'Ten Agorot';
+      case 50:
+        return 'Half Shekel';
+      case 100:
+        return 'One Shekel';
+      case 200:
+        return 'Two Shekels';
+      case 500:
+        return 'Five Shekels';
+      case 1000:
+        return 'Ten Shekels';
+      default:
+        return '$agorot';
+    }
+  }
 
   // ---- Memory Match (FEAT-002) ----
   @override
@@ -806,6 +857,48 @@ class HeStrings extends AppStrings {
   String get moneyTitleMaster => 'אלופי הכסף!';
   @override
   String get moneyTitleNice => 'חיסכון יפה!';
+
+  @override
+  String get coinsButton => 'מטבעות';
+  @override
+  String get coinInfoTitle => 'הכירו את המטבעות';
+  @override
+  String get coinInfoClose => 'הבנתי!';
+  @override
+  String usdCoinName(int cents) {
+    switch (cents) {
+      case 1:
+        return 'פני';
+      case 5:
+        return 'ניקל';
+      case 10:
+        return 'דיים';
+      case 25:
+        return 'קוורטר';
+      default:
+        return '$cents¢';
+    }
+  }
+
+  @override
+  String ilsCoinName(int agorot) {
+    switch (agorot) {
+      case 10:
+        return 'עשר אגורות';
+      case 50:
+        return 'חצי שקל';
+      case 100:
+        return 'שקל';
+      case 200:
+        return 'שני שקלים';
+      case 500:
+        return 'חמישה שקלים';
+      case 1000:
+        return 'עשרה שקלים';
+      default:
+        return '$agorot';
+    }
+  }
 
   // ---- Memory Match (FEAT-002) ----
   @override

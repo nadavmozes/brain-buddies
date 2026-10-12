@@ -1,17 +1,33 @@
 import 'dart:math';
 
+import '../../../core/l10n/app_lang.dart';
 import '../models/money_level.dart';
 import '../models/money_question.dart';
 
 /// Generates Money Math questions. [difficulty] 0..1 controls the coin set and
 /// pile sizes, and unlocks harder question types.
+///
+/// [lang] selects the currency and prompt language: English => US cents (¢),
+/// Hebrew => Israeli shekel/agorot (₪). It is passed in explicitly because the
+/// generator is static/stateless (the screen resolves it via `L10n.read` in
+/// `initState`, matching the Word Wizard pattern). English is byte-identical to
+/// the original behavior.
 class MoneyQuestionGenerator {
-  MoneyQuestionGenerator({Random? random}) : _rng = random ?? Random();
+  MoneyQuestionGenerator({Random? random, this.lang = AppLang.en})
+      : _rng = random ?? Random();
 
   final Random _rng;
+  final AppLang lang;
 
-  static List<MoneyQuestion> forLevel(MoneyLevel level, {Random? random}) {
-    final gen = MoneyQuestionGenerator(random: random);
+  /// The currency chosen by the current language.
+  Currency get currency => lang == AppLang.he ? Currency.ils : Currency.usd;
+
+  static List<MoneyQuestion> forLevel(
+    MoneyLevel level, {
+    Random? random,
+    AppLang lang = AppLang.en,
+  }) {
+    final gen = MoneyQuestionGenerator(random: random, lang: lang);
     return gen.generateRound(
       level.questionCount,
       difficulty: level.difficulty(MoneyMap.levelsPerTrail),
@@ -20,10 +36,24 @@ class MoneyQuestionGenerator {
   }
 
   /// The coins available at a difficulty (bigger coins unlock as it rises).
+  /// US keeps its exact original tiers; ILS mirrors the same 3-tier ramp over
+  /// its six denominations (10a/½₪/₪1/₪2/₪5/₪10).
   List<Coin> _coinSet(double d) {
+    if (currency == Currency.ils) {
+      if (d < 0.34) return const [Coin.agora10, Coin.halfShekel, Coin.shekel1];
+      if (d < 0.67) {
+        return const [
+          Coin.agora10,
+          Coin.halfShekel,
+          Coin.shekel1,
+          Coin.shekel2,
+        ];
+      }
+      return Coin.ilsAll;
+    }
     if (d < 0.34) return const [Coin.penny, Coin.nickel];
     if (d < 0.67) return const [Coin.penny, Coin.nickel, Coin.dime];
-    return Coin.all;
+    return Coin.usdAll;
   }
 
   int _pileSize(double d) {
@@ -85,7 +115,18 @@ class MoneyQuestionGenerator {
     }
   }
 
-  String _fmt(int cents) => '$cents¢';
+  bool get _he => lang == AppLang.he;
+
+  String _fmt(int cents) => currency.format(cents);
+
+  /// The smallest coin value of the current currency, used as the step for the
+  /// make-change amounts so the result is always representable in coins.
+  int get _smallestCoin =>
+      currency == Currency.ils ? Coin.agora10.cents : Coin.penny.cents;
+
+  /// The make-change step: multiples of 5¢ for US (kid-friendly mental math) or
+  /// multiples of 10 agorot for ILS (its smallest coin).
+  int get _changeStep => currency == Currency.ils ? 10 : 5;
 
   // Show a pile; pick its total value.
   MoneyQuestion _countCoins(double d) {
@@ -94,7 +135,7 @@ class MoneyQuestionGenerator {
     final options = _distinctAmounts(answer, 4, d);
     return MoneyQuestion(
       type: MoneyQuestionType.countCoins,
-      prompt: 'How much money is this?',
+      prompt: _he ? 'כמה כסף יש כאן?' : 'How much money is this?',
       pile: pile,
       textChoices: options.map(_fmt).toList(),
       correctIndex: options.indexOf(answer),
@@ -110,11 +151,13 @@ class MoneyQuestionGenerator {
       b = _randomPile(d);
       guard++;
     }
-    if (a.total == b.total) b = CoinPile([...b.coins, Coin.penny]);
+    if (a.total == b.total) {
+      b = CoinPile([...b.coins, _coinSet(d).first]);
+    }
     final aMore = a.total > b.total;
     return MoneyQuestion(
       type: MoneyQuestionType.whichMore,
-      prompt: 'Which one is more money?',
+      prompt: _he ? 'איפה יש יותר כסף?' : 'Which one is more money?',
       pileA: a,
       pileB: b,
       correctIndex: aMore ? 0 : 1,
@@ -133,12 +176,13 @@ class MoneyQuestionGenerator {
       if (!piles.any((p) => p.total == other.total)) piles.add(other);
     }
     while (piles.length < 4) {
-      piles.add(CoinPile([...answerPile.coins, Coin.penny]));
+      piles.add(CoinPile([...answerPile.coins, _coinSet(d).first]));
     }
     piles.shuffle(_rng);
+    final amount = _fmt(target.total);
     return MoneyQuestion(
       type: MoneyQuestionType.makeAmount,
-      prompt: 'Which coins make ${_fmt(target.total)}?',
+      prompt: _he ? 'אילו מטבעות שווים $amount?' : 'Which coins make $amount?',
       pileChoices: piles,
       correctIndex: piles.indexWhere((p) => p.total == target.total),
     );
@@ -146,39 +190,48 @@ class MoneyQuestionGenerator {
 
   // You pay more than a price; pick the change owed (shown as text amounts).
   MoneyQuestion _makeChange(double d) {
-    // Difficulty-scaled whole-cent amounts, biased to multiples of 5 for
-    // kid-friendly mental math. maxUnit scales the pool of 5¢ steps.
-    final maxUnit = 4 + (d * 16).round(); // 4..20 units of 5¢ (20¢..100¢)
-    final priceUnits = 1 + _rng.nextInt(maxUnit); // >= 5¢
-    final price = priceUnits * 5;
-    // Payment is at least price + 5¢ so change is always positive.
+    // Difficulty-scaled whole amounts in steps of the currency's smallest coin
+    // (5¢ for US, 10 agorot for ILS), so change is always coin-representable
+    // and strictly positive.
+    final step = _changeStep;
+    final maxUnit = 4 + (d * 16).round(); // 4..20 steps
+    final priceUnits = 1 + _rng.nextInt(maxUnit);
+    final price = priceUnits * step;
+    // Payment is at least price + one step so change is always positive.
     final extraUnits = 1 + _rng.nextInt(maxUnit);
-    final pay = price + extraUnits * 5;
+    final pay = price + extraUnits * step;
     final answer = pay - price; // > 0 by construction
     final options = _distinctAmounts(answer, 4, d);
+    final payStr = _fmt(pay);
+    final priceStr = _fmt(price);
     return MoneyQuestion(
       type: MoneyQuestionType.makeChange,
-      prompt: 'You pay ${_fmt(pay)} for a ${_fmt(price)} toy. How much change?',
+      prompt: _he
+          ? 'שילמתם $payStr על צעצוע ב-$priceStr. כמה עודף?'
+          : 'You pay $payStr for a $priceStr toy. How much change?',
       textChoices: options.map(_fmt).toList(),
       correctIndex: options.indexOf(answer),
     );
   }
 
   List<int> _distinctAmounts(int answer, int count, double d) {
+    // Distractors are offset in multiples of the smallest coin so every shown
+    // amount is a sensible, representable value in the current currency.
+    final unit = _smallestCoin;
     final set = <int>{answer};
     var guard = 0;
     while (set.length < count && guard < 60) {
       guard++;
-      final spread = 2 + (answer * 0.4).round();
-      var delta = _rng.nextInt(spread * 2 + 1) - spread;
-      if (delta == 0) delta = _rng.nextBool() ? 1 : -1;
-      final cand = answer + delta;
+      final spread = 2 + (answer / unit * 0.4).round();
+      var deltaUnits = _rng.nextInt(spread * 2 + 1) - spread;
+      if (deltaUnits == 0) deltaUnits = _rng.nextBool() ? 1 : -1;
+      final cand = answer + deltaUnits * unit;
       if (cand > 0) set.add(cand);
     }
-    var filler = answer + 1;
+    var filler = answer + unit;
     while (set.length < count) {
       set.add(filler);
-      filler++;
+      filler += unit;
     }
     return set.toList()..shuffle(_rng);
   }

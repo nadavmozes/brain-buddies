@@ -8,7 +8,9 @@ import '../../../core/widgets/comic_panel.dart';
 import '../../../core/widgets/sound_toggle_button.dart';
 import '../../../core/widgets/star_coin_hud.dart';
 import '../models/money_level.dart';
+import '../models/money_question.dart';
 import '../services/money_state.dart';
+import '../widgets/coin_info_map.dart';
 import 'money_trail_screen.dart';
 
 /// Money Math landing screen: title, HUD, and the world (piggy bank) select.
@@ -55,6 +57,8 @@ class MoneyMathHome extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w700),
                 ),
+                const SizedBox(height: 10),
+                const _CoinsLegendButton(),
                 const SizedBox(height: 12),
                 for (final world in MoneyWorld.values) ...[
                   _WorldCard(state: state, profile: profile, world: world),
@@ -158,6 +162,47 @@ class _WorldCard extends StatelessWidget {
               child: const Icon(Icons.chevron_right_rounded,
                   color: Colors.white, size: 34),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the Coin Info Map legend for the current currency (chosen by locale).
+class _CoinsLegendButton extends StatelessWidget {
+  const _CoinsLegendButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final currency =
+        context.lang == AppLang.he ? Currency.ils : Currency.usd;
+    return GestureDetector(
+      onTap: () => CoinInfoMap.show(context, currency),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.accent,
+          border: AppTheme.comicBorder,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: AppTheme.comicShadow(offset: 4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('💰', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.coinsButton,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.ink,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.help_outline_rounded,
+                color: AppTheme.ink, size: 20),
           ],
         ),
       ),

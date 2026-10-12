@@ -14,6 +14,8 @@ import '../models/money_level.dart';
 import '../models/money_question.dart';
 import '../services/money_generator.dart';
 import '../services/money_state.dart';
+import '../widgets/coin_chip.dart';
+import '../widgets/coin_info_map.dart';
 import 'money_result_screen.dart';
 
 /// Money Math gameplay for a single trail level, timed for a record.
@@ -35,6 +37,7 @@ class MoneyGameScreen extends StatefulWidget {
 
 class _MoneyGameScreenState extends State<MoneyGameScreen> {
   late final List<MoneyQuestion> _questions;
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -51,7 +54,10 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = MoneyQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists (matches the Word Wizard pattern).
+    _lang = L10n.read(context).lang;
+    _questions = MoneyQuestionGenerator.forLevel(widget.level, lang: _lang);
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed = _stopwatch.elapsed.inSeconds);
@@ -160,7 +166,13 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                                 fontSize: 22, fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 8),
+                        _CoinsHelpButton(
+                          currency: _lang == AppLang.he
+                              ? Currency.ils
+                              : Currency.usd,
+                        ),
+                        const SizedBox(height: 10),
                         _buildBody(),
                         SizedBox(
                           height: 26,
@@ -198,7 +210,7 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
       case MoneyQuestionType.countCoins:
         return Column(
           children: [
-            _CoinPanel(emojiRow: _q.pile!.emojiRow),
+            _CoinPanel(coins: _q.pile!.coins),
             const SizedBox(height: 16),
             _TextChoices(
               question: _q,
@@ -241,18 +253,55 @@ Color _bg(MoneyQuestion q, int index, int? selected, bool answered) {
 }
 
 class _CoinPanel extends StatelessWidget {
-  const _CoinPanel({required this.emojiRow});
-  final String emojiRow;
+  const _CoinPanel({required this.coins});
+  final List<Coin> coins;
 
   @override
   Widget build(BuildContext context) {
     return ComicPanel(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
-      child: Text(
-        emojiRow,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 40),
+      child: CoinChipRow(coins: coins),
+    );
+  }
+}
+
+/// A small "?" affordance that opens the Coin Info Map for the current currency.
+class _CoinsHelpButton extends StatelessWidget {
+  const _CoinsHelpButton({required this.currency});
+  final Currency currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.center,
+      child: GestureDetector(
+        onTap: () => CoinInfoMap.show(context, currency),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.accent,
+            border: AppTheme.comicBorder,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.comicShadow(offset: 3),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.help_outline_rounded,
+                  color: AppTheme.ink, size: 20),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.coinsButton,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.ink,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -362,9 +411,8 @@ class _TwoPiles extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: AppTheme.comicShadow(offset: 5),
                     ),
-                    child: Text(piles[index].emojiRow,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 28)),
+                    child: CoinChipRow(
+                        coins: piles[index].coins, chipSize: 42),
                   ),
                 ),
                 Positioned(
@@ -426,9 +474,8 @@ class _PileChoices extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: AppTheme.comicShadow(offset: 5),
                     ),
-                    child: Text(piles[index].emojiRow,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 24)),
+                    child: CoinChipRow(
+                        coins: piles[index].coins, chipSize: 40),
                   ),
                 ),
                 Positioned(
