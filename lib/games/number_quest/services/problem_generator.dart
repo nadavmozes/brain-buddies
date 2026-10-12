@@ -3,6 +3,7 @@ import 'dart:math';
 import '../models/difficulty.dart';
 import '../models/level.dart';
 import '../models/math_problem.dart';
+import '../models/mult_level.dart';
 
 /// Generates age-appropriate math problems for each difficulty tier.
 ///
@@ -46,6 +47,14 @@ class ProblemGenerator {
     double recentAccuracy = 0.7,
     Random? random,
   }) {
+    // Times Tables campaign levels emit multiplication-only facts drawn from
+    // the level's fixed factor window (no difficulty/adaptive scaling — the
+    // ramp is encoded in the per-level MultLevelSpec itself).
+    final spec = level.mult;
+    if (spec != null) {
+      final gen = ProblemGenerator(random: random);
+      return gen.generateMultRound(spec, count: level.questionCount);
+    }
     // Base ramps from ~0.8 at level 1 to ~1.2 at the boss.
     final ramp = 0.8 + (level.index / (WorldMap.levelsPerWorld - 1)) * 0.4;
     // Adaptive nudge: high accuracy -> harder, low -> easier.
@@ -53,6 +62,34 @@ class ProblemGenerator {
     final challenge = ramp + adaptive;
     final gen = ProblemGenerator(random: random, challenge: challenge);
     return gen.generateRound(level.world, count: level.questionCount);
+  }
+
+  /// Builds a round of multiplication-only problems for a Times Tables level,
+  /// de-duplicating within the round the same way [generateRound] does.
+  List<MathProblem> generateMultRound(MultLevelSpec spec, {required int count}) {
+    final problems = <MathProblem>[];
+    final seen = <String>{};
+    for (var i = 0; i < count; i++) {
+      MathProblem p;
+      var guard = 0;
+      do {
+        p = _multProblem(spec);
+        guard++;
+      } while (seen.contains(p.question) && guard < 25);
+      seen.add(p.question);
+      problems.add(p);
+    }
+    return problems;
+  }
+
+  /// A single multiplication fact `a × b` with factors inside the spec window.
+  MathProblem _multProblem(MultLevelSpec spec) {
+    final lo = spec.minFactor.clamp(1, 12);
+    final hi = spec.maxFactor.clamp(lo, 12);
+    final span = hi - lo + 1;
+    final a = _rng.nextInt(span) + lo;
+    final b = _rng.nextInt(span) + lo;
+    return _build('$a × $b', a * b, 'Multiplication');
   }
 
   /// Generates a single problem tuned to the difficulty tier.

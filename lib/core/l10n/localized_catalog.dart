@@ -192,6 +192,15 @@ class LocalizedCatalog {
       'easy': 'גולפאף',
       'intermediate': 'אוקטו',
       'expert': 'דראקו',
+      // Times Tables campaign guardian.
+      'times': 'מולטו',
+    },
+    // ---- number_quest Times Tables campaign ----
+    'nq.times.label': {
+      'times': 'לוח הכפל',
+    },
+    'nq.times.subtitle': {
+      'times': 'בנו את לוח הכפל עם נקודות, מ-1 עד 12.',
     },
 
     // ---- shape_safari habitat.dart ----

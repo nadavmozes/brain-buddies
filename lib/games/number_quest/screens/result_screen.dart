@@ -18,7 +18,8 @@ import 'game_screen.dart';
 
 /// The next level in play order after [level], or null if it's the last one.
 GameLevel? _nextLevelAfter(GameLevel level) {
-  final order = WorldMap.allLevels;
+  final order =
+      level.mult != null ? TimesTablesMap.allLevels : WorldMap.allLevels;
   final pos = order.indexWhere((l) => l.id == level.id);
   if (pos < 0 || pos + 1 >= order.length) return null;
   return order[pos + 1];
@@ -102,7 +103,7 @@ class _ResultScreenState extends State<ResultScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [level.world.color, AppTheme.paper],
+                colors: [level.worldColor, AppTheme.paper],
               ),
             ),
             child: SafeArea(
@@ -145,7 +146,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: level.world.color)),
+                                    color: level.worldColor)),
                             const Divider(height: 26, thickness: 2),
                             _rewardRow('🪙', l.coinsEarned,
                                 '+${outcome.coinsEarned}'),

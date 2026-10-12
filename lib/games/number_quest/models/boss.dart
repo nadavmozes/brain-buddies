@@ -45,4 +45,14 @@ class Bosses {
   };
 
   static Boss forWorld(Difficulty d) => _byWorld[d]!;
+
+  /// The friendly guardian of the Times Tables campaign. Kept outside
+  /// [_byWorld] (which is keyed by [Difficulty]) so it never changes the three
+  /// difficulty worlds. Its stable id for localization is `times`.
+  static const Boss timesGuardian = Boss(
+    name: 'Multo',
+    emoji: '✖️',
+    color: Color(0xFF5E35B1),
+    taunt: "Let's build some times tables together!",
+  );
 }

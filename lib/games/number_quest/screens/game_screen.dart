@@ -16,6 +16,7 @@ import '../models/skill.dart';
 import '../services/game_state.dart';
 import '../services/problem_generator.dart';
 import '../widgets/hero_buddy.dart';
+import '../widgets/mult_array_view.dart';
 import 'result_screen.dart';
 
 /// The core gameplay loop. Handles both regular levels and boss battles.
@@ -71,6 +72,19 @@ class _GameScreenState extends State<GameScreen>
   int _elapsed = 0;
 
   MathProblem get _problem => _problems[_current];
+
+  /// Whether this level teaches with the visual dot array (early Times Tables
+  /// levels). The boss and later recall levels fall back to the question card.
+  bool get _showArray => widget.level.mult?.useArray == true;
+
+  /// Parses the two factors out of the generator's `a × b` question string.
+  /// The generator fully controls this format for multiplication problems.
+  (int, int) get _arrayFactors {
+    final parts = _problem.question.split('×');
+    final a = int.tryParse(parts[0].trim()) ?? 1;
+    final b = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 1) : 1;
+    return (a, b);
+  }
 
   @override
   void initState() {
@@ -237,7 +251,7 @@ class _GameScreenState extends State<GameScreen>
                   title: widget.isDaily
                       ? '📅 Daily'
                       : (_isBoss
-                          ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
+                          ? '${widget.level.boss.emoji} ${context.tr('nq.boss.name', widget.level.bossId, widget.level.boss.name)}'
                           : widget.level.title),
                   world: widget.level.world,
                   current: _current + 1,
@@ -290,10 +304,17 @@ class _GameScreenState extends State<GameScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                _QuestionCard(
-                  problem: _problem,
-                  shakeController: _shakeController,
-                ),
+                if (_showArray)
+                  MultArrayView(
+                    a: _arrayFactors.$1,
+                    b: _arrayFactors.$2,
+                    hint: context.l10n.nqMultArrayHint,
+                  )
+                else
+                  _QuestionCard(
+                    problem: _problem,
+                    shakeController: _shakeController,
+                  ),
                 const SizedBox(height: 20),
                 _ChoiceGrid(
                   problem: _problem,

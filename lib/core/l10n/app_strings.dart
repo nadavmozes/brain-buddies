@@ -137,6 +137,12 @@ abstract class AppStrings {
   String get nextLesson; // "Next Lesson"
   String get backToPath; // "Back to Path"
 
+  // ---- Number Quest Times Tables campaign (Phase 4) ----
+  String get nqTimesTablesLabel; // "Times Tables" / "לוח הכפל"
+  String get nqTimesTablesSubtitle; // short world blurb
+  String get nqTimesGuardianName; // "Multo" / "מולטו"
+  String get nqMultArrayHint; // "Count the dots!" / "ספרו את הנקודות!"
+
   // ---- Number Quest (FEAT-002) ----
   String nqWrongFeedback(int a); // "The answer was <a>. You got this!"
   List<String> get nqPraise; // ['Nice!','Great!','Boom!','Yes!','Awesome!','Pow!']
@@ -430,6 +436,16 @@ class EnStrings extends AppStrings {
   String get nextLesson => 'Next Lesson';
   @override
   String get backToPath => 'Back to Path';
+
+  // ---- Number Quest Times Tables campaign (Phase 4) ----
+  @override
+  String get nqTimesTablesLabel => 'Times Tables';
+  @override
+  String get nqTimesTablesSubtitle => 'Build the times tables with dots, 1 to 12.';
+  @override
+  String get nqTimesGuardianName => 'Multo';
+  @override
+  String get nqMultArrayHint => 'Count the dots!';
 
   // ---- Number Quest (FEAT-002) ----
   @override
@@ -791,6 +807,16 @@ class HeStrings extends AppStrings {
   String get nextLesson => 'השיעור הבא';
   @override
   String get backToPath => 'חזרה לשביל';
+
+  // ---- Number Quest Times Tables campaign (Phase 4) ----
+  @override
+  String get nqTimesTablesLabel => 'לוח הכפל';
+  @override
+  String get nqTimesTablesSubtitle => 'בנו את לוח הכפל עם נקודות, מ-1 עד 12.';
+  @override
+  String get nqTimesGuardianName => 'מולטו';
+  @override
+  String get nqMultArrayHint => 'ספרו את הנקודות!';
 
   // ---- Number Quest (FEAT-002) ----
   @override

@@ -8,6 +8,7 @@ import '../models/difficulty.dart';
 import '../models/level.dart';
 import '../services/game_state.dart';
 import 'level_map_screen.dart';
+import 'times_tables_map_screen.dart';
 
 /// World select: pick a difficulty world to open its level map.
 class DifficultyScreen extends StatelessWidget {
@@ -33,6 +34,8 @@ class DifficultyScreen extends StatelessWidget {
                   difficulty: difficulty, state: state, profile: profile),
               const SizedBox(height: 20),
             ],
+            _TimesTablesCard(state: state, profile: profile),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -92,6 +95,95 @@ class _WorldCard extends StatelessWidget {
                   Text(
                     context.tr('nq.difficulty.subtitle', difficulty.name,
                         difficulty.subtitle),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AnimatedBuilder(
+                    animation: state,
+                    builder: (context, _) => Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            color: AppTheme.accent, size: 22),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_worldStars()} / $maxStars',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Transform.flip(
+              flipX: Directionality.of(context) == TextDirection.rtl,
+              child: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white, size: 36),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The Times Tables campaign tile. Routed separately from the three difficulty
+/// worlds into its own trail. Styled like [_WorldCard] for a consistent look.
+class _TimesTablesCard extends StatelessWidget {
+  const _TimesTablesCard({required this.state, required this.profile});
+
+  final GameState state;
+  final PlayerProfile profile;
+
+  int _worldStars() =>
+      TimesTablesMap.allLevels.fold(0, (sum, l) => sum + state.stars(l.id));
+
+  @override
+  Widget build(BuildContext context) {
+    final maxStars = TimesTablesMap.levelCount * 3;
+    final label = context.l10n.nqTimesTablesLabel;
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                TimesTablesMapScreen(state: state, profile: profile),
+          ),
+        );
+      },
+      child: ComicPanel(
+        color: TimesTablesMap.color,
+        child: Row(
+          children: [
+            const Text(TimesTablesMap.emoji,
+                style: TextStyle(fontSize: 44)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.worldLabel(label),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(color: AppTheme.ink, offset: Offset(2, 2)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.l10n.nqTimesTablesSubtitle,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
