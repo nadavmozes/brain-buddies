@@ -220,6 +220,17 @@ class LocalizedCatalog {
       'desert': 'קאמי הגמל',
       'mountain': 'רוקי הנשר',
     },
+    // ---- shape_safari shape_kind.dart (shape names, keyed by ShapeKind.name) ----
+    'ss.shape.label': {
+      'circle': 'עיגול',
+      'oval': 'אליפסה',
+      'triangle': 'משולש',
+      'square': 'ריבוע',
+      'rectangle': 'מלבן',
+      'pentagon': 'מחומש',
+      'hexagon': 'משושה',
+      'star': 'כוכב',
+    },
 
     // ---- clock_hero time_world.dart ----
     'ch.world.label': {

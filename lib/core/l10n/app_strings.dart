@@ -198,6 +198,60 @@ abstract class AppStrings {
   String get memoryTitleWell; // "WELL MATCHED!"
   String get memoryNoMistakes; // "No mistakes!"
   String get memoryBoardCleared; // "Board cleared!"
+
+  // ---- Chrome leak fixes (FEAT-001 / Group 0.1) ----
+  String get soundOn; // "Sound: On"
+  String get soundOff; // "Sound: Off"
+  String get buddyGrew; // "🎉 Buddy grew!"
+  String get nqHeroLevel; // "Hero Level"
+  String get nqTotalStars; // "Total Stars"
+  String get nqDayStreakLabel; // "Day Streak"
+  String get nqSkills; // "Skills"
+  String get nqGrownupTip; // "Tip for grown-ups"
+  String get nqTipDefault; // grown-up default tip
+  String nqTipWeakest(String skill); // grown-up weakest-skill tip
+  String get nqNoQuestionsYet; // "No questions yet"
+  String get resetConfirmTitle; // "Reset all progress?"
+  String get resetConfirmBody; // reset dialog body
+  String get cancel; // "Cancel"
+  String get reset; // "Reset"
+  String get masteryJustStarting; // "Just starting"
+  String get masteryNeedsPractice; // "Needs practice"
+  String get masteryPracticing; // "Practicing"
+  String get masteryStrong; // "Strong"
+  String get masteryMastered; // "Mastered"
+
+  // ---- Clock Hero prompts + spoken-time (FEAT-001 / Group 0.1) ----
+  String get clockPromptRead; // "What time is it?"
+  String clockPromptFind(String spoken); // "Which clock shows <spoken>?"
+  String clockPromptSet(String spoken); // "Set the clock to <spoken>"
+  String clockPromptElapsed(String spoken, String hours); // elapsed prompt
+  String clockHours(int n); // "1 hour" / "<n> hours"
+  String get clockHour; // "Hour"
+  String get clockMinute; // "Minute"
+  /// Language-aware spoken-time formatter. English output is byte-identical to
+  /// the current ClockTime.spoken.
+  String clockSpoken(int hour, int minute);
+
+  // ---- Shape Safari prompts (FEAT-001 / Group 0.1) ----
+  String get ssPromptIdentify; // "What shape is this?"
+  String ssPromptFind(String shapeName); // "Which one is a <shapeName>?"
+  String get ssPromptSides; // "How many sides does this shape have?"
+  String get ssPromptPattern; // "What comes next?"
+
+  // ---- Game two-line logos (FEAT-001 / Group 0.1) ----
+  String get nqLogoLine1; // "NUMBER" / "מסע"
+  String get nqLogoLine2; // "QUEST" / "המספרים"
+  String get ssLogoLine1; // "SHAPE" / "ספארי"
+  String get ssLogoLine2; // "SAFARI" / "הצורות"
+  String get wwLogoLine1; // "WORD" / "קוסם"
+  String get wwLogoLine2; // "WIZARD" / "המילים"
+  String get chLogoLine1; // "CLOCK" / "גיבור"
+  String get chLogoLine2; // "HERO" / "השעון"
+  String get mmLogoLine1; // "MONEY" / "חשבון"
+  String get mmLogoLine2; // "MATH" / "הכסף"
+  String get memLogoLine1; // "MEMORY" / "משחק"
+  String get memLogoLine2; // "MATCH" / "הזיכרון"
 }
 
 /// English chrome strings. Values here MUST equal the previously hard-coded
@@ -575,6 +629,112 @@ class EnStrings extends AppStrings {
   String get memoryNoMistakes => 'No mistakes!';
   @override
   String get memoryBoardCleared => 'Board cleared!';
+
+  // ---- Chrome leak fixes (FEAT-001 / Group 0.1) ----
+  @override
+  String get soundOn => 'Sound: On';
+  @override
+  String get soundOff => 'Sound: Off';
+  @override
+  String get buddyGrew => '🎉 Buddy grew!';
+  @override
+  String get nqHeroLevel => 'Hero Level';
+  @override
+  String get nqTotalStars => 'Total Stars';
+  @override
+  String get nqDayStreakLabel => 'Day Streak';
+  @override
+  String get nqSkills => 'Skills';
+  @override
+  String get nqGrownupTip => 'Tip for grown-ups';
+  @override
+  String get nqTipDefault =>
+      'Keep playing a few quests so we can spot which skills need the most practice.';
+  @override
+  String nqTipWeakest(String skill) =>
+      'Right now $skill could use the most practice. Try a few short sessions focused on that skill.';
+  @override
+  String get nqNoQuestionsYet => 'No questions yet';
+  @override
+  String get resetConfirmTitle => 'Reset all progress?';
+  @override
+  String get resetConfirmBody =>
+      'This erases stars, XP, coins, avatars and awards across all games. This cannot be undone.';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get reset => 'Reset';
+  @override
+  String get masteryJustStarting => 'Just starting';
+  @override
+  String get masteryNeedsPractice => 'Needs practice';
+  @override
+  String get masteryPracticing => 'Practicing';
+  @override
+  String get masteryStrong => 'Strong';
+  @override
+  String get masteryMastered => 'Mastered';
+
+  // ---- Clock Hero prompts + spoken-time (FEAT-001 / Group 0.1) ----
+  @override
+  String get clockPromptRead => 'What time is it?';
+  @override
+  String clockPromptFind(String spoken) => 'Which clock shows $spoken?';
+  @override
+  String clockPromptSet(String spoken) => 'Set the clock to $spoken';
+  @override
+  String clockPromptElapsed(String spoken, String hours) =>
+      "It's $spoken. What time in $hours?";
+  @override
+  String clockHours(int n) => n == 1 ? '1 hour' : '$n hours';
+  @override
+  String get clockHour => 'Hour';
+  @override
+  String get clockMinute => 'Minute';
+  @override
+  String clockSpoken(int hour, int minute) {
+    if (minute == 0) return "$hour o'clock";
+    if (minute == 30) return 'half past $hour';
+    if (minute == 15) return 'quarter past $hour';
+    if (minute == 45) return 'quarter to ${hour == 12 ? 1 : hour + 1}';
+    return '$hour:${minute.toString().padLeft(2, '0')}';
+  }
+
+  // ---- Shape Safari prompts (FEAT-001 / Group 0.1) ----
+  @override
+  String get ssPromptIdentify => 'What shape is this?';
+  @override
+  String ssPromptFind(String shapeName) => 'Which one is a $shapeName?';
+  @override
+  String get ssPromptSides => 'How many sides does this shape have?';
+  @override
+  String get ssPromptPattern => 'What comes next?';
+
+  // ---- Game two-line logos (FEAT-001 / Group 0.1) ----
+  @override
+  String get nqLogoLine1 => 'NUMBER';
+  @override
+  String get nqLogoLine2 => 'QUEST';
+  @override
+  String get ssLogoLine1 => 'SHAPE';
+  @override
+  String get ssLogoLine2 => 'SAFARI';
+  @override
+  String get wwLogoLine1 => 'WORD';
+  @override
+  String get wwLogoLine2 => 'WIZARD';
+  @override
+  String get chLogoLine1 => 'CLOCK';
+  @override
+  String get chLogoLine2 => 'HERO';
+  @override
+  String get mmLogoLine1 => 'MONEY';
+  @override
+  String get mmLogoLine2 => 'MATH';
+  @override
+  String get memLogoLine1 => 'MEMORY';
+  @override
+  String get memLogoLine2 => 'MATCH';
 }
 
 /// Hebrew chrome strings. Emoji are kept (language-neutral); numerals stay
@@ -951,6 +1111,112 @@ class HeStrings extends AppStrings {
   String get memoryNoMistakes => 'בלי טעויות!';
   @override
   String get memoryBoardCleared => 'הלוח נוקה!';
+
+  // ---- Chrome leak fixes (FEAT-001 / Group 0.1) ----
+  @override
+  String get soundOn => 'צליל: פועל';
+  @override
+  String get soundOff => 'צליל: כבוי';
+  @override
+  String get buddyGrew => '🎉 החבר גדל!';
+  @override
+  String get nqHeroLevel => 'דרגת גיבור';
+  @override
+  String get nqTotalStars => 'סך הכוכבים';
+  @override
+  String get nqDayStreakLabel => 'רצף ימים';
+  @override
+  String get nqSkills => 'מיומנויות';
+  @override
+  String get nqGrownupTip => 'טיפ למבוגרים';
+  @override
+  String get nqTipDefault =>
+      'שחקו עוד כמה סבבים כדי שנוכל לזהות אילו מיומנויות דורשות תרגול.';
+  @override
+  String nqTipWeakest(String skill) =>
+      'כרגע כדאי לתרגל הכי הרבה את $skill. נסו כמה סבבים קצרים שמתמקדים במיומנות הזו.';
+  @override
+  String get nqNoQuestionsYet => 'עדיין אין שאלות';
+  @override
+  String get resetConfirmTitle => 'לאפס את כל ההתקדמות?';
+  @override
+  String get resetConfirmBody =>
+      'פעולה זו תמחק כוכבים, נקודות ניסיון, מטבעות, דמויות ופרסים בכל המשחקים. אי אפשר לבטל.';
+  @override
+  String get cancel => 'ביטול';
+  @override
+  String get reset => 'איפוס';
+  @override
+  String get masteryJustStarting => 'רק מתחילים';
+  @override
+  String get masteryNeedsPractice => 'צריך תרגול';
+  @override
+  String get masteryPracticing => 'מתרגלים';
+  @override
+  String get masteryStrong => 'חזק';
+  @override
+  String get masteryMastered => 'שולט';
+
+  // ---- Clock Hero prompts + spoken-time (FEAT-001 / Group 0.1) ----
+  @override
+  String get clockPromptRead => 'מה השעה?';
+  @override
+  String clockPromptFind(String spoken) => 'איזה שעון מראה $spoken?';
+  @override
+  String clockPromptSet(String spoken) => 'כוונו את השעון ל-$spoken';
+  @override
+  String clockPromptElapsed(String spoken, String hours) =>
+      'השעה $spoken. מה תהיה השעה בעוד $hours?';
+  @override
+  String clockHours(int n) => n == 1 ? 'שעה' : '$n שעות';
+  @override
+  String get clockHour => 'שעה';
+  @override
+  String get clockMinute => 'דקה';
+  @override
+  String clockSpoken(int hour, int minute) {
+    if (minute == 0) return 'השעה $hour';
+    if (minute == 30) return '$hour וחצי';
+    if (minute == 15) return '$hour ורבע';
+    if (minute == 45) return 'רבע ל-${hour == 12 ? 1 : hour + 1}';
+    return '$hour:${minute.toString().padLeft(2, '0')}';
+  }
+
+  // ---- Shape Safari prompts (FEAT-001 / Group 0.1) ----
+  @override
+  String get ssPromptIdentify => 'איזו צורה זו?';
+  @override
+  String ssPromptFind(String shapeName) => 'איזו היא $shapeName?';
+  @override
+  String get ssPromptSides => 'כמה צלעות יש לצורה הזו?';
+  @override
+  String get ssPromptPattern => 'מה בא אחר כך?';
+
+  // ---- Game two-line logos (FEAT-001 / Group 0.1) ----
+  @override
+  String get nqLogoLine1 => 'מסע';
+  @override
+  String get nqLogoLine2 => 'המספרים';
+  @override
+  String get ssLogoLine1 => 'ספארי';
+  @override
+  String get ssLogoLine2 => 'הצורות';
+  @override
+  String get wwLogoLine1 => 'קוסם';
+  @override
+  String get wwLogoLine2 => 'המילים';
+  @override
+  String get chLogoLine1 => 'גיבור';
+  @override
+  String get chLogoLine2 => 'השעון';
+  @override
+  String get mmLogoLine1 => 'חשבון';
+  @override
+  String get mmLogoLine2 => 'הכסף';
+  @override
+  String get memLogoLine1 => 'משחק';
+  @override
+  String get memLogoLine2 => 'הזיכרון';
 }
 
 /// Resolves the [AppStrings] implementation for a language code.

@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "l10n foundation: add every new AppStrings chrome key (English = exact current literal, Hebrew from the strings doc verbatim) and the new ss.shape.label catalog domain. This FEAT only adds keys/values; it changes no display behavior. All later FEATs depend on it. Independent of FEAT-002/003 in content but MUST land first because they reference these keys.",
+  "status": "completed",
+  "steps": [
+    "Edit lib/core/l10n/app_strings.dart. Add each key to the abstract AppStrings class AND to EnStrings AND to HeStrings. Follow plan.md Group 0.1 for the full list and exact En/He values. Keys: soundOn, soundOff, buddyGrew, nqHeroLevel, nqTotalStars, nqDayStreakLabel, nqSkills, nqGrownupTip, nqTipDefault, nqTipWeakest(String skill), nqNoQuestionsYet, resetConfirmTitle, resetConfirmBody, cancel, reset, masteryJustStarting, masteryNeedsPractice, masteryPracticing, masteryStrong, masteryMastered.",
+    "In the same file add the Clock Hero keys: clockPromptRead, clockPromptFind(String spoken), clockPromptSet(String spoken), clockPromptElapsed(String spoken, String hours), clockHours(int n) [En: n==1?'1 hour':'$n hours'; He: n==1?'שעה':'$n שעות'], clockHour, clockMinute, and clockSpoken(int hour, int minute) — a language-aware spoken-time formatter whose English output is byte-identical to the current ClockTime.spoken (minute 0 -> \"$hour o'clock\"; 30 -> 'half past $hour'; 15 -> 'quarter past $hour'; 45 -> 'quarter to ${hour==12?1:hour+1}'; else '$hour:${minute.toString().padLeft(2,'0')}') and Hebrew per the strings doc (0 -> 'השעה $hour'; 30 -> '$hour וחצי'; 15 -> '$hour ורבע'; 45 -> 'רבע ל-${hour==12?1:hour+1}'; else numeric).",
+    "In the same file add the Shape Safari keys: ssPromptIdentify, ssPromptFind(String shapeName), ssPromptSides, ssPromptPattern (En/He per plan.md).",
+    "In the same file add the six games' two-line logo keys: nqLogoLine1/nqLogoLine2, ssLogoLine1/ssLogoLine2, wwLogoLine1/wwLogoLine2, chLogoLine1/chLogoLine2, mmLogoLine1/mmLogoLine2, memLogoLine1/memLogoLine2. En = current literals (NUMBER/QUEST, SHAPE/SAFARI, WORD/WIZARD, CLOCK/HERO, MONEY/MATH, MEMORY/MATCH). He = מסע/המספרים, ספארי/הצורות, קוסם/המילים, גיבור/השעון, חשבון/הכסף, משחק/הזיכרון.",
+    "Edit lib/core/l10n/localized_catalog.dart: add a new domain to the _he map, 'ss.shape.label', keyed by ShapeKind.name: circle->עיגול, oval->אליפסה, triangle->משולש, square->ריבוע, rectangle->מלבן, pentagon->מחומש, hexagon->משושה, star->כוכב.",
+    "Run build web and the full test suite to confirm the engine still compiles and nothing regressed."
+  ],
+  "acceptance_criteria": [
+    "lib/core/l10n/app_strings.dart defines every new key in the abstract class and both EnStrings and HeStrings, with English values byte-identical to the literals being replaced and Hebrew values matching the strings doc.",
+    "clockSpoken English output exactly reproduces the existing ClockTime.spoken formatting for minutes 0/15/30/45 and the numeric fallback.",
+    "lib/core/l10n/localized_catalog.dart contains the ss.shape.label domain with all 8 Hebrew shape names keyed by ShapeKind.name.",
+    "Running build web prints 'Built build\\web' and flutter test keeps all 89 baseline tests green (no behavior changed yet)."
+  ],
+  "verification": [
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" build web  (expect the line: Built build\\web)",
+    "& \"$env:USERPROFILE\\flutter\\bin\\flutter.bat\" test  (expect all 89 tests pass)"
+  ],
+  "blocked_reason": null,
+  "findings": "All Group 0.1 + 0.2 keys/domain landed in lib/core/l10n/app_strings.dart and lib/core/l10n/localized_catalog.dart. build web = 'Built build\\web'; flutter test = 89 passed (no behavior changed). Notes for FEAT-002/003:\n- New AppStrings keys available (abstract + EnStrings + HeStrings): soundOn, soundOff, buddyGrew, nqHeroLevel, nqTotalStars, nqDayStreakLabel, nqSkills, nqGrownupTip, nqTipDefault, nqTipWeakest(String skill), nqNoQuestionsYet, resetConfirmTitle, resetConfirmBody, cancel, reset, masteryJustStarting, masteryNeedsPractice, masteryPracticing, masteryStrong, masteryMastered, clockPromptRead, clockPromptFind(String spoken), clockPromptSet(String spoken), clockPromptElapsed(String spoken, String hours), clockHours(int n), clockHour, clockMinute, clockSpoken(int hour, int minute), ssPromptIdentify, ssPromptFind(String shapeName), ssPromptSides, ssPromptPattern, and the 12 logo keys nq/ss/ww/ch/mm/mem LogoLine1/LogoLine2.\n- clockSpoken English output is byte-identical to ClockTime.spoken (0 -> \"$hour o'clock\"; 30 -> 'half past $hour'; 15 -> 'quarter past $hour'; 45 -> 'quarter to ${hour==12?1:hour+1}'; else '$hour:${minute.padLeft2}'). ClockTime.spoken getter is left intact as a dormant fallback (FEAT-002 Group B uses clockSpoken instead).\n- New data domain 'ss.shape.label' in LocalizedCatalog._he keyed by ShapeKind.name (circle/oval/triangle/square/rectangle/pentagon/hexagon/star -> Hebrew). Resolve via context.tr('ss.shape.label', shape.name, shape.label) or LocalizedCatalog.resolve(..., lang: lang) in generators.\n- Reminder for later FEATs: extension getters (ShapeKindInfo.label, SkillInfo.*) require importing their defining file at new display sites; flutter analyze is unavailable on this Hebrew path, verify via build web."
+}
