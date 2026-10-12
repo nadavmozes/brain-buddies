@@ -48,9 +48,10 @@ class Bosses {
 
   /// The friendly guardian of the Times Tables campaign. Kept outside
   /// [_byWorld] (which is keyed by [Difficulty]) so it never changes the three
-  /// difficulty worlds. Its stable id for localization is `times`.
+  /// difficulty worlds. Its stable id for localization is `times`; this English
+  /// name is the fallback the boss header shows when the language is English.
   static const Boss timesGuardian = Boss(
-    name: 'Multo',
+    name: 'Times Guardian',
     emoji: '✖️',
     color: Color(0xFF5E35B1),
     taunt: "Let's build some times tables together!",

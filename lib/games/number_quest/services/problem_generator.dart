@@ -83,13 +83,15 @@ class ProblemGenerator {
   }
 
   /// A single multiplication fact `a × b` with factors inside the spec window.
+  /// Choices are strictly positive (minChoice: 1): a 1-12 campaign never offers
+  /// 0 as a distractor, unlike the shared worlds which allow 0.
   MathProblem _multProblem(MultLevelSpec spec) {
     final lo = spec.minFactor.clamp(1, 12);
     final hi = spec.maxFactor.clamp(lo, 12);
     final span = hi - lo + 1;
     final a = _rng.nextInt(span) + lo;
     final b = _rng.nextInt(span) + lo;
-    return _build('$a × $b', a * b, 'Multiplication');
+    return _build('$a × $b', a * b, 'Multiplication', minChoice: 1);
   }
 
   /// Generates a single problem tuned to the difficulty tier.
@@ -161,8 +163,14 @@ class ProblemGenerator {
   }
 
   /// Wraps a question with a set of plausible multiple-choice options.
-  MathProblem _build(String question, int answer, String label) {
-    final choices = _buildChoices(answer);
+  ///
+  /// [minChoice] is the smallest value any distractor may take. The three
+  /// difficulty worlds call this with the default (0) so their behavior is
+  /// byte-identical; the Times Tables campaign passes 1 so a 1-12 fact never
+  /// shows 0 as an option.
+  MathProblem _build(String question, int answer, String label,
+      {int minChoice = 0}) {
+    final choices = _buildChoices(answer, minChoice: minChoice);
     return MathProblem(
       question: question,
       answer: answer,
@@ -173,7 +181,8 @@ class ProblemGenerator {
 
   /// Produces 4 unique options including the correct answer, with
   /// distractors that stay close to the answer so guesses feel real.
-  List<int> _buildChoices(int answer) {
+  /// [minChoice] floors the allowed distractor values (default 0).
+  List<int> _buildChoices(int answer, {int minChoice = 0}) {
     final options = <int>{answer};
     var guard = 0;
     while (options.length < 4 && guard < 50) {
@@ -182,14 +191,14 @@ class ProblemGenerator {
       var delta = _rng.nextInt(spread * 2 + 1) - spread; // -spread..spread
       if (delta == 0) delta = _rng.nextBool() ? 1 : -1;
       final candidate = answer + delta;
-      if (candidate >= 0) {
+      if (candidate >= minChoice) {
         options.add(candidate);
       }
     }
     // Fallback in case the loop could not find enough distinct values.
     var filler = answer + 1;
     while (options.length < 4) {
-      if (filler >= 0) options.add(filler);
+      if (filler >= minChoice) options.add(filler);
       filler++;
     }
     final list = options.toList()..shuffle(_rng);

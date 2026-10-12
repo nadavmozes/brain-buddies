@@ -17,7 +17,10 @@ import '../services/game_state.dart';
 import 'game_screen.dart';
 
 /// The next level in play order after [level], or null if it's the last one.
-GameLevel? _nextLevelAfter(GameLevel level) {
+///
+/// The Times Tables campaign walks its own ordered list so "Next Level" never
+/// leaks into (or out of) the three difficulty worlds. Exposed for tests.
+GameLevel? nqNextLevelAfter(GameLevel level) {
   final order =
       level.mult != null ? TimesTablesMap.allLevels : WorldMap.allLevels;
   final pos = order.indexWhere((l) => l.id == level.id);
@@ -202,7 +205,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Widget _buildActions(BuildContext context) {
     final l = context.l10n;
-    final next = _nextLevelAfter(level);
+    final next = nqNextLevelAfter(level);
     // Next level is available once this one is cleared (earned a star). Boss
     // levels must be defeated to progress.
     final canAdvance = outcome.stars > 0 && (!level.isBoss || bossDefeated);

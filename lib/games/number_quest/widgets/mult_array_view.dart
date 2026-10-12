@@ -35,80 +35,92 @@ class MultArrayView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: ComicPanel(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$a × $b = ?',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.ink,
-                shadows: [Shadow(color: AppTheme.accent, offset: Offset(2, 2))],
-              ),
-            ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final maxW = constraints.maxWidth;
-                // Fit `b` columns across the available width.
-                var cell =
-                    ((maxW - (b - 1) * _spacing) / b).clamp(_minCell, _maxCell);
-                final gridW = b * cell + (b - 1) * _spacing;
-                final gridH = a * cell + (a - 1) * _spacing;
-                // Cap the drawn height so even 12×12 never pushes the choices
-                // off-screen; scroll inside this box if the grid is taller.
-                const maxGridH = 240.0;
-
-                final grid = SizedBox(
-                  width: gridW,
-                  height: gridH,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var r = 0; r < a; r++) ...[
-                        if (r > 0) const SizedBox(height: _spacing),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (var c = 0; c < b; c++) ...[
-                              if (c > 0) const SizedBox(width: _spacing),
-                              _Dot(size: cell, row: r),
-                            ],
-                          ],
-                        ),
-                      ],
+    return ComicPanel(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The equation + dot grid are an LTR island (math reads left-to-right
+          // even under Hebrew RTL). The hint below stays in the ambient
+          // direction so Hebrew prose reads correctly.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$a × $b = ?',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.ink,
+                    shadows: [
+                      Shadow(color: AppTheme.accent, offset: Offset(2, 2))
                     ],
                   ),
-                );
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxW = constraints.maxWidth;
+                    // Fit `b` columns across the available width.
+                    var cell = ((maxW - (b - 1) * _spacing) / b)
+                        .clamp(_minCell, _maxCell);
+                    final gridW = b * cell + (b - 1) * _spacing;
+                    final gridH = a * cell + (a - 1) * _spacing;
+                    // Cap the drawn height so even 12×12 never pushes the
+                    // choices off-screen; scroll inside this box if the grid
+                    // is taller.
+                    const maxGridH = 240.0;
 
-                return ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: maxGridH),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: Center(child: grid),
-                  ),
-                );
-              },
+                    final grid = SizedBox(
+                      width: gridW,
+                      height: gridH,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var r = 0; r < a; r++) ...[
+                            if (r > 0) const SizedBox(height: _spacing),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (var c = 0; c < b; c++) ...[
+                                  if (c > 0) const SizedBox(width: _spacing),
+                                  _Dot(size: cell, row: r),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: maxGridH),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Center(child: grid),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              hint,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.primary.withOpacity(0.8),
-              ),
+          ),
+          const SizedBox(height: 10),
+          // Hint prose stays in the ambient direction (Hebrew RTL when He).
+          Text(
+            hint,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.primary.withOpacity(0.8),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

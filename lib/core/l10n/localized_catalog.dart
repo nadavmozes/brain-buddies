@@ -192,8 +192,8 @@ class LocalizedCatalog {
       'easy': 'גולפאף',
       'intermediate': 'אוקטו',
       'expert': 'דראקו',
-      // Times Tables campaign guardian.
-      'times': 'מולטו',
+      // Times Tables campaign guardian ("Times Guardian").
+      'times': 'שומר הכפל',
     },
     // ---- number_quest Times Tables campaign ----
     'nq.times.label': {

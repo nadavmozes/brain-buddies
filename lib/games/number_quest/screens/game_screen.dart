@@ -226,6 +226,23 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
+  /// Builds the header title. The three difficulty worlds keep their original
+  /// (English) `boss.name` / `level.title` so their behavior stays
+  /// byte-identical; only the Times Tables campaign (`level.mult != null`) is
+  /// localized.
+  String _headerTitle(BuildContext context) {
+    if (widget.isDaily) return '📅 Daily';
+    final level = widget.level;
+    final isCampaign = level.mult != null;
+    if (_isBoss) {
+      final name = isCampaign
+          ? context.tr('nq.boss.name', level.bossId, level.boss.name)
+          : level.boss.name;
+      return '${level.boss.emoji} $name';
+    }
+    return isCampaign ? context.l10n.levelN(level.number) : level.title;
+  }
+
   @override
   Widget build(BuildContext context) {
     final progress = (_current + 1) / _problems.length;
@@ -248,11 +265,7 @@ class _GameScreenState extends State<GameScreen>
             child: Column(
               children: [
                 _Header(
-                  title: widget.isDaily
-                      ? '📅 Daily'
-                      : (_isBoss
-                          ? '${widget.level.boss.emoji} ${context.tr('nq.boss.name', widget.level.bossId, widget.level.boss.name)}'
-                          : widget.level.title),
+                  title: _headerTitle(context),
                   world: widget.level.world,
                   current: _current + 1,
                   total: _problems.length,
@@ -314,6 +327,15 @@ class _GameScreenState extends State<GameScreen>
                   _QuestionCard(
                     problem: _problem,
                     shakeController: _shakeController,
+                    // Only the Times Tables campaign localizes the skill label;
+                    // the three worlds keep their original English label so
+                    // their behavior stays byte-identical.
+                    labelOverride: widget.level.mult != null
+                        ? context.tr(
+                            'nq.skill.label',
+                            SkillInfo.fromLabel(_problem.operatorLabel).name,
+                            _problem.operatorLabel)
+                        : null,
                   ),
                 const SizedBox(height: 20),
                 _ChoiceGrid(
@@ -446,10 +468,19 @@ class _BossBar extends StatelessWidget {
 }
 
 class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({required this.problem, required this.shakeController});
+  const _QuestionCard({
+    required this.problem,
+    required this.shakeController,
+    this.labelOverride,
+  });
 
   final MathProblem problem;
   final AnimationController shakeController;
+
+  /// When set (Times Tables campaign), the operator label is already localized
+  /// and shown as-is; otherwise the English [MathProblem.operatorLabel] is used
+  /// uppercased, exactly as before, so the three worlds are unchanged.
+  final String? labelOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -473,7 +504,7 @@ class _QuestionCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              problem.operatorLabel.toUpperCase(),
+              (labelOverride ?? problem.operatorLabel).toUpperCase(),
               style: TextStyle(
                 color: AppTheme.primary.withOpacity(0.7),
                 fontSize: 16,

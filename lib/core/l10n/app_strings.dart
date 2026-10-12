@@ -140,7 +140,6 @@ abstract class AppStrings {
   // ---- Number Quest Times Tables campaign (Phase 4) ----
   String get nqTimesTablesLabel; // "Times Tables" / "לוח הכפל"
   String get nqTimesTablesSubtitle; // short world blurb
-  String get nqTimesGuardianName; // "Multo" / "מולטו"
   String get nqMultArrayHint; // "Count the dots!" / "ספרו את הנקודות!"
 
   // ---- Number Quest (FEAT-002) ----
@@ -442,8 +441,6 @@ class EnStrings extends AppStrings {
   String get nqTimesTablesLabel => 'Times Tables';
   @override
   String get nqTimesTablesSubtitle => 'Build the times tables with dots, 1 to 12.';
-  @override
-  String get nqTimesGuardianName => 'Multo';
   @override
   String get nqMultArrayHint => 'Count the dots!';
 
@@ -813,8 +810,6 @@ class HeStrings extends AppStrings {
   String get nqTimesTablesLabel => 'לוח הכפל';
   @override
   String get nqTimesTablesSubtitle => 'בנו את לוח הכפל עם נקודות, מ-1 עד 12.';
-  @override
-  String get nqTimesGuardianName => 'מולטו';
   @override
   String get nqMultArrayHint => 'ספרו את הנקודות!';
 
