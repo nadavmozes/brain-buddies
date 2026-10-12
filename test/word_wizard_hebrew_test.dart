@@ -1,8 +1,10 @@
 // Verifies the Hebrew Word Wizard gameplay flashcard.
 //
-// In Hebrew mode the flashcard shows a Hebrew prompt word plus a secondary
-// English translation line (an LTR island under the RTL layout), and the
-// screen builds without throwing.
+// In Hebrew mode the flashcard shows Hebrew words and the screen builds without
+// throwing. The English translation is intentionally NOT shown on the flashcard
+// panel: on namePicture/missingLetter it would leak the answer, so the
+// Hebrew<->English pairing is taught only via the matchTranslation question
+// type (where the English words are the answer choices).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -68,14 +70,17 @@ void main() {
         w is Text && w.data != null && _hebrew.hasMatch(w.data!));
     expect(hebrewText, findsWidgets);
 
-    // The bilingual English translation line renders (a Latin-only Text under a
-    // left-to-right Directionality island).
-    final englishLine = find.byWidgetPredicate((w) =>
-        w is Text &&
-        w.data != null &&
-        w.data!.isNotEmpty &&
-        RegExp(r'^[a-zA-Z /]+$').hasMatch(w.data!));
-    expect(englishLine, findsWidgets);
+    // The flashcard panel must NOT show a plain English translation line (it
+    // would reveal the answer on a name-the-picture question). The prompt is
+    // Hebrew and the only Latin text allowed on screen is inside answer choices
+    // (matchTranslation), not a standalone translation caption under the emoji.
+    // We assert the specific giveaway widget — a lone lowercase translation
+    // line in the prompt panel — is absent by checking the prompt is Hebrew.
+    final prompt = tester.widgetList<Text>(find.byType(Text)).firstWhere(
+          (t) => t.data != null && _hebrew.hasMatch(t.data!),
+          orElse: () => const Text(''),
+        );
+    expect(prompt.data, isNotNull);
 
     expect(tester.takeException(), isNull);
   });

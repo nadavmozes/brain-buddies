@@ -179,24 +179,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                           ),
                         ),
                       ],
-                      // Bilingual helper: in Hebrew mode show the English
-                      // meaning on a small LTR line so the panel stays an LTR
-                      // island for the Latin text under an RTL layout.
-                      if (_q.translation != null) ...[
-                        const SizedBox(height: 8),
-                        Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: Text(
-                            _q.translation!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.ink.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
-                      ],
+                      // NOTE: the English translation is intentionally NOT
+                      // shown here. On namePicture/missingLetter it would leak
+                      // the answer (the child could just read the English and
+                      // pick the Hebrew word), and on matchTranslation the
+                      // translations are the answer choices themselves. The
+                      // Hebrew<->English pairing is taught via the
+                      // matchTranslation question type, not a giveaway label.
                     ],
                   ),
                 ),

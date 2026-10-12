@@ -324,7 +324,8 @@ class _ResultScreenState extends State<ResultScreen> {
                 Column(
                   children: [
                     Text(a.emoji, style: const TextStyle(fontSize: 40)),
-                    Text(a.name,
+                    Text(context.tr('ach.name', a.id, a.name),
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w800)),
                   ],
