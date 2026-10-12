@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/l10n.dart';
+
 /// Opens the device mail app with a pre-filled feedback email. Works on iOS
 /// and Android (and web, which opens the default mail handler) via a mailto:
 /// URL.
@@ -10,12 +12,13 @@ class FeedbackEmail {
   static const String address = 'BrainBuddies13@gmail.com';
 
   static Future<void> open(BuildContext context) async {
+    final l = L10n.read(context).strings;
     final uri = Uri(
       scheme: 'mailto',
       path: address,
       query: _encodeQuery({
-        'subject': 'BrainBuddies Feedback',
-        'body': 'Hi BrainBuddies team,\n\n',
+        'subject': l.feedbackSubject,
+        'body': l.feedbackBody,
       }),
     );
 
@@ -27,9 +30,9 @@ class FeedbackEmail {
     if (!launched && context.mounted) {
       // Fallback: show the address so the user can copy it manually.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email us at $address'),
-          duration: Duration(seconds: 4),
+        SnackBar(
+          content: Text(l.emailUsAt(address)),
+          duration: const Duration(seconds: 4),
         ),
       );
     }

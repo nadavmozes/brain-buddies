@@ -40,6 +40,11 @@ abstract class AppStrings {
 
   // ---- Common game chrome ----
   String get allGames; // "All Games"
+  String get doubleAwards; // "Double Awards"
+  String get watchVideoComingSoon; // "Watch a video — Coming Soon"
+  String emailUsAt(String address); // fallback snackbar
+  String get feedbackSubject; // mailto subject
+  String get feedbackBody; // mailto body greeting
   String trailTitle(String emoji, String label); // "<emoji> <label> Trail"
   String trailLabel(String label); // "<label> Trail" (no emoji)
   String deckLabel(String label); // "<label> Deck"
@@ -311,6 +316,16 @@ class EnStrings extends AppStrings {
 
   @override
   String get allGames => 'All Games';
+  @override
+  String get doubleAwards => 'Double Awards';
+  @override
+  String get watchVideoComingSoon => 'Watch a video — Coming Soon';
+  @override
+  String emailUsAt(String address) => 'Email us at $address';
+  @override
+  String get feedbackSubject => 'BrainBuddies Feedback';
+  @override
+  String get feedbackBody => 'Hi BrainBuddies team,\n\n';
   @override
   String trailTitle(String emoji, String label) => '$emoji $label Trail';
   @override
@@ -794,6 +809,16 @@ class HeStrings extends AppStrings {
 
   @override
   String get allGames => 'כל המשחקים';
+  @override
+  String get doubleAwards => 'פרסים כפולים';
+  @override
+  String get watchVideoComingSoon => 'צפו בסרטון — בקרוב';
+  @override
+  String emailUsAt(String address) => 'כתבו לנו אל $address';
+  @override
+  String get feedbackSubject => 'משוב על BrainBuddies';
+  @override
+  String get feedbackBody => 'שלום לצוות BrainBuddies,\n\n';
   @override
   String trailTitle(String emoji, String label) => 'שביל $label $emoji';
   @override
