@@ -1,19 +1,33 @@
 import 'dart:math';
 
+import '../../../core/l10n/app_lang.dart';
 import '../models/word_bank.dart';
 import '../models/word_question.dart';
 import '../models/wizard_level.dart';
 
+/// The Hebrew letters offered as missing-letter choices. Niqqud is OFF and
+/// final/sofit forms (ך ם ן ף ץ) are excluded to keep the choice buttons clean
+/// and unambiguous for young readers.
+const String heAlphabet = 'אבגדהוזחטיכלמנסעפצקרשת';
+
 /// Generates Word Wizard questions. [difficulty] 0..1 selects the word pool
-/// and mixes in harder question types.
+/// and mixes in harder question types. [lang] selects the English or Hebrew
+/// word bank + question types; it is passed in explicitly because generators
+/// are static/stateless (the screen resolves it via L10n.read in initState).
 class WordQuestionGenerator {
-  WordQuestionGenerator({Random? random}) : _rng = random ?? Random();
+  WordQuestionGenerator({Random? random, this.lang = AppLang.en})
+      : _rng = random ?? Random();
 
   final Random _rng;
+  final AppLang lang;
 
   /// Builds a round for a specific spellbook level using its difficulty.
-  static List<WordQuestion> forLevel(WizardLevel level, {Random? random}) {
-    final gen = WordQuestionGenerator(random: random);
+  static List<WordQuestion> forLevel(
+    WizardLevel level, {
+    Random? random,
+    AppLang lang = AppLang.en,
+  }) {
+    final gen = WordQuestionGenerator(random: random, lang: lang);
     return gen.generateRound(
       level.questionCount,
       difficulty: level.difficulty(WizardMap.levelsPerChapter),
@@ -49,6 +63,25 @@ class WordQuestionGenerator {
   // needs distractors chosen by initial letter. Both would require new model
   // fields and a new type branch, so they are deferred.
   WordQuestion generateOne(double difficulty) {
+    if (lang == AppLang.he) {
+      final types = <WordQuestionType>[
+        WordQuestionType.namePicture,
+        if (difficulty >= 0.25) WordQuestionType.matchTranslation,
+        if (difficulty >= 0.5) WordQuestionType.missingLetter,
+      ];
+      final type = types[_rng.nextInt(types.length)];
+      switch (type) {
+        case WordQuestionType.namePicture:
+          return _namePictureHe(difficulty);
+        case WordQuestionType.matchTranslation:
+          return _matchTranslation(difficulty);
+        case WordQuestionType.missingLetter:
+          return _missingLetterHe(difficulty);
+        case WordQuestionType.correctSpelling:
+          // Not used in Hebrew; namePicture is a safe fallback.
+          return _namePictureHe(difficulty);
+      }
+    }
     final types = <WordQuestionType>[
       WordQuestionType.namePicture,
       if (difficulty >= 0.25) WordQuestionType.missingLetter,
@@ -62,11 +95,16 @@ class WordQuestionGenerator {
         return _missingLetter(difficulty);
       case WordQuestionType.correctSpelling:
         return _correctSpelling(difficulty);
+      case WordQuestionType.matchTranslation:
+        // Not used in English; namePicture is a safe fallback.
+        return _namePicture(difficulty);
     }
   }
 
   WordEntry _pick(double d) {
-    final pool = WordBank.forDifficulty(d);
+    final pool = lang == AppLang.he
+        ? HebrewWordBank.forDifficulty(d)
+        : WordBank.forDifficulty(d);
     return pool[_rng.nextInt(pool.length)];
   }
 
@@ -82,6 +120,94 @@ class WordQuestionGenerator {
       choices: options,
       correctIndex: options.indexOf(answer.word),
       word: answer.word,
+    );
+  }
+
+  // Hebrew: show emoji, pick the Hebrew word (display form with niqqud).
+  WordQuestion _namePictureHe(double d) {
+    final answer = _pick(d);
+    final options = _distinctDisplayWords(d, answer.displayWord, 4);
+    return WordQuestion(
+      type: WordQuestionType.namePicture,
+      prompt: 'איזו מילה זאת?',
+      emoji: answer.emoji,
+      display: '',
+      choices: options,
+      correctIndex: options.indexOf(answer.displayWord),
+      word: answer.word,
+      translation: answer.translation,
+    );
+  }
+
+  // Hebrew: show the Hebrew word, pick its English translation.
+  WordQuestion _matchTranslation(double d) {
+    final answer = _pick(d);
+    final pool = HebrewWordBank.forDifficulty(d)
+        .map((e) => e.translation)
+        .whereType<String>()
+        .toList()
+      ..shuffle(_rng);
+    final set = <String>{answer.translation!};
+    for (final t in pool) {
+      if (set.length >= 4) break;
+      set.add(t);
+    }
+    if (set.length < 4) {
+      final extra = HebrewWordBank.allWords
+          .map((e) => e.translation)
+          .whereType<String>()
+          .toList()
+        ..shuffle(_rng);
+      for (final t in extra) {
+        if (set.length >= 4) break;
+        set.add(t);
+      }
+    }
+    final options = set.toList()..shuffle(_rng);
+    return WordQuestion(
+      type: WordQuestionType.matchTranslation,
+      prompt: 'מה הפירוש באנגלית?',
+      emoji: answer.emoji,
+      display: answer.displayWord,
+      choices: options,
+      correctIndex: options.indexOf(answer.translation!),
+      word: answer.word,
+    );
+  }
+
+  // Hebrew: show emoji + plain word with a blank; pick the missing letter from
+  // the Hebrew alphabet pool (niqqud off, no final forms).
+  WordQuestion _missingLetterHe(double d) {
+    final entry = _pick(d);
+    final word = entry.word;
+    // Prefer masking a letter that exists in the choice pool so the correct
+    // answer is always offerable; fall back to any index if none qualify.
+    final maskable = [
+      for (var i = 0; i < word.length; i++)
+        if (heAlphabet.contains(word[i])) i,
+    ];
+    final idx = maskable.isNotEmpty
+        ? maskable[_rng.nextInt(maskable.length)]
+        : _rng.nextInt(word.length);
+    final missing = word[idx];
+    final shown =
+        [for (var i = 0; i < word.length; i++) i == idx ? '_' : word[i]]
+            .join(' ');
+
+    final letters = <String>{missing};
+    while (letters.length < 4) {
+      letters.add(heAlphabet[_rng.nextInt(heAlphabet.length)]);
+    }
+    final options = letters.toList()..shuffle(_rng);
+    return WordQuestion(
+      type: WordQuestionType.missingLetter,
+      prompt: 'בחרו את האות החסרה',
+      emoji: entry.emoji,
+      display: shown,
+      choices: options,
+      correctIndex: options.indexOf(missing),
+      word: word,
+      translation: entry.translation,
     );
   }
 
@@ -163,6 +289,28 @@ class WordQuestionGenerator {
     }
     final result = chars.join();
     return result == word ? '${word}e' : result;
+  }
+
+  // Distinct Hebrew display words (niqqud forms) for namePicture choices.
+  List<String> _distinctDisplayWords(double d, String answer, int count) {
+    final pool =
+        HebrewWordBank.forDifficulty(d).map((e) => e.displayWord).toList();
+    final set = <String>{answer};
+    pool.shuffle(_rng);
+    for (final w in pool) {
+      if (set.length >= count) break;
+      set.add(w);
+    }
+    if (set.length < count) {
+      final extra =
+          HebrewWordBank.allWords.map((e) => e.displayWord).toList()
+            ..shuffle(_rng);
+      for (final w in extra) {
+        if (set.length >= count) break;
+        set.add(w);
+      }
+    }
+    return set.toList()..shuffle(_rng);
   }
 
   List<String> _distinctWords(double d, String answer, int count) {

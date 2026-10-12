@@ -117,7 +117,7 @@
     // Speak a word aloud with the browser's built-in text-to-speech. Guarded
     // the same defensive way as maPlaySound so it is a safe no-op wherever
     // SpeechSynthesis is unavailable (and never throws).
-    window.maSpeak = function (text) {
+    window.maSpeak = function (text, lang) {
       try {
         if (typeof window.speechSynthesis === 'undefined') return;
         if (typeof window.SpeechSynthesisUtterance === 'undefined') return;
@@ -127,7 +127,10 @@
         var u = new SpeechSynthesisUtterance(text);
         u.rate = 0.9;   // gentle, easy for young readers to follow
         u.pitch = 1.1;  // slightly high, friendly for kids
-        u.lang = 'en-US';
+        // BCP-47 language (e.g. 'en-US', 'he-IL'); defaults to en-US. Where no
+        // voice is installed for the language the browser just stays silent —
+        // speech is a nice-to-have and never gates gameplay.
+        u.lang = (typeof lang === 'string' && lang) ? lang : 'en-US';
         window.speechSynthesis.speak(u);
       } catch (e) { /* no-op: speech is a nice-to-have */ }
     };

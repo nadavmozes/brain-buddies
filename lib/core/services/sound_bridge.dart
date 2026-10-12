@@ -34,11 +34,13 @@ class SoundBridge {
   static void levelUp() => _play('levelup');
   static void victory() => _play('victory');
 
-  /// Speaks [text] aloud with the browser's text-to-speech. Respects the same
-  /// [enabled] toggle as sound effects; a no-op where speech is unavailable.
-  static void speak(String text) {
+  /// Speaks [text] aloud with the browser's text-to-speech in the given BCP-47
+  /// [lang] (e.g. 'en-US', 'he-IL'). Respects the same [enabled] toggle as
+  /// sound effects; a no-op where speech is unavailable. A missing voice for
+  /// [lang] is a silent no-op in the JS layer — never gate correctness on it.
+  static void speak(String text, {String lang = 'en-US'}) {
     if (!enabled) return;
-    impl.speak(text);
+    impl.speak(text, lang: lang);
   }
 
   /// Stops any in-progress speech. Safe no-op where speech is unavailable.

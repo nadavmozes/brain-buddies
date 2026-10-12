@@ -8,6 +8,9 @@ enum WordQuestionType {
 
   /// Show a picture; pick the correctly-spelled word among misspellings.
   correctSpelling,
+
+  /// Show a (Hebrew) word; pick its English translation. Hebrew mode only.
+  matchTranslation,
 }
 
 /// A built Word Wizard question.
@@ -20,6 +23,7 @@ class WordQuestion {
     required this.choices,
     required this.correctIndex,
     this.word,
+    this.translation,
   });
 
   final WordQuestionType type;
@@ -41,6 +45,12 @@ class WordQuestion {
   /// (only the masked [display] and single-letter [choices]). Optional for
   /// backward compatibility; falls back to the correct choice.
   final String? word;
+
+  /// The English translation of the prompt word, rendered as a secondary
+  /// bilingual line on the flashcard (Hebrew mode only). Null when there is no
+  /// translation to show (e.g. all English questions, or matchTranslation
+  /// where the translation IS the answer). Optional, defaults to null.
+  final String? translation;
 
   /// The word to speak aloud for this question: always the full correct
   /// answer word, never a distractor or the masked display.

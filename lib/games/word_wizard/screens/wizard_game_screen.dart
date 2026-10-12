@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -34,6 +35,9 @@ class WizardGameScreen extends StatefulWidget {
 
 class _WizardGameScreenState extends State<WizardGameScreen> {
   late final List<WordQuestion> _questions;
+  // The language resolved once in initState; drives Hebrew vs English question
+  // generation and the text-to-speech voice.
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -50,7 +54,10 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = WordQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists (e.g. the plain English speaker test).
+    _lang = L10n.read(context).lang;
+    _questions = WordQuestionGenerator.forLevel(widget.level, lang: _lang);
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed = _stopwatch.elapsed.inSeconds);
@@ -70,7 +77,11 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   void _speakWord() {
     final word = _q.spokenWord;
     if (word.isEmpty) return;
-    FeedbackService(enabled: widget.state.soundOn).speak(word);
+    // Speak in the round's language. Hebrew speech needs an OS/browser he-IL
+    // voice; where none is installed the JS layer stays silent (never throws,
+    // never gates correctness).
+    final ttsLang = _lang == AppLang.he ? 'he-IL' : 'en-US';
+    FeedbackService(enabled: widget.state.soundOn).speak(word, lang: ttsLang);
   }
 
   void _onAnswer(int index) {
@@ -185,6 +196,24 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                           ),
                         ),
                       ],
+                      // Bilingual helper: in Hebrew mode show the English
+                      // meaning on a small LTR line so the panel stays an LTR
+                      // island for the Latin text under an RTL layout.
+                      if (_q.translation != null) ...[
+                        const SizedBox(height: 8),
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            _q.translation!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.ink.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -276,6 +305,20 @@ class _ChoiceGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Shrink the label font for long Hebrew words so RTL choices (which can be
+    // 6-7 letters) never overflow the 2-column tiles. English rendering is
+    // left untouched (always 22pt) so the English game stays byte-identical.
+    final isHebrew =
+        question.choices.any((c) => RegExp(r'[\u0590-\u05FF]').hasMatch(c));
+    final longest = question.choices.fold<int>(
+      0,
+      (max, c) => c.length > max ? c.length : max,
+    );
+    final fontSize = !isHebrew || longest <= 5
+        ? 22.0
+        : longest <= 7
+            ? 19.0
+            : 17.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileWidth = (constraints.maxWidth - 14) / 2;
@@ -291,7 +334,7 @@ class _ChoiceGrid extends StatelessWidget {
                 children: [
                   ComicButton(
                     label: question.choices[index],
-                    fontSize: 22,
+                    fontSize: fontSize,
                     color: _bg(index),
                     textColor: answered &&
                             (index == question.correctIndex ||
