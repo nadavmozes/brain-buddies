@@ -13,6 +13,8 @@ class ClockSetter extends StatelessWidget {
     required this.value,
     required this.minuteStep,
     required this.enabled,
+    required this.hourLabel,
+    required this.minuteLabel,
     required this.onChanged,
   });
 
@@ -21,6 +23,10 @@ class ClockSetter extends StatelessWidget {
   /// The minute increment, derived from the world (e.g. 30, 15, or 5).
   final int minuteStep;
   final bool enabled;
+
+  /// Localized captions for the hour/minute steppers.
+  final String hourLabel;
+  final String minuteLabel;
   final ValueChanged<ClockTime> onChanged;
 
   void _changeHour(int delta) {
@@ -48,13 +54,13 @@ class ClockSetter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _StepGroup(
-              label: 'Hour',
+              label: hourLabel,
               onMinus: enabled ? () => _changeHour(-1) : null,
               onPlus: enabled ? () => _changeHour(1) : null,
             ),
             const SizedBox(width: 20),
             _StepGroup(
-              label: 'Minute',
+              label: minuteLabel,
               onMinus: enabled ? () => _changeMinute(-1) : null,
               onPlus: enabled ? () => _changeMinute(1) : null,
             ),

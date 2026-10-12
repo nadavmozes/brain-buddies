@@ -150,8 +150,8 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                      : '${world.emoji} ${widget.level.title}',
+                      ? '${widget.level.guardian.emoji} ${context.tr('mm.guardian.name', world.name, widget.level.guardian.name)}'
+                      : '${world.emoji} ${context.l10n.stopN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,

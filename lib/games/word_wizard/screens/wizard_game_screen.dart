@@ -161,8 +161,8 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.boss.emoji} ${widget.level.boss.name}'
-                      : '${widget.level.chapter.emoji} ${widget.level.title}',
+                      ? '${widget.level.boss.emoji} ${context.tr('ww.boss.name', widget.level.chapter.name, widget.level.boss.name)}'
+                      : '${widget.level.chapter.emoji} ${widget.level.isBoss ? context.l10n.spellMaster : context.l10n.lessonN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,

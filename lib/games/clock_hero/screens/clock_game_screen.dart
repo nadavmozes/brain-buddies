@@ -39,6 +39,9 @@ class ClockGameScreen extends StatefulWidget {
 
 class _ClockGameScreenState extends State<ClockGameScreen> {
   late final List<ClockQuestion> _questions;
+  // The language resolved once in initState; drives Hebrew vs English question
+  // generation.
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -66,7 +69,10 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = ClockQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists (matches the Money Math pattern).
+    _lang = L10n.read(context).lang;
+    _questions = ClockQuestionGenerator.forLevel(widget.level, lang: _lang);
     _resetSetValue();
     _stopwatch.start();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -180,8 +186,8 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                      : '${world.emoji} ${widget.level.title}',
+                      ? '${widget.level.guardian.emoji} ${context.tr('ch.guardian.name', world.name, widget.level.guardian.name)}'
+                      : '${world.emoji} ${context.l10n.stopN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,
@@ -267,6 +273,8 @@ class _ClockGameScreenState extends State<ClockGameScreen> {
                 value: _setValue,
                 minuteStep: _minuteStep,
                 enabled: !_answered,
+                hourLabel: context.l10n.clockHour,
+                minuteLabel: context.l10n.clockMinute,
                 onChanged: (t) => setState(() => _setValue = t),
               ),
             ),

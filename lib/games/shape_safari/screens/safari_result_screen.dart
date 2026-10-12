@@ -161,8 +161,10 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                             ],
                             if (_befriended) ...[
                               const SizedBox(height: 12),
-                              ResultBanner(
-                                  l.safariFriendBanner(level.guardian.name)),
+                              ResultBanner(l.safariFriendBanner(context.tr(
+                                  'ss.guardian.name',
+                                  level.habitat.name,
+                                  level.guardian.name))),
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),

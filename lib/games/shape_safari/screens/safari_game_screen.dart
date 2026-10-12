@@ -38,6 +38,9 @@ class SafariGameScreen extends StatefulWidget {
 
 class _SafariGameScreenState extends State<SafariGameScreen> {
   late final List<ShapeQuestion> _questions;
+  // The language resolved once in initState; drives Hebrew vs English question
+  // generation.
+  late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
   int? _selectedIndex;
@@ -59,7 +62,10 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = ShapeQuestionGenerator.forLevel(widget.level);
+    // Non-listening lookup is safe in initState; falls back to English when no
+    // L10n ancestor exists (matches the Money Math pattern).
+    _lang = L10n.read(context).lang;
+    _questions = ShapeQuestionGenerator.forLevel(widget.level, lang: _lang);
     // Need most answers right to befriend the guardian.
     _photosNeeded = 5;
     _stopwatch.start();
@@ -89,7 +95,7 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
         _feedback = _isGuardian ? l.safariSnap : _praise(l);
         fb.correct();
       } else {
-        _feedback = _correctAnswerText(l);
+        _feedback = _correctAnswerText(context, l);
         fb.wrong();
       }
     });
@@ -101,9 +107,13 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
     return lines[_correct % lines.length];
   }
 
-  String _correctAnswerText(AppStrings l) {
+  String _correctAnswerText(BuildContext context, AppStrings l) {
     final c = _q.choices[_q.correctIndex];
-    final label = c.isShape ? c.shape!.label : c.text!;
+    // Localize the shape name for shape choices; text choices (numbers) are
+    // already language-neutral.
+    final label = c.isShape
+        ? context.tr('ss.shape.label', c.shape!.name, c.shape!.label)
+        : c.text!;
     return l.safariWrong(label);
   }
 
@@ -167,8 +177,8 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
               children: [
                 GameHeader(
                   title: _isGuardian
-                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                      : '${habitat.emoji} ${widget.level.title}',
+                      ? '${widget.level.guardian.emoji} ${context.tr('ss.guardian.name', habitat.name, widget.level.guardian.name)}'
+                      : '${habitat.emoji} ${context.l10n.stopN(widget.level.number)}',
                   countLabel: '${_current + 1} / ${_questions.length}',
                   seconds: _elapsed,
                   progress: progress,

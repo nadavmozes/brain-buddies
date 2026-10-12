@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../../../core/l10n/app_lang.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../models/clock_question.dart';
 import '../models/clock_time.dart';
 import '../models/time_world.dart';
@@ -7,20 +9,35 @@ import '../models/time_world.dart';
 /// Generates Clock Hero questions. [difficulty] 0..1 controls minute precision
 /// and which question types appear. A [minutePool] (from a world) pins the
 /// allowed minutes.
+///
+/// [lang] selects the prompt + spoken-time language. It is passed in explicitly
+/// because the generator is static/stateless (the screen resolves it via
+/// `L10n.read` in `initState`, matching the Money Math pattern). English is
+/// byte-identical to the original behavior.
 class ClockQuestionGenerator {
-  ClockQuestionGenerator({Random? random, List<int>? minutePool})
+  ClockQuestionGenerator(
+      {Random? random, List<int>? minutePool, this.lang = AppLang.en})
       : _rng = random ?? Random(),
         _worldMinutes = minutePool;
 
   final Random _rng;
   final List<int>? _worldMinutes;
+  final AppLang lang;
+
+  /// Resolved chrome strings for the current language.
+  AppStrings get _s => stringsFor(lang == AppLang.he);
 
   /// Builds a round for a specific trail level using the world's minute pool
   /// and the level's difficulty.
-  static List<ClockQuestion> forLevel(ClockLevel level, {Random? random}) {
+  static List<ClockQuestion> forLevel(
+    ClockLevel level, {
+    Random? random,
+    AppLang lang = AppLang.en,
+  }) {
     final gen = ClockQuestionGenerator(
       random: random,
       minutePool: level.world.minutePool,
+      lang: lang,
     );
     return gen.generateRound(
       level.questionCount,
@@ -88,7 +105,7 @@ class ClockQuestionGenerator {
     final times = _distinctTimes(d, answer, 4);
     return ClockQuestion(
       type: ClockQuestionType.readClock,
-      prompt: 'What time is it?',
+      prompt: _s.clockPromptRead,
       promptTime: answer,
       textChoices: times.map((t) => t.label).toList(),
       correctIndex: times.indexOf(answer),
@@ -101,7 +118,7 @@ class ClockQuestionGenerator {
     final times = _distinctTimes(d, answer, 4);
     return ClockQuestion(
       type: ClockQuestionType.findClock,
-      prompt: 'Which clock shows ${answer.spoken}?',
+      prompt: _s.clockPromptFind(_s.clockSpoken(answer.hour, answer.minute)),
       clockChoices: times,
       correctIndex: times.indexOf(answer),
     );
@@ -112,7 +129,7 @@ class ClockQuestionGenerator {
     final target = _randomTime(d);
     return ClockQuestion(
       type: ClockQuestionType.setClock,
-      prompt: 'Set the clock to ${target.spoken}',
+      prompt: _s.clockPromptSet(_s.clockSpoken(target.hour, target.minute)),
       targetTime: target,
       correctIndex: 0, // not used; correctness checked against targetTime
     );
@@ -124,10 +141,11 @@ class ClockQuestionGenerator {
     final hours = _rng.nextInt(3) + 1; // 1..3 hours
     final answer = start.addHours(hours);
     final times = _distinctTimes(d, answer, 4);
-    final hourWord = hours == 1 ? '1 hour' : '$hours hours';
+    final hourWord = _s.clockHours(hours);
     return ClockQuestion(
       type: ClockQuestionType.elapsed,
-      prompt: "It's ${start.spoken}. What time in $hourWord?",
+      prompt: _s.clockPromptElapsed(
+          _s.clockSpoken(start.hour, start.minute), hourWord),
       promptTime: start,
       textChoices: times.map((t) => t.label).toList(),
       correctIndex: times.indexOf(answer),

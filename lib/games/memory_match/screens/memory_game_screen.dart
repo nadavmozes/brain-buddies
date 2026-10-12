@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/services/feedback_service.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/theme/app_theme.dart';
@@ -169,8 +170,8 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
               children: [
                 GameHeader(
                   title: widget.level.isBoss
-                      ? '${widget.level.guardian.emoji} ${widget.level.guardian.name}'
-                      : '${world.emoji} ${widget.level.title}',
+                      ? '${widget.level.guardian.emoji} ${context.tr('mem.guardian.name', world.name, widget.level.guardian.name)}'
+                      : '${world.emoji} ${context.l10n.stopN(widget.level.number)}',
                   countLabel: '$_matchedPairs / ${widget.level.pairs}',
                   seconds: _elapsed,
                   progress: progress,
