@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../theme/app_theme.dart';
 import 'comic_button.dart';
 
@@ -18,7 +19,7 @@ class SoundToggleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ComicButton(
-      label: soundOn ? 'Sound: On' : 'Sound: Off',
+      label: soundOn ? context.l10n.soundOn : context.l10n.soundOff,
       icon: soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
       color: Colors.white,
       textColor: AppTheme.ink,

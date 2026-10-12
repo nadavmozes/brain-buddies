@@ -48,7 +48,7 @@ class MemoryMatchHome extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _TitleBanner(),
+                _TitleBanner(),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.pickDeck,
@@ -166,7 +166,7 @@ class _WorldCard extends StatelessWidget {
 }
 
 class _TitleBanner extends StatelessWidget {
-  const _TitleBanner();
+  _TitleBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -176,9 +176,9 @@ class _TitleBanner extends StatelessWidget {
         color: const Color(0xFF8E24AA),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
-          children: const [
-            Text('MEMORY',
-                style: TextStyle(
+          children: [
+            Text(context.l10n.memLogoLine1,
+                style: const TextStyle(
                   fontSize: 42,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
@@ -186,8 +186,8 @@ class _TitleBanner extends StatelessWidget {
                   letterSpacing: 2,
                   shadows: [Shadow(color: AppTheme.ink, offset: Offset(3, 3))],
                 )),
-            Text('MATCH',
-                style: TextStyle(
+            Text(context.l10n.memLogoLine2,
+                style: const TextStyle(
                   fontSize: 40,
                   height: 1.0,
                   fontWeight: FontWeight.w900,

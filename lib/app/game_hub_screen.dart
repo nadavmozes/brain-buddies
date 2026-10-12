@@ -10,6 +10,7 @@ import '../core/services/sound_bridge.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_panel.dart';
+import '../core/widgets/stat_chip.dart';
 import '../games/clock_hero/screens/clock_hero_home_screen.dart';
 import '../games/clock_hero/services/clock_state.dart';
 import '../games/memory_match/screens/memory_match_home_screen.dart';
@@ -461,26 +462,11 @@ class _ProfileBar extends StatelessWidget {
             _LangToggle(profile: profile),
             const SizedBox(width: 8),
             if (profile.dailyStreak > 0) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                margin: const EdgeInsetsDirectional.only(end: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppTheme.ink, width: 2.5),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 3),
-                    Text('${profile.dailyStreak}',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ),
+              StatChip(
+                  leading: '🔥',
+                  value: '${profile.dailyStreak}',
+                  fontSize: 15),
+              const SizedBox(width: 8),
             ],
             CoinPill(amount: profile.coins),
           ],

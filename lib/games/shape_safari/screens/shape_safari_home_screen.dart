@@ -49,7 +49,7 @@ class ShapeSafariHome extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _TitleBanner(),
+                _TitleBanner(),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.pickHabitat,
@@ -168,7 +168,7 @@ class _HabitatCard extends StatelessWidget {
 }
 
 class _TitleBanner extends StatelessWidget {
-  const _TitleBanner();
+  _TitleBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +178,9 @@ class _TitleBanner extends StatelessWidget {
         color: const Color(0xFF26A69A),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         child: Column(
-          children: const [
-            Text('SHAPE',
-                style: TextStyle(
+          children: [
+            Text(context.l10n.ssLogoLine1,
+                style: const TextStyle(
                   fontSize: 42,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
@@ -188,8 +188,8 @@ class _TitleBanner extends StatelessWidget {
                   letterSpacing: 2,
                   shadows: [Shadow(color: AppTheme.ink, offset: Offset(3, 3))],
                 )),
-            Text('SAFARI',
-                style: TextStyle(
+            Text(context.l10n.ssLogoLine2,
+                style: const TextStyle(
                   fontSize: 38,
                   height: 1.0,
                   fontWeight: FontWeight.w900,

@@ -51,11 +51,4 @@ class WordQuestion {
   /// translation to show (e.g. all English questions, or matchTranslation
   /// where the translation IS the answer). Optional, defaults to null.
   final String? translation;
-
-  /// The word to speak aloud for this question: always the full correct
-  /// answer word, never a distractor or the masked display.
-  String get spokenWord =>
-      word ?? (correctIndex >= 0 && correctIndex < choices.length
-          ? choices[correctIndex]
-          : '');
 }

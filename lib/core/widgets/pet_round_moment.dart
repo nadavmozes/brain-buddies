@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../services/player_profile.dart';
 import '../theme/app_theme.dart';
 import 'comic_panel.dart';
@@ -29,9 +30,9 @@ class PetRoundMoment extends StatelessWidget {
               Text(profile.petStage.emoji,
                   style: const TextStyle(fontSize: 30)),
               const SizedBox(width: 12),
-              const Text('Buddy',
-                  style:
-                      TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(context.l10n.buddy,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w800)),
               const Spacer(),
               Text('+${profile.lastRoundPetXp} XP',
                   style: const TextStyle(
@@ -40,14 +41,14 @@ class PetRoundMoment extends StatelessWidget {
           ),
           if (grew) ...[
             const SizedBox(height: 10),
-            _grewBanner(),
+            _grewBanner(context),
           ],
         ],
       ),
     );
   }
 
-  Widget _grewBanner() {
+  Widget _grewBanner(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
@@ -56,10 +57,10 @@ class PetRoundMoment extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.ink, width: 2.5),
       ),
-      child: const Text(
-        '🎉 Buddy grew!',
+      child: Text(
+        context.l10n.buddyGrew,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
             color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900),
       ),
     );

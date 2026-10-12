@@ -50,7 +50,7 @@ class MoneyMathHome extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _TitleBanner(),
+                _TitleBanner(),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.pickPiggy,
@@ -211,7 +211,7 @@ class _CoinsLegendButton extends StatelessWidget {
 }
 
 class _TitleBanner extends StatelessWidget {
-  const _TitleBanner();
+  _TitleBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -221,9 +221,9 @@ class _TitleBanner extends StatelessWidget {
         color: const Color(0xFF66BB6A),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
-          children: const [
-            Text('MONEY',
-                style: TextStyle(
+          children: [
+            Text(context.l10n.mmLogoLine1,
+                style: const TextStyle(
                   fontSize: 46,
                   height: 1.0,
                   fontWeight: FontWeight.w900,
@@ -231,8 +231,8 @@ class _TitleBanner extends StatelessWidget {
                   letterSpacing: 2,
                   shadows: [Shadow(color: AppTheme.ink, offset: Offset(3, 3))],
                 )),
-            Text('MATH',
-                style: TextStyle(
+            Text(context.l10n.mmLogoLine2,
+                style: const TextStyle(
                   fontSize: 42,
                   height: 1.0,
                   fontWeight: FontWeight.w900,

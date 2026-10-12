@@ -36,7 +36,7 @@ class WizardGameScreen extends StatefulWidget {
 class _WizardGameScreenState extends State<WizardGameScreen> {
   late final List<WordQuestion> _questions;
   // The language resolved once in initState; drives Hebrew vs English question
-  // generation and the text-to-speech voice.
+  // generation.
   late final AppLang _lang;
   int _current = 0;
   int _correct = 0;
@@ -55,7 +55,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   void initState() {
     super.initState();
     // Non-listening lookup is safe in initState; falls back to English when no
-    // L10n ancestor exists (e.g. the plain English speaker test).
+    // L10n ancestor exists.
     _lang = L10n.read(context).lang;
     _questions = WordQuestionGenerator.forLevel(widget.level, lang: _lang);
     _stopwatch.start();
@@ -69,19 +69,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     _ticker?.cancel();
     _stopwatch.stop();
     super.dispose();
-  }
-
-  // Reads the current question's correct word aloud. Routes through
-  // FeedbackService so it respects the sound toggle; a no-op where
-  // text-to-speech is unavailable.
-  void _speakWord() {
-    final word = _q.spokenWord;
-    if (word.isEmpty) return;
-    // Speak in the round's language. Hebrew speech needs an OS/browser he-IL
-    // voice; where none is installed the JS layer stays silent (never throws,
-    // never gates correctness).
-    final ttsLang = _lang == AppLang.he ? 'he-IL' : 'en-US';
-    FeedbackService(enabled: widget.state.soundOn).speak(word, lang: ttsLang);
   }
 
   void _onAnswer(int index) {
@@ -181,11 +168,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   child: Column(
                     children: [
                       Text(_q.emoji, style: const TextStyle(fontSize: 72)),
-                      const SizedBox(height: 10),
-                      _SpeakerButton(
-                        enabled: widget.state.soundOn,
-                        onTap: _speakWord,
-                      ),
                       if (_q.display.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -247,37 +229,6 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A big comic-style speaker button that reads the word aloud. Stays visible
-/// for a stable layout; when sound is off it is greyed out and inert.
-class _SpeakerButton extends StatelessWidget {
-  const _SpeakerButton({required this.enabled, required this.onTap});
-
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: enabled ? AppTheme.sky : Colors.grey.shade400,
-          border: AppTheme.comicBorder,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.comicShadow(offset: 4),
-        ),
-        child: const Icon(
-          Icons.volume_up_rounded,
-          color: Colors.white,
-          size: 36,
         ),
       ),
     );

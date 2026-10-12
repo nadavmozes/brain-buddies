@@ -110,8 +110,9 @@ class SettingsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '⭐ ${state.totalStars} stars   🪙 ${profile.coins} coins   '
-                      'LV ${state.level}',
+                      '⭐ ${state.totalStars} ${context.l10n.stars}   '
+                      '🪙 ${profile.coins} ${context.l10n.coins}   '
+                      '${context.l10n.levelAbbrev(state.level)}',
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w800),
                     ),
@@ -134,6 +135,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _confirmReset(BuildContext context) {
+    final l = context.l10n;
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -142,17 +144,16 @@ class SettingsScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: AppTheme.ink, width: 3),
         ),
-        title: const Text('Reset all progress?',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-          'This erases stars, XP, coins, avatars and awards across all games. '
-          'This cannot be undone.',
-          style: TextStyle(fontSize: 16),
+        title: Text(l.resetConfirmTitle,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          l.resetConfirmBody,
+          style: const TextStyle(fontSize: 16),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -160,8 +161,8 @@ class SettingsScreen extends StatelessWidget {
               await profile.reset();
               if (dialogContext.mounted) Navigator.of(dialogContext).pop();
             },
-            child: const Text('Reset',
-                style: TextStyle(
+            child: Text(l.reset,
+                style: const TextStyle(
                     color: AppTheme.danger, fontWeight: FontWeight.w800)),
           ),
         ],

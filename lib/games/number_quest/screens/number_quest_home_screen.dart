@@ -7,7 +7,7 @@ import '../../../core/widgets/all_games_back_button.dart';
 import '../../../core/widgets/coin_pill.dart';
 import '../../../core/widgets/comic_button.dart';
 import '../../../core/widgets/comic_panel.dart';
-import '../../../core/widgets/xp_bar.dart';
+import '../../../core/widgets/stat_chip.dart';
 import '../models/level.dart';
 import '../services/game_state.dart';
 import '../widgets/hero_buddy.dart';
@@ -53,7 +53,7 @@ class NumberQuestHome extends StatelessWidget {
                 ),
                 _Hud(state: state, profile: profile),
                 const SizedBox(height: 16),
-                const _TitleBanner(),
+                _TitleBanner(),
                 const SizedBox(height: 20),
                 ComicButton(
                   label: context.l10n.play,
@@ -174,28 +174,9 @@ class _Hud extends StatelessWidget {
             heroEmoji: profile.selectedAvatar.emoji,
             baseColor: profile.selectedAvatar.color,
           ),
-          const SizedBox(width: 10),
-          XpBar(level: state.level, progress: state.levelProgress, width: 90),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            margin: const EdgeInsetsDirectional.only(end: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppTheme.ink, width: 2.5),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🔥', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 4),
-                Text('${profile.dailyStreak}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w900)),
-              ],
-            ),
-          ),
+          StatChip(leading: '🔥', value: '${profile.dailyStreak}'),
+          const SizedBox(width: 8),
           CoinPill(amount: profile.coins),
         ],
       ),
@@ -204,7 +185,7 @@ class _Hud extends StatelessWidget {
 }
 
 class _TitleBanner extends StatelessWidget {
-  const _TitleBanner();
+  _TitleBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -214,10 +195,10 @@ class _TitleBanner extends StatelessWidget {
         color: AppTheme.primary,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
         child: Column(
-          children: const [
+          children: [
             Text(
-              'NUMBER',
-              style: TextStyle(
+              context.l10n.nqLogoLine1,
+              style: const TextStyle(
                 fontSize: 48,
                 height: 1.0,
                 fontWeight: FontWeight.w900,
@@ -227,8 +208,8 @@ class _TitleBanner extends StatelessWidget {
               ),
             ),
             Text(
-              'QUEST',
-              style: TextStyle(
+              context.l10n.nqLogoLine2,
+              style: const TextStyle(
                 fontSize: 44,
                 height: 1.0,
                 fontWeight: FontWeight.w900,
