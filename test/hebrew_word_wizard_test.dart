@@ -86,9 +86,12 @@ void main() {
       }
     });
 
-    test('matchTranslation picks the correct English translation', () {
+    test('Hebrew mode never shows English translation questions', () {
+      // The Hebrew Word Wizard teaches Hebrew reading, not English. Every
+      // question type must be Hebrew-only: no matchTranslation, and every
+      // answer choice is Hebrew (missingLetter choices are single Hebrew
+      // letters; namePicture choices are Hebrew words).
       final level = WizardMap.allLevels.last;
-      var sawTranslation = false;
       for (final seed in [1, 7, 13, 42, 99, 123, 256]) {
         final qs = WordQuestionGenerator.forLevel(
           level,
@@ -96,20 +99,14 @@ void main() {
           random: Random(seed),
         );
         for (final q in qs) {
-          if (q.type != WordQuestionType.matchTranslation) continue;
-          sawTranslation = true;
-          // Prompt word is Hebrew; choices are English (no Hebrew).
-          expect(_hasHebrew(q.display), isTrue);
+          expect(q.type, isNot(WordQuestionType.matchTranslation),
+              reason: 'Hebrew mode must not use translation questions');
           for (final c in q.choices) {
-            expect(_hasHebrew(c), isFalse,
-                reason: 'translation choice should be English: $c');
+            expect(_hasHebrew(c), isTrue,
+                reason: 'every Hebrew choice should be Hebrew, got: $c');
           }
-          // The spoken word is the plain Hebrew word.
-          expect(_hasHebrew(q.word ?? ''), isTrue);
         }
       }
-      expect(sawTranslation, isTrue,
-          reason: 'expected at least one matchTranslation question');
     });
 
     test('English mode is unchanged (words are Latin, no matchTranslation)',

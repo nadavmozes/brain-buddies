@@ -64,21 +64,20 @@ class WordQuestionGenerator {
   // fields and a new type branch, so they are deferred.
   WordQuestion generateOne(double difficulty) {
     if (lang == AppLang.he) {
+      // Hebrew is a Hebrew-reading game: ONLY Hebrew question types. No
+      // translation/English-meaning questions (Israeli kids are learning
+      // Hebrew, not English). The two types are: pick the Hebrew word for the
+      // picture, and fill in the missing Hebrew letter.
       final types = <WordQuestionType>[
         WordQuestionType.namePicture,
-        if (difficulty >= 0.25) WordQuestionType.matchTranslation,
-        if (difficulty >= 0.5) WordQuestionType.missingLetter,
+        if (difficulty >= 0.3) WordQuestionType.missingLetter,
       ];
       final type = types[_rng.nextInt(types.length)];
       switch (type) {
-        case WordQuestionType.namePicture:
-          return _namePictureHe(difficulty);
-        case WordQuestionType.matchTranslation:
-          return _matchTranslation(difficulty);
         case WordQuestionType.missingLetter:
           return _missingLetterHe(difficulty);
-        case WordQuestionType.correctSpelling:
-          // Not used in Hebrew; namePicture is a safe fallback.
+        case WordQuestionType.namePicture:
+        default:
           return _namePictureHe(difficulty);
       }
     }
@@ -136,42 +135,6 @@ class WordQuestionGenerator {
       correctIndex: options.indexOf(answer.displayWord),
       word: answer.word,
       translation: answer.translation,
-    );
-  }
-
-  // Hebrew: show the Hebrew word, pick its English translation.
-  WordQuestion _matchTranslation(double d) {
-    final answer = _pick(d);
-    final pool = HebrewWordBank.forDifficulty(d)
-        .map((e) => e.translation)
-        .whereType<String>()
-        .toList()
-      ..shuffle(_rng);
-    final set = <String>{answer.translation!};
-    for (final t in pool) {
-      if (set.length >= 4) break;
-      set.add(t);
-    }
-    if (set.length < 4) {
-      final extra = HebrewWordBank.allWords
-          .map((e) => e.translation)
-          .whereType<String>()
-          .toList()
-        ..shuffle(_rng);
-      for (final t in extra) {
-        if (set.length >= 4) break;
-        set.add(t);
-      }
-    }
-    final options = set.toList()..shuffle(_rng);
-    return WordQuestion(
-      type: WordQuestionType.matchTranslation,
-      prompt: 'מה הפירוש באנגלית?',
-      emoji: answer.emoji,
-      display: answer.displayWord,
-      choices: options,
-      correctIndex: options.indexOf(answer.translation!),
-      word: answer.word,
     );
   }
 
