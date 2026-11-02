@@ -680,15 +680,20 @@ class PlayerProfile extends ChangeNotifier {
     // below stay on the ORIGINAL coinsEarned so the double only affects the
     // coin balance shown to the child.
     final firstWinToday = _doubleDay != _todayKey();
-    final doubledNow = firstWinToday && coinsEarned > 0;
-    _lastRoundWasDoubled = doubledNow;
-    _lastRoundCoinsPaid =
-        doubledNow ? (coinsEarned * 2).clamp(0, _kDoubleCap) : coinsEarned;
-    if (doubledNow) {
+    final firstWinWithCoins = firstWinToday && coinsEarned > 0;
+    final paid =
+        firstWinWithCoins ? (coinsEarned * 2).clamp(0, _kDoubleCap) : coinsEarned;
+    final extra = paid - coinsEarned;
+    // Only flag/celebrate the "Daily Double" when the child actually received
+    // extra coins. On a very high-earning round the cap can leave extra == 0;
+    // consuming the day's double silently (no banner) avoids over-promising.
+    _lastRoundWasDoubled = firstWinWithCoins && extra > 0;
+    _lastRoundCoinsPaid = paid;
+    if (firstWinWithCoins) {
       _doubleDay = _todayKey();
       await _prefs?.setString(_kDoubleDay, _doubleDay);
       // Credit the extra coins beyond what the game already paid.
-      await addCoins(_lastRoundCoinsPaid - coinsEarned);
+      if (extra > 0) await addCoins(extra);
     }
 
     await recordPlayDay();
