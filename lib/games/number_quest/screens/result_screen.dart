@@ -172,6 +172,8 @@ class _ResultScreenState extends State<ResultScreen> {
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
+                              _recordBanner(l.newBest),
+                              const SizedBox(height: 8),
                               _recordBanner(l.newFastestTime),
                             ],
                             if (outcome.leveledUp) ...[

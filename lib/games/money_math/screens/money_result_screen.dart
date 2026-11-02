@@ -155,6 +155,8 @@ class _MoneyResultScreenState extends State<MoneyResultScreen> {
                             ),
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
+                              ResultBanner(l.newBest),
+                              const SizedBox(height: 8),
                               ResultBanner(l.newFastestTime),
                             ] else if (outcome.isNewBestScore) ...[
                               const SizedBox(height: 12),

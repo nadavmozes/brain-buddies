@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/mastery.dart';
+import 'player_profile.dart';
 import 'sound_bridge.dart';
 
 /// Shared base for the sibling per-game progress stores (Shape Safari, Word
@@ -142,5 +144,23 @@ abstract class GameProgressStore extends ChangeNotifier {
       }
     }
     return false;
+  }
+
+  // ---- mastery cache (Engagement Phase 4 / P5b) ----
+
+  /// This game's per-level star counts in play order, for the mastery tier.
+  @protected
+  List<int> masteryStarList() =>
+      orderedLevelIds.map(stars).toList(growable: false);
+
+  /// Recomputes this game's mastery tier from its current 3-star coverage and
+  /// caches it on the shared [profile] under `profile_mastery_<gameId>`. Call
+  /// at the END of completeLevel (after [keepBestStars]) — the one place a
+  /// game's star coverage changes. The profile persists + notifies only when
+  /// the tier actually changes, so repeated calls are cheap.
+  @protected
+  Future<void> cacheMastery(PlayerProfile profile, String gameId) async {
+    final tier = masteryTierForStars(masteryStarList());
+    await profile.setMasteryTier(gameId, tier.rank);
   }
 }

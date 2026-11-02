@@ -8,6 +8,7 @@ import '../models/avatar.dart';
 import '../models/avatar_frame.dart';
 import '../models/daily_reward.dart';
 import '../models/game_catalog.dart';
+import '../models/mastery.dart';
 import '../models/mission.dart';
 import '../models/pet.dart';
 import 'analytics_service.dart';
@@ -65,6 +66,20 @@ class PlayerProfile extends ChangeNotifier {
   String _weekKey = '';
   int _weekDaysPlayed = 0;
   bool _weekClaimed = false;
+
+  // Per-game MASTERY cache (Engagement Phase 4 / P5b): the cached 0..3 tier per
+  // gameId, so the hub can show a mastery badge WITHOUT force-loading the six
+  // lazy per-game stores. Each game recomputes + writes its own tier at round
+  // end (in completeLevel), the only place its 3-star coverage changes.
+  final Map<String, int> _masteryTiers = {};
+
+  // Daily surprise chest (Engagement Phase 4 / P6): the day-key of the last
+  // chest open. A chest is openable whenever today differs from this.
+  String _chestDay = '';
+
+  // What's-new-today panel (Engagement Phase 4 / P11): the day-key the hub
+  // panel was last seen/dismissed, so it auto-dismisses once per day.
+  String _whatsNewSeenDay = '';
 
   // Hub-wide daily streak (spans all games).
   int _dailyStreak = 0;
@@ -169,6 +184,14 @@ class PlayerProfile extends ChangeNotifier {
   static const _kWeekKey = 'profile_week_key';
   static const _kWeekDaysPlayed = 'profile_week_days_played';
   static const _kWeekClaimed = 'profile_week_claimed';
+  // Engagement Phase 4 keys (additive, default-absent-safe — schemaVersion
+  // stays 1). All are cleared in reset().
+  // P5b per-game mastery cache (one int per gameId):
+  static String _kMastery(String gameId) => 'profile_mastery_$gameId';
+  // P6 daily surprise chest:
+  static const _kChestDay = 'profile_chest_day';
+  // P11 what's-new-today panel:
+  static const _kWhatsNewSeen = 'profile_whatsnew_seen_day';
 
   // ---- Engagement Phase 3 tuning constants (documented) ----
 
@@ -186,6 +209,17 @@ class PlayerProfile extends ChangeNotifier {
 
   /// Distinct days this week needed to claim the weekly bonus.
   static const int _kWeeklyGoalTarget = 5;
+
+  /// The FIXED daily-surprise-chest reward set (Engagement Phase 4 / P6). All
+  /// are friendly, never empty, and modest versus shop prices (avatars 50-200)
+  /// so the economy keeps meaning. One is chosen DETERMINISTICALLY by the
+  /// day-key (stable within a day, rotates across days) — no rarity, no
+  /// gambling framing, every outcome a nice prize.
+  static const List<ChestReward> _chestRewards = [
+    ChestReward(coins: 60, treats: 0, confetti: false),
+    ChestReward(coins: 120, treats: 0, confetti: true),
+    ChestReward(coins: 30, treats: 2, confetti: true),
+  ];
 
   bool get isLoaded => _loaded;
 
@@ -244,6 +278,23 @@ class PlayerProfile extends ChangeNotifier {
   /// week and not yet claimed this week.
   bool get canClaimWeeklyBonus =>
       _weekDaysPlayed >= weeklyGoalTarget && !_weekClaimed;
+
+  // ---- per-game mastery (Engagement Phase 4 / P5b) ----
+
+  /// The cached 0..3 mastery tier for [gameId] (0 when unknown/never updated).
+  /// Read on the hub game card WITHOUT loading any per-game store.
+  int masteryTier(String gameId) => _masteryTiers[gameId] ?? 0;
+
+  // ---- daily surprise chest (Engagement Phase 4 / P6) ----
+
+  /// Whether today's surprise chest is still unopened (today != last-open day).
+  bool get canOpenChest => _chestDay != _todayKey();
+
+  // ---- what's-new-today panel (Engagement Phase 4 / P11) ----
+
+  /// Whether the hub's what's-new panel was already seen/dismissed today (so it
+  /// auto-dismisses once per day).
+  bool get whatsNewSeenToday => _whatsNewSeenDay == _todayKey();
 
   bool hasAchievement(String id) => _achievements.contains(id);
   int get achievementCount => _achievements.length;
@@ -412,6 +463,17 @@ class PlayerProfile extends ChangeNotifier {
     _weekDaysPlayed = p.getInt(_kWeekDaysPlayed) ?? 0;
     _weekClaimed = p.getBool(_kWeekClaimed) ?? false;
     await _rolloverWeekIfNeeded();
+
+    // Engagement Phase 4 (additive, default-safe). Per-game mastery cache: one
+    // int per game id (default 0 = none). Chest + what's-new day-keys default
+    // to '' so a fresh profile can open the chest and will see the panel.
+    _masteryTiers.clear();
+    for (final g in GameCatalog.all) {
+      final t = p.getInt(_kMastery(g.id));
+      if (t != null) _masteryTiers[g.id] = t;
+    }
+    _chestDay = p.getString(_kChestDay) ?? '';
+    _whatsNewSeenDay = p.getString(_kWhatsNewSeen) ?? '';
 
     _loaded = true;
     notifyListeners();
@@ -791,6 +853,65 @@ class PlayerProfile extends ChangeNotifier {
     return bonus;
   }
 
+  // ---- per-game mastery (Engagement Phase 4 / P5b) ----
+
+  /// Caches a game's mastery [tier] (clamped 0..3) under
+  /// `profile_mastery_<gameId>`. Persists + notifies ONLY when the value
+  /// actually changes, so recomputing the same tier at every round end is a
+  /// no-op. Called from each game's completeLevel after its stars are written.
+  Future<void> setMasteryTier(String gameId, int tier) async {
+    final clamped = tier.clamp(0, 3);
+    if (_masteryTiers[gameId] == clamped) return;
+    _masteryTiers[gameId] = clamped;
+    await _prefs?.setInt(_kMastery(gameId), clamped);
+    notifyListeners();
+  }
+
+  // ---- daily surprise chest (Engagement Phase 4 / P6) ----
+
+  /// Opens today's surprise chest, granting ONE fixed, friendly reward from
+  /// [_chestRewards]. The reward is picked DETERMINISTICALLY by the day-key so
+  /// it is stable within a day and rotates across days — never random, never
+  /// empty, no rarity. Guards: returns null (grants nothing) when the chest was
+  /// already opened today. On success grants coins/treats, stamps today as the
+  /// last-open day, notifies, and returns the chosen [ChestReward] so the UI
+  /// can show the prize.
+  Future<ChestReward?> openChest() async {
+    if (!canOpenChest) return null;
+    final reward = _chestForDay(_todayKey());
+    // Stamp the day FIRST so canOpenChest flips false immediately (addCoins/
+    // addTreats notify, and a listener re-reading canOpenChest must see it
+    // closed).
+    _chestDay = _todayKey();
+    await _prefs?.setString(_kChestDay, _chestDay);
+    if (reward.coins > 0) await addCoins(reward.coins);
+    if (reward.treats > 0) await addTreats(reward.treats);
+    notifyListeners();
+    return reward;
+  }
+
+  /// The chest reward for a given [dayKey]: a stable, non-negative hash of the
+  /// key mod the reward-set length. Deterministic per day, rotates across days.
+  ChestReward _chestForDay(String dayKey) {
+    var h = 0;
+    for (final code in dayKey.codeUnits) {
+      h = (h * 31 + code) & 0x7fffffff; // keep non-negative
+    }
+    return _chestRewards[h % _chestRewards.length];
+  }
+
+  // ---- what's-new-today panel (Engagement Phase 4 / P11) ----
+
+  /// Marks the hub what's-new panel as seen/dismissed for today, so it
+  /// auto-dismisses until the next calendar day. Persists + notifies.
+  Future<void> markWhatsNewSeen() async {
+    final today = _todayKey();
+    if (_whatsNewSeenDay == today) return;
+    _whatsNewSeenDay = today;
+    await _prefs?.setString(_kWhatsNewSeen, _whatsNewSeenDay);
+    notifyListeners();
+  }
+
   // ---- pet companion ----
 
   /// Adds XP to the pet (earned alongside coins). Grants pet-level awards.
@@ -1109,6 +1230,31 @@ class PlayerProfile extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Clears the chest open stamp (dev-only) so today's surprise chest can be
+  /// opened again for testing.
+  Future<void> debugResetChest() async {
+    _chestDay = '';
+    await _prefs?.remove(_kChestDay);
+    notifyListeners();
+  }
+
+  /// Clears the what's-new seen stamp (dev-only) so the hub panel shows again.
+  Future<void> debugResetWhatsNew() async {
+    _whatsNewSeenDay = '';
+    await _prefs?.remove(_kWhatsNewSeen);
+    notifyListeners();
+  }
+
+  /// Bumps every game's cached mastery tier to gold (3) for QA (dev-only), so
+  /// the hub mastery badges can be eyeballed without clearing every level.
+  Future<void> debugBumpMastery() async {
+    for (final g in GameCatalog.all) {
+      _masteryTiers[g.id] = 3;
+      await _prefs?.setInt(_kMastery(g.id), 3);
+    }
+    notifyListeners();
+  }
+
   // ---- reset ----
 
   Future<void> reset() async {
@@ -1148,6 +1294,9 @@ class PlayerProfile extends ChangeNotifier {
     _weekKey = '';
     _weekDaysPlayed = 0;
     _weekClaimed = false;
+    _masteryTiers.clear();
+    _chestDay = '';
+    _whatsNewSeenDay = '';
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -1178,6 +1327,11 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kWeekKey);
     await _prefs?.remove(_kWeekDaysPlayed);
     await _prefs?.remove(_kWeekClaimed);
+    for (final g in GameCatalog.all) {
+      await _prefs?.remove(_kMastery(g.id));
+    }
+    await _prefs?.remove(_kChestDay);
+    await _prefs?.remove(_kWhatsNewSeen);
     notifyListeners();
   }
 }

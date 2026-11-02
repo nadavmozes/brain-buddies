@@ -1,4 +1,5 @@
 import '../../../core/models/achievement.dart';
+import '../../../core/models/game_catalog.dart';
 import '../../../core/services/game_progress_store.dart';
 import '../../../core/services/player_profile.dart';
 import '../models/time_world.dart';
@@ -94,6 +95,9 @@ class ClockState extends GameProgressStore {
       threeStars: stars == 3,
       bossBeaten: guardianGreeted,
     );
+
+    // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
+    await cacheMastery(profile, GameCatalog.clockHero.id);
 
     notifyListeners();
     return ClockOutcome(

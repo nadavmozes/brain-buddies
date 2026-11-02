@@ -143,6 +143,8 @@ class _MemoryResultScreenState extends State<MemoryResultScreen> {
                             ),
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
+                              ResultBanner(l.newBest),
+                              const SizedBox(height: 8),
                               ResultBanner(l.newFastestTime),
                             ],
                           ],
