@@ -164,7 +164,34 @@ class _CalendarPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canClaim = profile.canClaimDailyLogin;
-    final currentIndex = profile.loginCycleIndex;
+    final cycleIndex = profile.loginCycleIndex;
+    final count = DailyRewards.length;
+
+    // The calendar must separate "next claim index" (what the profile stores in
+    // loginCycleIndex) from "what the child sees today". claimDailyLogin()
+    // advances loginCycleIndex immediately on claim, so after a claim the raw
+    // index points at TOMORROW's reward, not today's.
+    //
+    // - canClaim == true  -> today's reward is still unclaimed. The highlighted
+    //   today box is cycleIndex, and boxes before it are claimed this cycle.
+    // - canClaim == false -> today's reward was already claimed. The box the
+    //   child claimed today is (cycleIndex - 1) mod 7. Everything up to and
+    //   including it is completed, and no box is "claimable today". On the
+    //   day-7 wrap (cycleIndex == 0 after claiming day 7) all 7 boxes read as
+    //   completed until the date changes.
+    final int todayIndex; // highlighted-as-today box (-1 when none)
+    final int completedCount; // number of leading boxes shown as claimed
+    if (canClaim) {
+      todayIndex = cycleIndex;
+      completedCount = cycleIndex;
+    } else {
+      // Index just claimed today; -1 wraps to the last box (day 7).
+      final claimedToday = (cycleIndex - 1 + count) % count;
+      todayIndex = -1;
+      // day-7 wrap (claimed day 7, cycleIndex back to 0) -> all boxes done.
+      completedCount = cycleIndex == 0 ? count : claimedToday + 1;
+    }
+
     // 4 boxes per row at phone width; sized from the panel width (not
     // MediaQuery) so it is correct inside the 430px frame.
     const perRow = 4;
@@ -189,14 +216,14 @@ class _CalendarPanel extends StatelessWidget {
             spacing: gap,
             runSpacing: gap,
             children: [
-              for (var i = 0; i < DailyRewards.length; i++)
+              for (var i = 0; i < count; i++)
                 _RewardBox(
                   def: DailyRewards.atIndex(i),
                   size: boxSize,
-                  // Boxes before the current index this cycle are "claimed".
-                  claimed: i < currentIndex,
-                  isToday: i == currentIndex,
-                  claimableToday: i == currentIndex && canClaim,
+                  // Leading boxes this cycle are "claimed".
+                  claimed: i < completedCount,
+                  isToday: i == todayIndex,
+                  claimableToday: i == todayIndex && canClaim,
                 ),
             ],
           ),

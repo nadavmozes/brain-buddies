@@ -69,10 +69,60 @@ void main() {
     expect(find.text('Play all 6 today!'), findsOneWidget);
     expect(find.text("Play today's challenge"), findsOneWidget);
 
+    // Before claiming, no box is marked completed yet.
+    expect(find.text('✅'), findsNothing);
+
     // Claiming the gift pays coins and swaps the button for the come-back note.
     await tester.tap(find.text('Claim'));
     await tester.pumpAndSettle();
     expect(find.text('Come back tomorrow!'), findsOneWidget);
+
+    // Ordinary-day post-claim state: exactly the day-1 box reads as completed
+    // (one ✅), and tomorrow's box is NOT highlighted as today/claimable (no
+    // CLAIM button). This guards against the calendar jumping a day ahead.
+    expect(find.text('Claim'), findsNothing);
+    expect(find.text('✅'), findsOneWidget);
+  });
+
+  testWidgets('day-7 post-claim shows all boxes completed, not reset',
+      (WidgetTester tester) async {
+    // Seed the cycle at the final day (index 6), unclaimed so day 7 is
+    // claimable. Claiming day 7 wraps the cycle index back to 0, which must NOT
+    // wipe the completed markers for the rest of the day.
+    SharedPreferences.setMockInitialValues({
+      'profile_login_cycle': DailyRewards.length - 1,
+    });
+    _usePhone(tester);
+
+    final profile = PlayerProfile();
+    await profile.load();
+
+    await tester.pumpWidget(
+      L10n(
+        lang: profile.lang,
+        notifier: profile,
+        child: MaterialApp(
+          locale: profile.lang.locale,
+          home: DailyRewardScreen(profile: profile, onPlayDaily: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Day 7 is claimable: the CLAIM button shows and the six earlier boxes read
+    // as completed.
+    expect(find.text('Claim'), findsOneWidget);
+    expect(find.text('✅'), findsNWidgets(DailyRewards.length - 1));
+
+    await tester.tap(find.text('Claim'));
+    await tester.pumpAndSettle();
+
+    // After the day-7 claim the cycle wraps to index 0, but all seven boxes
+    // must remain completed for the rest of the day (not reset to an empty
+    // calendar presenting day 1 as today).
+    expect(find.text('Come back tomorrow!'), findsOneWidget);
+    expect(find.text('Claim'), findsNothing);
+    expect(find.text('✅'), findsNWidgets(DailyRewards.length));
   });
 
   testWidgets('DailyRewardScreen renders RTL in Hebrew at 430x900',
