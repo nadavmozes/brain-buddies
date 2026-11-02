@@ -11,6 +11,7 @@ import '../models/game_catalog.dart';
 import '../models/mastery.dart';
 import '../models/mission.dart';
 import '../models/pet.dart';
+import '../models/season.dart';
 import 'analytics_service.dart';
 import 'sound_bridge.dart';
 
@@ -1064,8 +1065,17 @@ class PlayerProfile extends ChangeNotifier {
   // ---- avatar frames (shop + daily reward) ----
 
   /// Whether a gated frame's unlock requirement is satisfied. Frames with no
-  /// [AvatarFrame.unlock] are always considered unlocked.
-  bool isFrameUnlocked(AvatarFrame f) => isUnlocked(f.unlock);
+  /// [AvatarFrame.unlock] are always considered unlocked. A season-gated frame
+  /// ([AvatarFrame.season] != null) ALSO requires the current date to fall in
+  /// that season — so a seasonal frame is claimable only in its season. This
+  /// adds NO persistence: the season is derived from the clock each call.
+  bool isFrameUnlocked(AvatarFrame f) {
+    if (!isUnlocked(f.unlock)) return false;
+    if (f.season != null && Season.forDate(DateTime.now()).key != f.season) {
+      return false;
+    }
+    return true;
+  }
 
   /// Progress (0..1) toward a gated frame's unlock requirement, for a hint UI.
   double frameUnlockProgress(AvatarFrame f) => unlockProgress(f.unlock);

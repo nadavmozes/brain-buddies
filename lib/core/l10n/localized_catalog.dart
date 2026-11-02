@@ -170,6 +170,8 @@ class LocalizedCatalog {
       'stars': 'כוכבים',
       'flower': 'פרח',
       'rainbow': 'קשת',
+      'frost': 'כפור',
+      'blossom': 'פריחה',
     },
     // ---- avatar_frame.dart (unlock requirement labels) ----
     'frame.unlock': {

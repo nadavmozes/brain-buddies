@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/l10n/l10n.dart';
 import '../core/models/game_catalog.dart';
+import '../core/models/season.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/feedback_email.dart';
 import '../core/services/player_profile.dart';
@@ -314,13 +315,19 @@ class _GameHubScreenState extends State<GameHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // P7 seasonal dressing: a SUBTLE, date-driven tint (no persistence). The
+    // top gradient stop is lerped lightly toward the season's accent so the
+    // hub quietly changes with the time of year.
+    final season = Season.forDate(DateTime.now());
+    final topColor =
+        Color.lerp(AppTheme.sky, season.tint, 0.35) ?? AppTheme.sky;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.sky, AppTheme.paper],
+            colors: [topColor, AppTheme.paper],
           ),
         ),
         child: SafeArea(
@@ -345,7 +352,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _HubTitle(),
+                _HubTitle(seasonEmoji: season.emoji),
                 const SizedBox(height: 6),
                 Text(
                   context.l10n.hubTagline,
@@ -1024,33 +1031,54 @@ class _LangToggle extends StatelessWidget {
 }
 
 class _HubTitle extends StatelessWidget {
-  const _HubTitle();
+  const _HubTitle({required this.seasonEmoji});
+
+  /// The current season's small emoji motif (P7), tucked beside the title.
+  final String seasonEmoji;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: -0.02,
-      child: ComicPanel(
-        color: AppTheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('🧠', style: TextStyle(fontSize: 30)),
-            SizedBox(width: 8),
-            Text(
-              'BrainBuddies',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 0.5,
-                shadows: [Shadow(color: AppTheme.ink, offset: Offset(2.5, 2.5))],
-              ),
+    // Overlay ONE small seasonal motif at the title's trailing-top corner.
+    // PositionedDirectional + EdgeInsetsDirectional keep it RTL-safe inside
+    // the 430px frame; clipBehavior:none lets it peek just outside the panel.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Transform.rotate(
+          angle: -0.02,
+          child: ComicPanel(
+            color: AppTheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('🧠', style: TextStyle(fontSize: 30)),
+                SizedBox(width: 8),
+                Text(
+                  'BrainBuddies',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(color: AppTheme.ink, offset: Offset(2.5, 2.5))
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        PositionedDirectional(
+          end: -6,
+          top: -10,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 4),
+            child: Text(seasonEmoji, style: const TextStyle(fontSize: 24)),
+          ),
+        ),
+      ],
     );
   }
 }
