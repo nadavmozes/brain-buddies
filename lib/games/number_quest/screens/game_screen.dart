@@ -204,6 +204,13 @@ class _GameScreenState extends State<GameScreen>
       bossDefeated: bossDefeated,
     );
 
+    // Engagement Phase 4 / P11: finishing today's daily challenge consumes the
+    // what's-new "new daily challenge" nudge for the day (the challenge stays
+    // replayable; only the pending signal clears).
+    if (widget.isDaily) {
+      await widget.profile.markDailyChallengePlayed();
+    }
+
     if (!mounted) return;
     if (outcome.stars == 3 || bossDefeated) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();

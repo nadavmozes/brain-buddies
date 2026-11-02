@@ -217,6 +217,61 @@ void main() {
     });
   });
 
+  group("what's-new daily-challenge pending signal", () {
+    test('fresh profile: challenge is pending (unplayed today)', () async {
+      SharedPreferences.setMockInitialValues({});
+      final profile = PlayerProfile();
+      await profile.load();
+      expect(profile.canPlayDailyChallenge, isTrue);
+    });
+
+    test('markDailyChallengePlayed stamps today and flips the signal off',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final profile = PlayerProfile();
+      await profile.load();
+
+      await profile.markDailyChallengePlayed();
+      expect(profile.canPlayDailyChallenge, isFalse);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('profile_challenge_day'),
+          _dayKey(DateTime.now()));
+    });
+
+    test('a stale challenge-day from yesterday re-arms today', () async {
+      final yesterday =
+          _dayKey(DateTime.now().subtract(const Duration(days: 1)));
+      SharedPreferences.setMockInitialValues({
+        'profile_challenge_day': yesterday,
+      });
+      final profile = PlayerProfile();
+      await profile.load();
+      expect(profile.canPlayDailyChallenge, isTrue);
+    });
+
+    test('ALL hooks off -> no pending what\'s-new item exists', () async {
+      // Seed every daily hook as already satisfied TODAY so the panel would
+      // show nothing (auto-hide). This is the all-hooks-off state the review
+      // requires coverage for.
+      final today = _dayKey(DateTime.now());
+      SharedPreferences.setMockInitialValues({
+        'profile_login_last_claim': today, // login gift claimed
+        'profile_daily_treat_day': today, // daily treat claimed
+        'profile_chest_day': today, // chest opened
+        'profile_challenge_day': today, // daily challenge played
+      });
+      final profile = PlayerProfile();
+      await profile.load();
+
+      expect(profile.canClaimDailyLogin, isFalse);
+      expect(profile.canClaimDailyTreat, isFalse);
+      expect(profile.canOpenChest, isFalse);
+      expect(profile.hasClaimableMission, isFalse);
+      expect(profile.canPlayDailyChallenge, isFalse);
+    });
+  });
+
   group('persistence + reset', () {
     test('reset() removes every new Phase 4 key', () async {
       SharedPreferences.setMockInitialValues({
@@ -228,6 +283,7 @@ void main() {
         'profile_mastery_memory_match': 1,
         'profile_chest_day': '2020-01-01',
         'profile_whatsnew_seen_day': '2020-01-01',
+        'profile_challenge_day': '2020-01-01',
       });
       final profile = PlayerProfile();
       await profile.load();
@@ -242,9 +298,11 @@ void main() {
       }
       expect(prefs.get('profile_chest_day'), isNull);
       expect(prefs.get('profile_whatsnew_seen_day'), isNull);
+      expect(prefs.get('profile_challenge_day'), isNull);
       // In-memory getters back to defaults.
       expect(profile.canOpenChest, isTrue);
       expect(profile.whatsNewSeenToday, isFalse);
+      expect(profile.canPlayDailyChallenge, isTrue);
     });
   });
 }

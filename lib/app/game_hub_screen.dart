@@ -410,8 +410,10 @@ class _GameHubScreenState extends State<GameHubScreen> {
             label: context.l10n.daily,
             emoji: '📅',
             onTap: _openDaily,
-            // Nudge the child when today's login gift is unclaimed.
-            badge: _profile.canClaimDailyLogin,
+            // Nudge the child when today's login gift is unclaimed OR today's
+            // surprise chest is still unopened — both live on the Daily
+            // surface, so the badge must reflect either pending hook.
+            badge: _profile.canClaimDailyLogin || _profile.canOpenChest,
           ),
           const SizedBox(height: 14),
           Row(
@@ -743,22 +745,33 @@ class _WhatsNewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (profile.whatsNewSeenToday) return const SizedBox.shrink();
     final l = context.l10n;
+    // Tapping ANY item consumes the panel for the day: it marks the panel seen
+    // (persisting profile_whatsnew_seen_day) and THEN routes to that surface.
+    // This is the product-defined "consumed" event the review requires, so the
+    // panel does not reappear on return; the X control is a second way to
+    // dismiss. Each row is also gated on a REAL pending signal, so the list
+    // empties — and the panel auto-hides — as the hooks are satisfied.
+    VoidCallback consume(VoidCallback route) => () {
+          profile.markWhatsNewSeen();
+          route();
+        };
     final items = <_WhatsNewItem>[
       if (profile.canClaimDailyLogin)
-        _WhatsNewItem('🎁', l.whatsNewGift, onOpenDaily),
+        _WhatsNewItem('🎁', l.whatsNewGift, consume(onOpenDaily)),
       if (profile.canClaimDailyTreat)
-        _WhatsNewItem('🦴', l.whatsNewTreat, onOpenPet),
+        _WhatsNewItem('🦴', l.whatsNewTreat, consume(onOpenPet)),
       // The chest lives on the Daily surface, so route there.
       if (profile.canOpenChest)
-        _WhatsNewItem('📦', l.whatsNewChest, onOpenDaily),
+        _WhatsNewItem('📦', l.whatsNewChest, consume(onOpenDaily)),
       if (profile.hasClaimableMission)
-        _WhatsNewItem('📋', l.whatsNewMission, onOpenMissions),
-      // The Number Quest daily challenge is always available, so always list
-      // it (consistent with the "only when available" rule — it is available).
-      _WhatsNewItem('⭐', l.whatsNewChallenge, onOpenChallenge),
+        _WhatsNewItem('📋', l.whatsNewMission, consume(onOpenMissions)),
+      // The Number Quest daily challenge is a REAL pending signal now: shown
+      // only while today's challenge is unplayed, so it stops padding the list
+      // and the panel can empty out (and auto-hide) once it is played.
+      if (profile.canPlayDailyChallenge)
+        _WhatsNewItem('⭐', l.whatsNewChallenge, consume(onOpenChallenge)),
     ];
-    // Auto-hide when nothing is pending (the always-on challenge means this is
-    // rarely empty, but the guard keeps the rule honest if that changes).
+    // Auto-hide when nothing is pending.
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Padding(

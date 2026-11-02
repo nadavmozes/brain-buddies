@@ -81,6 +81,13 @@ class PlayerProfile extends ChangeNotifier {
   // panel was last seen/dismissed, so it auto-dismisses once per day.
   String _whatsNewSeenDay = '';
 
+  // Daily challenge "played today" stamp (Engagement Phase 4 / P11): the
+  // day-key of the last day the Number Quest daily challenge was played. The
+  // challenge is a REAL pending signal for the what's-new panel — pending while
+  // today differs from this, consumed once today's challenge round finishes.
+  // (The challenge itself stays replayable; this only drives the nudge.)
+  String _challengeDay = '';
+
   // Hub-wide daily streak (spans all games).
   int _dailyStreak = 0;
   String _lastPlayedDay = '';
@@ -192,6 +199,8 @@ class PlayerProfile extends ChangeNotifier {
   static const _kChestDay = 'profile_chest_day';
   // P11 what's-new-today panel:
   static const _kWhatsNewSeen = 'profile_whatsnew_seen_day';
+  // P11 daily-challenge "played today" stamp (drives the challenge pending row):
+  static const _kChallengeDay = 'profile_challenge_day';
 
   // ---- Engagement Phase 3 tuning constants (documented) ----
 
@@ -295,6 +304,13 @@ class PlayerProfile extends ChangeNotifier {
   /// Whether the hub's what's-new panel was already seen/dismissed today (so it
   /// auto-dismisses once per day).
   bool get whatsNewSeenToday => _whatsNewSeenDay == _todayKey();
+
+  /// Whether today's Number Quest daily challenge is still UNPLAYED (today !=
+  /// the last-played day). This is a real pending signal for the what's-new
+  /// panel's challenge row, so the row — and the panel — can empty out once the
+  /// child has played today's challenge. The challenge stays replayable; this
+  /// flag only drives the nudge.
+  bool get canPlayDailyChallenge => _challengeDay != _todayKey();
 
   bool hasAchievement(String id) => _achievements.contains(id);
   int get achievementCount => _achievements.length;
@@ -474,6 +490,7 @@ class PlayerProfile extends ChangeNotifier {
     }
     _chestDay = p.getString(_kChestDay) ?? '';
     _whatsNewSeenDay = p.getString(_kWhatsNewSeen) ?? '';
+    _challengeDay = p.getString(_kChallengeDay) ?? '';
 
     _loaded = true;
     notifyListeners();
@@ -912,6 +929,18 @@ class PlayerProfile extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Stamps today as the day the Number Quest daily challenge was played, so
+  /// [canPlayDailyChallenge] flips false and the what's-new challenge row (and
+  /// the panel, if that was the last pending item) empties out. Called when a
+  /// daily-challenge round finishes. Idempotent within a day.
+  Future<void> markDailyChallengePlayed() async {
+    final today = _todayKey();
+    if (_challengeDay == today) return;
+    _challengeDay = today;
+    await _prefs?.setString(_kChallengeDay, _challengeDay);
+    notifyListeners();
+  }
+
   // ---- pet companion ----
 
   /// Adds XP to the pet (earned alongside coins). Grants pet-level awards.
@@ -1238,10 +1267,13 @@ class PlayerProfile extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clears the what's-new seen stamp (dev-only) so the hub panel shows again.
+  /// Clears the what's-new seen stamp AND the daily-challenge played stamp
+  /// (dev-only) so the hub panel shows again with its challenge row re-armed.
   Future<void> debugResetWhatsNew() async {
     _whatsNewSeenDay = '';
+    _challengeDay = '';
     await _prefs?.remove(_kWhatsNewSeen);
+    await _prefs?.remove(_kChallengeDay);
     notifyListeners();
   }
 
@@ -1297,6 +1329,7 @@ class PlayerProfile extends ChangeNotifier {
     _masteryTiers.clear();
     _chestDay = '';
     _whatsNewSeenDay = '';
+    _challengeDay = '';
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -1332,6 +1365,7 @@ class PlayerProfile extends ChangeNotifier {
     }
     await _prefs?.remove(_kChestDay);
     await _prefs?.remove(_kWhatsNewSeen);
+    await _prefs?.remove(_kChallengeDay);
     notifyListeners();
   }
 }
