@@ -1,4 +1,5 @@
 import '../../../core/models/achievement.dart';
+import '../../../core/models/game_catalog.dart';
 import '../../../core/services/game_progress_store.dart';
 import '../../../core/services/player_profile.dart';
 import '../models/money_level.dart';
@@ -93,6 +94,9 @@ class MoneyState extends GameProgressStore {
       threeStars: stars == 3,
       bossBeaten: bossBeaten,
     );
+
+    // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
+    await cacheMastery(profile, GameCatalog.moneyMath.id);
 
     notifyListeners();
     return MoneyOutcome(

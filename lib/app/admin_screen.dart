@@ -127,6 +127,24 @@ class _AdminScreenState extends State<AdminScreen> {
     _snack(msg);
   }
 
+  Future<void> _resetChest() async {
+    final msg = context.l10n.adminResetChest;
+    await widget.profile.debugResetChest();
+    _snack(msg);
+  }
+
+  Future<void> _resetWhatsNew() async {
+    final msg = context.l10n.adminResetWhatsNew;
+    await widget.profile.debugResetWhatsNew();
+    _snack(msg);
+  }
+
+  Future<void> _bumpMastery() async {
+    final msg = context.l10n.adminBumpMastery;
+    await widget.profile.debugBumpMastery();
+    _snack(msg);
+  }
+
   Future<void> _unlockAllAvatars() async {
     // Most avatar gates read achievements; the pet-level and lifetime-coin
     // gates are covered by the "Set pet to level 10" and "Add 500 coins"
@@ -232,6 +250,28 @@ class _AdminScreenState extends State<AdminScreen> {
                         icon: Icons.calendar_month_rounded,
                         color: AppTheme.primary,
                         onPressed: _busy ? null : _resetWeeklyGoal,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminResetChest,
+                        icon: Icons.card_giftcard_rounded,
+                        color: AppTheme.accent,
+                        textColor: AppTheme.ink,
+                        onPressed: _busy ? null : _resetChest,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminResetWhatsNew,
+                        icon: Icons.auto_awesome_rounded,
+                        color: AppTheme.primary,
+                        onPressed: _busy ? null : _resetWhatsNew,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminBumpMastery,
+                        icon: Icons.workspace_premium_rounded,
+                        color: AppTheme.success,
+                        onPressed: _busy ? null : _bumpMastery,
                       ),
                     ],
                   ),

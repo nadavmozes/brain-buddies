@@ -334,6 +334,16 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   profile: _profile,
                   onTapAvatar: () => showAvatarPicker(context, _profile),
                 ),
+                AnimatedBuilder(
+                  animation: _profile,
+                  builder: (context, _) => _WhatsNewCard(
+                    profile: _profile,
+                    onOpenDaily: _openDaily,
+                    onOpenPet: _openPet,
+                    onOpenMissions: _openMissions,
+                    onOpenChallenge: _openDailyChallenge,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 const _HubTitle(),
                 const SizedBox(height: 6),
@@ -343,19 +353,27 @@ class _GameHubScreenState extends State<GameHubScreen> {
                       fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
-                GridView.count(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.82,
-                  // Let the grid size to its content; the page scrolls.
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    for (final game in GameCatalog.all)
-                      _GameCard(game: game, onTap: () => _onTap(game)),
-                  ],
+                AnimatedBuilder(
+                  animation: _profile,
+                  builder: (context, _) => GridView.count(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.82,
+                    // Let the grid size to its content; the page scrolls.
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      for (final game in GameCatalog.all)
+                        _GameCard(
+                          game: game,
+                          onTap: () => _onTap(game),
+                          // Cached tier read — no per-game store is loaded.
+                          masteryTier: _profile.masteryTier(game.id),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 AnimatedBuilder(
@@ -392,8 +410,10 @@ class _GameHubScreenState extends State<GameHubScreen> {
             label: context.l10n.daily,
             emoji: '📅',
             onTap: _openDaily,
-            // Nudge the child when today's login gift is unclaimed.
-            badge: _profile.canClaimDailyLogin,
+            // Nudge the child when today's login gift is unclaimed OR today's
+            // surprise chest is still unopened — both live on the Daily
+            // surface, so the badge must reflect either pending hook.
+            badge: _profile.canClaimDailyLogin || _profile.canOpenChest,
           ),
           const SizedBox(height: 14),
           Row(
@@ -687,15 +707,200 @@ class _WelcomeBackCard extends StatelessWidget {
   }
 }
 
-class _GameCard extends StatelessWidget {
-  const _GameCard({required this.game, required this.onTap});
-
-  final GameEntry game;
+/// A single tappable row inside the what's-new panel.
+class _WhatsNewItem {
+  const _WhatsNewItem(this.icon, this.label, this.onTap);
+  final String icon;
+  final String label;
   final VoidCallback onTap;
+}
+
+/// The compact, dismissible "what's new today" panel (Engagement Phase 4 /
+/// P11) at the TOP of the hub. It lists ONLY the daily hooks that are
+/// currently available (each reads a live PlayerProfile flag) and routes a tap
+/// to that surface. It is an IN-APP stand-in for push notifications.
+///
+/// Visibility: shown only when the panel has NOT been seen/dismissed today
+/// (`!whatsNewSeenToday`) AND at least one hook is pending; otherwise it
+/// auto-hides (returns an empty box). The X marks it seen for the day
+/// (mark-seen-on-X): it then stays hidden until tomorrow, and it also
+/// naturally shrinks as individual flags clear. LayoutBuilder-safe, no
+/// MediaQuery.size; RTL-safe via directional widgets.
+class _WhatsNewCard extends StatelessWidget {
+  const _WhatsNewCard({
+    required this.profile,
+    required this.onOpenDaily,
+    required this.onOpenPet,
+    required this.onOpenMissions,
+    required this.onOpenChallenge,
+  });
+
+  final PlayerProfile profile;
+  final VoidCallback onOpenDaily;
+  final VoidCallback onOpenPet;
+  final VoidCallback onOpenMissions;
+  final VoidCallback onOpenChallenge;
+
+  @override
+  Widget build(BuildContext context) {
+    if (profile.whatsNewSeenToday) return const SizedBox.shrink();
+    final l = context.l10n;
+    // Tapping ANY item consumes the panel for the day: it marks the panel seen
+    // (persisting profile_whatsnew_seen_day) and THEN routes to that surface.
+    // This is the product-defined "consumed" event the review requires, so the
+    // panel does not reappear on return; the X control is a second way to
+    // dismiss. Each row is also gated on a REAL pending signal, so the list
+    // empties — and the panel auto-hides — as the hooks are satisfied.
+    VoidCallback consume(VoidCallback route) => () {
+          profile.markWhatsNewSeen();
+          route();
+        };
+    final items = <_WhatsNewItem>[
+      if (profile.canClaimDailyLogin)
+        _WhatsNewItem('🎁', l.whatsNewGift, consume(onOpenDaily)),
+      if (profile.canClaimDailyTreat)
+        _WhatsNewItem('🦴', l.whatsNewTreat, consume(onOpenPet)),
+      // The chest lives on the Daily surface, so route there.
+      if (profile.canOpenChest)
+        _WhatsNewItem('📦', l.whatsNewChest, consume(onOpenDaily)),
+      if (profile.hasClaimableMission)
+        _WhatsNewItem('📋', l.whatsNewMission, consume(onOpenMissions)),
+      // The Number Quest daily challenge is a REAL pending signal now: shown
+      // only while today's challenge is unplayed, so it stops padding the list
+      // and the panel can empty out (and auto-hide) once it is played.
+      if (profile.canPlayDailyChallenge)
+        _WhatsNewItem('⭐', l.whatsNewChallenge, consume(onOpenChallenge)),
+    ];
+    // Auto-hide when nothing is pending.
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: LayoutBuilder(
+        builder: (context, constraints) => ComicPanel(
+          color: AppTheme.accent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.whatsNewTitle,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  // Compact 28x28 visual, but the tap target fills a 44x44
+                  // box so it meets the kid-friendly large-target convention.
+                  GestureDetector(
+                    onTap: profile.markWhatsNewSeen,
+                    behavior: HitTestBehavior.opaque,
+                    child: Tooltip(
+                      message: l.whatsNewDismiss,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: AppTheme.ink, width: 2),
+                            ),
+                            child: const Icon(Icons.close,
+                                size: 16, color: AppTheme.ink),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              for (final item in items) ...[
+                _WhatsNewRow(item: item),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WhatsNewRow extends StatelessWidget {
+  const _WhatsNewRow({required this.item});
+
+  final _WhatsNewItem item;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: item.onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppTheme.ink, width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Text(item.icon, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w800),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppTheme.ink),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GameCard extends StatelessWidget {
+  const _GameCard({
+    required this.game,
+    required this.onTap,
+    this.masteryTier = 0,
+  });
+
+  final GameEntry game;
+  final VoidCallback onTap;
+
+  /// The cached 0..3 per-game mastery tier (Engagement Phase 4 / P5b). A tiny
+  /// medal badge shows in a corner only when > 0. Read from the profile cache
+  /// so no per-game store is force-loaded.
+  final int masteryTier;
+
+  /// Tiny medal emoji for a mastery tier (1 bronze / 2 silver / 3 gold).
+  static String _medalFor(int tier) {
+    switch (tier) {
+      case 1:
+        return '🥉';
+      case 2:
+        return '🥈';
+      case 3:
+        return '🥇';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final card = GestureDetector(
       onTap: onTap,
       child: Opacity(
         opacity: game.available ? 1 : 0.6,
@@ -753,6 +958,35 @@ class _GameCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (masteryTier <= 0) return card;
+    // A tiny medal badge in the top-start corner (RTL-safe via
+    // PositionedDirectional), shown only for a mastered game.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        card,
+        PositionedDirectional(
+          start: -4,
+          top: -4,
+          child: Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppTheme.ink, width: 2),
+              boxShadow: AppTheme.comicShadow(offset: 2),
+            ),
+            child: Text(
+              _medalFor(masteryTier),
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

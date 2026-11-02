@@ -168,6 +168,8 @@ class _SafariResultScreenState extends State<SafariResultScreen> {
                             ],
                             if (outcome.isNewFastest) ...[
                               const SizedBox(height: 12),
+                              ResultBanner(l.newBest),
+                              const SizedBox(height: 8),
                               ResultBanner(l.newFastestTime),
                             ] else if (outcome.isNewBest && !_befriended) ...[
                               const SizedBox(height: 12),

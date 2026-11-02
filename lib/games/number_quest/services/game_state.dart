@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/models/achievement.dart';
+import '../../../core/models/game_catalog.dart';
+import '../../../core/models/mastery.dart';
 import '../../../core/services/player_profile.dart';
 import '../../../core/services/sound_bridge.dart';
 import '../models/difficulty.dart';
@@ -308,6 +310,17 @@ class GameState extends ChangeNotifier {
       threeStars: earnedStars == 3,
       bossBeaten: bossDefeated,
     );
+
+    // Engagement Phase 4 / P5b: recompute Number Quest's cached mastery tier
+    // over its on-map levels (worlds + times tables). The off-map daily
+    // challenge level contributes nothing to this star list, so it never
+    // affects the tier (matches the on-map fastest-time guard above).
+    final masteryStars = [
+      ...WorldMap.allLevels,
+      ...TimesTablesMap.allLevels,
+    ].map((l) => stars(l.id)).toList(growable: false);
+    await profile.setMasteryTier(
+        GameCatalog.numberQuest.id, masteryTierForStars(masteryStars).rank);
 
     notifyListeners();
     return LevelOutcome(

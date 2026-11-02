@@ -53,6 +53,10 @@ visual "build-the-fact" array that shows `a × b` as a grid to count.
   one daily, plus more from bosses/3-star rounds) and **feed** Buddy for bonus growth.
 - **Daily double** — the first finished round each day pays **double coins** (capped).
 - **Weekly goal** — play a set number of days each week for a bonus.
+- **Daily surprise chest** — open a friendly chest once a day for a coin/treat prize.
+- **Mastery medals** — each game earns a 🥉/🥈/🥇 medal as you 3-star more of its levels.
+- **Personal bests** — a "New Best! 🌟" celebration when you beat your own fastest time.
+- **"What's new today"** — a compact hub card that surfaces whatever is ready to claim.
 - **Daily missions** — three rotating goals each day, with coin rewards.
 - **Daily Challenge** — a rotating bonus round reachable from the hub.
 

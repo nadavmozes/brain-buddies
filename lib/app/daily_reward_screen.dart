@@ -81,6 +81,20 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
     );
   }
 
+  Future<void> _openChest() async {
+    final reward = await _profile.openChest();
+    if (reward == null || !mounted) return;
+    FeedbackService(enabled: _profile.soundOn).coin();
+    setState(() => _showConfetti = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.l10n.chestPrizeToast(reward.coins, reward.treats),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,6 +148,11 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
                         _WeeklyGoalPanel(
                           profile: _profile,
                           onClaim: _claimWeekly,
+                        ),
+                        const SizedBox(height: 16),
+                        _ChestPanel(
+                          profile: _profile,
+                          onOpen: _openChest,
                         ),
                         const SizedBox(height: 16),
                         ComicButton(
@@ -470,6 +489,62 @@ class _WeeklyGoalPanel extends StatelessWidget {
                 context.l10n.weeklyGoalClaimed,
                 style: const TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The daily Surprise Chest card (Engagement Phase 4 / P6): once per day the
+/// child taps a wrapped chest for a FIXED, friendly prize (never empty, no
+/// rarity/gambling). Shows the OPEN button while the chest is unopened, else a
+/// "come back tomorrow" note. Comic style, no MediaQuery.
+class _ChestPanel extends StatelessWidget {
+  const _ChestPanel({required this.profile, required this.onOpen});
+
+  final PlayerProfile profile;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final canOpen = profile.canOpenChest;
+    return ComicPanel(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(canOpen ? '🎁' : '📦',
+                  style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.l10n.chestTitle,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (canOpen)
+            ComicButton(
+              label: context.l10n.chestOpen,
+              icon: Icons.card_giftcard_rounded,
+              color: AppTheme.accent,
+              textColor: AppTheme.ink,
+              onPressed: onOpen,
+            )
+          else
+            Center(
+              child: Text(
+                context.l10n.chestComeBack,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800),
+                textAlign: TextAlign.center,
               ),
             ),
         ],

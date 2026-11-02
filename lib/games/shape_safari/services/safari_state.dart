@@ -1,4 +1,5 @@
 import '../../../core/models/achievement.dart';
+import '../../../core/models/game_catalog.dart';
 import '../../../core/services/game_progress_store.dart';
 import '../../../core/services/player_profile.dart';
 import '../models/safari_level.dart';
@@ -118,6 +119,9 @@ class SafariState extends GameProgressStore {
       threeStars: stars == 3,
       bossBeaten: guardianBefriended,
     );
+
+    // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
+    await cacheMastery(profile, GameCatalog.shapeSafari.id);
 
     notifyListeners();
     return SafariOutcome(

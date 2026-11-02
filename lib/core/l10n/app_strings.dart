@@ -171,6 +171,28 @@ abstract class AppStrings {
   String get newFastestTime; // "⚡ NEW FASTEST TIME!"
   String get newBestScore; // "🏆 NEW BEST SCORE!"
 
+  // ---- Engagement Phase 4 (personal best / mastery / chest / what's-new) ----
+  String get newBest; // P5a "🌟 NEW BEST!"
+  /// Localized Bronze/Silver/Gold for tiers 1/2/3 ('' for 0). (P5b)
+  String masteryTierName(int tier);
+  // Daily surprise chest (P6).
+  String get chestTitle; // "Surprise Chest"
+  String get chestOpen; // "Open! 🎁"
+  String get chestComeBack; // "Come back tomorrow for another!"
+  String chestPrizeToast(int coins, int treats); // friendly "you got" line
+  // What's-new-today panel (P11).
+  String get whatsNewTitle; // "Today ✨"
+  String get whatsNewGift; // "Today's gift is ready!"
+  String get whatsNewTreat; // "Feed Buddy — treat ready"
+  String get whatsNewChest; // "Surprise chest!"
+  String get whatsNewMission; // "A mission reward is ready"
+  String get whatsNewChallenge; // "New daily challenge"
+  String get whatsNewDismiss; // X tooltip "Dismiss"
+  // Admin shortcuts (E).
+  String get adminResetChest; // "Reset chest"
+  String get adminResetWhatsNew; // "Reset what's-new"
+  String get adminBumpMastery; // "Bump mastery to gold"
+
   // ---- Word Wizard (FEAT-002) ----
   String get wwCorrectFeedback; // "Magic! ✨"
   String wwWrongFeedback(String answer); // "It was "<answer>""
@@ -599,6 +621,59 @@ class EnStrings extends AppStrings {
   String get newFastestTime => '⚡ NEW FASTEST TIME!';
   @override
   String get newBestScore => '🏆 NEW BEST SCORE!';
+
+  // ---- Engagement Phase 4 ----
+  @override
+  String get newBest => '🌟 NEW BEST!';
+  @override
+  String masteryTierName(int tier) {
+    switch (tier) {
+      case 1:
+        return 'Bronze';
+      case 2:
+        return 'Silver';
+      case 3:
+        return 'Gold';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  String get chestTitle => 'Surprise Chest';
+  @override
+  String get chestOpen => 'Open! 🎁';
+  @override
+  String get chestComeBack => 'Come back tomorrow for another!';
+  @override
+  String chestPrizeToast(int coins, int treats) {
+    if (coins > 0 && treats > 0) {
+      return 'You got 🪙 $coins + 🦴 $treats!';
+    }
+    if (treats > 0) return 'You got 🦴 $treats treats!';
+    return 'You got 🪙 $coins coins!';
+  }
+
+  @override
+  String get whatsNewTitle => 'Today ✨';
+  @override
+  String get whatsNewGift => "Today's gift is ready!";
+  @override
+  String get whatsNewTreat => 'Feed Buddy — treat ready';
+  @override
+  String get whatsNewChest => 'Surprise chest!';
+  @override
+  String get whatsNewMission => 'A mission reward is ready';
+  @override
+  String get whatsNewChallenge => 'New daily challenge';
+  @override
+  String get whatsNewDismiss => 'Dismiss';
+  @override
+  String get adminResetChest => 'Reset chest';
+  @override
+  String get adminResetWhatsNew => "Reset what's-new";
+  @override
+  String get adminBumpMastery => 'Bump mastery to gold';
 
   // ---- Word Wizard (FEAT-002) ----
   @override
@@ -1158,6 +1233,59 @@ class HeStrings extends AppStrings {
   String get newFastestTime => '⚡ שיא זמן חדש!';
   @override
   String get newBestScore => '🏆 שיא ניקוד חדש!';
+
+  // ---- Engagement Phase 4 ----
+  @override
+  String get newBest => '🌟 שיא חדש!';
+  @override
+  String masteryTierName(int tier) {
+    switch (tier) {
+      case 1:
+        return 'ארד';
+      case 2:
+        return 'כסף';
+      case 3:
+        return 'זהב';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  String get chestTitle => 'תיבת הפתעה';
+  @override
+  String get chestOpen => 'לפתוח! 🎁';
+  @override
+  String get chestComeBack => 'חזרו מחר לעוד הפתעה!';
+  @override
+  String chestPrizeToast(int coins, int treats) {
+    if (coins > 0 && treats > 0) {
+      return 'קיבלתם 🪙 $coins + 🦴 $treats!';
+    }
+    if (treats > 0) return 'קיבלתם 🦴 $treats חטיפים!';
+    return 'קיבלתם 🪙 $coins מטבעות!';
+  }
+
+  @override
+  String get whatsNewTitle => 'היום ✨';
+  @override
+  String get whatsNewGift => 'המתנה היומית מוכנה!';
+  @override
+  String get whatsNewTreat => 'האכילו את החבר — חטיף מוכן';
+  @override
+  String get whatsNewChest => 'תיבת הפתעה!';
+  @override
+  String get whatsNewMission => 'פרס משימה מוכן';
+  @override
+  String get whatsNewChallenge => 'אתגר יומי חדש';
+  @override
+  String get whatsNewDismiss => 'סגירה';
+  @override
+  String get adminResetChest => 'איפוס תיבה';
+  @override
+  String get adminResetWhatsNew => 'איפוס מה חדש';
+  @override
+  String get adminBumpMastery => 'קביעת שליטה לזהב';
 
   // ---- Word Wizard (FEAT-002) ----
   @override

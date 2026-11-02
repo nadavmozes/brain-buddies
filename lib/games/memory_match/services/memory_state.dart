@@ -1,4 +1,5 @@
 import '../../../core/models/achievement.dart';
+import '../../../core/models/game_catalog.dart';
 import '../../../core/services/game_progress_store.dart';
 import '../../../core/services/player_profile.dart';
 import '../models/memory_level.dart';
@@ -96,6 +97,10 @@ class MemoryState extends GameProgressStore {
       threeStars: stars == 3,
       bossBeaten: bossBeaten,
     );
+
+    // Engagement Phase 4 / P5b: recompute this game's cached mastery tier now
+    // that its star coverage may have changed.
+    await cacheMastery(profile, GameCatalog.memoryMatch.id);
 
     notifyListeners();
     return MemoryOutcome(
