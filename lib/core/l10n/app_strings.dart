@@ -26,6 +26,7 @@ abstract class AppStrings {
   // ---- Shop / avatars ----
   String get avatarShop; // "Avatar Shop"
   String get chooseYourAvatar; // "Choose your avatar"
+  String get framesTab; // "Frames" (shop tab + section title)
   String get getMore; // "Get more"
   String get done; // "Done"
   String get comingSoon; // "Coming Soon"
@@ -311,6 +312,8 @@ class EnStrings extends AppStrings {
   String get avatarShop => 'Avatar Shop';
   @override
   String get chooseYourAvatar => 'Choose your avatar';
+  @override
+  String get framesTab => 'Frames';
   @override
   String get getMore => 'Get more';
   @override
@@ -841,6 +844,8 @@ class HeStrings extends AppStrings {
   String get avatarShop => 'חנות דמויות';
   @override
   String get chooseYourAvatar => 'בחרו את הדמות שלכם';
+  @override
+  String get framesTab => 'מסגרות';
   @override
   String get getMore => 'עוד דמויות';
   @override

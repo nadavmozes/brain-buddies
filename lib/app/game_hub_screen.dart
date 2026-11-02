@@ -8,6 +8,7 @@ import '../core/services/feedback_email.dart';
 import '../core/services/player_profile.dart';
 import '../core/services/sound_bridge.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/avatar_badge.dart';
 import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_button.dart';
 import '../core/widgets/comic_panel.dart';
@@ -462,17 +463,9 @@ class _ProfileBar extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: profile.selectedAvatar.color,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.ink, width: 2.5),
-                    ),
-                    child: Text(profile.selectedAvatar.emoji,
-                        style: const TextStyle(fontSize: 24)),
+                  AvatarBadge(
+                    avatar: profile.selectedAvatar,
+                    frame: profile.selectedFrame,
                   ),
                   // Small edit badge hinting the avatar is tappable.
                   PositionedDirectional(

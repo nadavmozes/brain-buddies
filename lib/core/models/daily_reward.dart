@@ -17,10 +17,10 @@ enum DailyRewardKind {
   /// A pet treat: pays [DailyRewardDef.amount] as pet XP via addPetXp.
   petTreat,
 
-  /// The day-7 finale: a larger coin bonus PLUS extra pet XP. Kept as its own
-  /// kind so it is cleanly swappable to an avatar-frame reward in a later phase
-  /// (P2) — change this case's payout in PlayerProfile.claimDailyLogin without
-  /// touching the ladder shape or the 0..6 cycle math.
+  /// The day-7 finale: grants a cosmetic avatar frame (Engagement Phase 2)
+  /// PLUS a smaller coin + pet-XP bonus. Kept as its own kind so the frame
+  /// grant lives in PlayerProfile.claimDailyLogin without touching the ladder
+  /// shape or the 0..6 cycle math.
   special,
 }
 
@@ -109,8 +109,8 @@ class DailyRewards {
       petXp: 0,
       labelKey: 'coins',
     ),
-    // Day 7 finale: bigger coin bonus + extra pet XP. Swappable to a frame
-    // reward later (see DailyRewardKind.special).
+    // Day 7 finale: a cosmetic frame + coin bonus + extra pet XP (see
+    // DailyRewardKind.special and PlayerProfile.claimDailyLogin).
     DailyRewardDef(
       dayIndex: 6,
       emoji: '🎁',

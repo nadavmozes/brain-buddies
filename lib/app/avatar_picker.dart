@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../core/l10n/l10n.dart';
 import '../core/models/avatar.dart';
+import '../core/models/avatar_frame.dart';
 import '../core/services/feedback_service.dart';
 import '../core/services/player_profile.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/avatar_badge.dart';
 import 'shop_screen.dart';
 
 /// A quick picker to switch between owned avatars. Opened by tapping the
@@ -35,6 +37,7 @@ Future<void> showAvatarPicker(BuildContext context, PlayerProfile profile) {
                 for (final a in owned)
                   _PickTile(
                     avatar: a,
+                    frame: profile.selectedFrame,
                     selected: profile.selectedAvatarId == a.id,
                     onTap: () {
                       profile.selectAvatar(a.id);
@@ -69,9 +72,13 @@ Future<void> showAvatarPicker(BuildContext context, PlayerProfile profile) {
 
 class _PickTile extends StatelessWidget {
   const _PickTile(
-      {required this.avatar, required this.selected, required this.onTap});
+      {required this.avatar,
+      required this.frame,
+      required this.selected,
+      required this.onTap});
 
   final Avatar avatar;
+  final AvatarFrame frame;
   final bool selected;
   final VoidCallback onTap;
 
@@ -79,19 +86,12 @@ class _PickTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 64,
-        height: 64,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: avatar.color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: selected ? AppTheme.success : AppTheme.ink,
-            width: selected ? 4 : 2.5,
-          ),
-        ),
-        child: Text(avatar.emoji, style: const TextStyle(fontSize: 32)),
+      child: AvatarBadge(
+        avatar: avatar,
+        frame: frame,
+        size: 64,
+        emojiSize: 32,
+        highlight: selected,
       ),
     );
   }

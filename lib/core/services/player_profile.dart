@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../l10n/app_lang.dart';
 import '../models/achievement.dart';
 import '../models/avatar.dart';
+import '../models/avatar_frame.dart';
 import '../models/daily_reward.dart';
 import '../models/game_catalog.dart';
 import '../models/mission.dart';
@@ -35,6 +36,11 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _achievements = {};
   final Set<String> _playedGames = {};
   bool _soundOn = true;
+
+  // Avatar frames (Engagement Phase 2): the set of owned frame ids (the
+  // default 'none' is always owned) and the currently equipped frame id.
+  final Set<String> _ownedFrames = {AvatarFrames.defaultId};
+  String _selectedFrame = AvatarFrames.defaultId;
 
   // Hub-wide daily streak (spans all games).
   int _dailyStreak = 0;
@@ -124,6 +130,10 @@ class PlayerProfile extends ChangeNotifier {
   static const _kAllSixClaimed = 'profile_allsix_claimed';
   static const _kComebackPending = 'profile_comeback_pending';
   static const _kStreakFreezes = 'profile_streak_freezes';
+  // Engagement Phase 2 keys (additive, default-absent-safe — schemaVersion
+  // stays 1). Both are cleared in reset().
+  static const _kOwnedFrames = 'profile_owned_frames';
+  static const _kSelectedFrame = 'profile_selected_frame';
 
   bool get isLoaded => _loaded;
 
@@ -138,6 +148,18 @@ class PlayerProfile extends ChangeNotifier {
   Avatar get selectedAvatar => Avatars.byId(_selectedAvatar);
   bool ownsAvatar(String id) => _ownedAvatars.contains(id);
   int get ownedAvatarCount => _ownedAvatars.length;
+
+  // ---- avatar frames ----
+
+  /// The id of the currently equipped frame ('none' when no ring is shown).
+  String get selectedFrameId => _selectedFrame;
+
+  /// The currently equipped frame.
+  AvatarFrame get selectedFrame => AvatarFrames.byId(_selectedFrame);
+
+  /// Whether the given frame id is owned. The default 'none' is always owned.
+  bool ownsFrame(String id) =>
+      id == AvatarFrames.defaultId || _ownedFrames.contains(id);
 
   bool hasAchievement(String id) => _achievements.contains(id);
   int get achievementCount => _achievements.length;
@@ -283,6 +305,17 @@ class PlayerProfile extends ChangeNotifier {
     _comebackPending = p.getBool(_kComebackPending) ?? false;
     _streakFreezes = p.getInt(_kStreakFreezes) ?? 0;
 
+    // Avatar frames (Engagement Phase 2): owned defaults to just 'none', and
+    // the selected frame defaults to 'none'. 'none' is always kept in the set.
+    _ownedFrames
+      ..clear()
+      ..add(AvatarFrames.defaultId)
+      ..addAll(p.getStringList(_kOwnedFrames) ?? const []);
+    _selectedFrame = p.getString(_kSelectedFrame) ?? AvatarFrames.defaultId;
+    // Default-safe: a selected frame that is no longer owned (e.g. catalog
+    // change) falls back to 'none'.
+    if (!ownsFrame(_selectedFrame)) _selectedFrame = AvatarFrames.defaultId;
+
     _loaded = true;
     notifyListeners();
   }
@@ -382,7 +415,11 @@ class PlayerProfile extends ChangeNotifier {
           await addPetXp(reward.amount);
           break;
         case DailyRewardKind.special:
-          // Day-7 finale: coins + bonus pet XP. Swappable to a frame later.
+          // Day-7 finale: a cosmetic frame (Engagement Phase 2) PLUS a small
+          // coin + pet-XP bonus. Granting the frame is idempotent — claiming
+          // day 7 again in a later cycle when the frame is already owned is a
+          // no-op, so it never errors or double-grants.
+          await grantFrame(AvatarFrames.dailyRewardFrameId);
           await addCoins(reward.amount);
           await addPetXp(reward.petXp);
           // Completing the cycle grants one streak freeze (max 1 held).
@@ -586,10 +623,11 @@ class PlayerProfile extends ChangeNotifier {
 
   // ---- avatars / shop ----
 
-  /// Whether a gated avatar's unlock requirement is satisfied. Avatars with no
-  /// [Avatar.unlock] are always considered unlocked.
-  bool isAvatarUnlocked(Avatar a) {
-    final u = a.unlock;
+  /// Whether an [AvatarUnlock] requirement is satisfied. A null unlock (no
+  /// gate) is always considered unlocked. This is the single source of truth
+  /// for BOTH avatars and frames — [isAvatarUnlocked] and [isFrameUnlocked]
+  /// delegate here so the gating rules never drift between them.
+  bool isUnlocked(AvatarUnlock? u) {
     if (u == null) return true;
     switch (u.kind) {
       case AvatarUnlockKind.achievement:
@@ -607,10 +645,9 @@ class PlayerProfile extends ChangeNotifier {
     }
   }
 
-  /// Progress (0..1) toward a gated avatar's unlock requirement, for a hint UI.
-  /// Avatars with no [Avatar.unlock] return 1.
-  double avatarUnlockProgress(Avatar a) {
-    final u = a.unlock;
+  /// Progress (0..1) toward an [AvatarUnlock] requirement, for a hint UI. A
+  /// null unlock returns 1. Shared by avatars and frames (see [isUnlocked]).
+  double unlockProgress(AvatarUnlock? u) {
     if (u == null) return 1;
     double ratio(int current, int target) {
       if (target <= 0) return 1;
@@ -634,6 +671,68 @@ class PlayerProfile extends ChangeNotifier {
       case AvatarUnlockKind.lifetimeCoins:
         return ratio(lifetimeCoins, u.threshold);
     }
+  }
+
+  /// Whether a gated avatar's unlock requirement is satisfied. Avatars with no
+  /// [Avatar.unlock] are always considered unlocked.
+  bool isAvatarUnlocked(Avatar a) => isUnlocked(a.unlock);
+
+  /// Progress (0..1) toward a gated avatar's unlock requirement, for a hint UI.
+  /// Avatars with no [Avatar.unlock] return 1.
+  double avatarUnlockProgress(Avatar a) => unlockProgress(a.unlock);
+
+  // ---- avatar frames (shop + daily reward) ----
+
+  /// Whether a gated frame's unlock requirement is satisfied. Frames with no
+  /// [AvatarFrame.unlock] are always considered unlocked.
+  bool isFrameUnlocked(AvatarFrame f) => isUnlocked(f.unlock);
+
+  /// Progress (0..1) toward a gated frame's unlock requirement, for a hint UI.
+  double frameUnlockProgress(AvatarFrame f) => unlockProgress(f.unlock);
+
+  /// Equips an owned frame. No-op if the frame is not owned. Passing the
+  /// default 'none' frame (always owned) clears the ring.
+  Future<void> selectFrame(String id) async {
+    if (!ownsFrame(id)) return;
+    _selectedFrame = id;
+    await _prefs?.setString(_kSelectedFrame, id);
+    notifyListeners();
+  }
+
+  /// Claims a frame once its requirement is met (mirrors [claimAvatar]).
+  /// Returns false if the frame is still locked; true if already owned. If
+  /// [AvatarFrame.cost] > 0 the claim deducts coins. Grants nothing extra.
+  Future<bool> claimFrame(AvatarFrame frame) async {
+    if (!isFrameUnlocked(frame)) return false;
+    if (ownsFrame(frame.id)) return true;
+    if (frame.cost > 0) {
+      if (_coins < frame.cost) return false;
+      _coins -= frame.cost;
+      await _prefs?.setInt(_kCoins, _coins);
+    }
+    _ownedFrames.add(frame.id);
+    await _persistFrames();
+    notifyListeners();
+    return true;
+  }
+
+  /// Grants a frame outright (no cost, no gate check) — used by reward paths
+  /// such as the day-7 daily-login finale. Idempotent: granting an already
+  /// owned frame returns false and leaves ownership unchanged.
+  Future<bool> grantFrame(String id) async {
+    if (ownsFrame(id)) return false;
+    _ownedFrames.add(id);
+    await _persistFrames();
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> _persistFrames() async {
+    // 'none' is implicit (always owned); persist only the earned ids.
+    await _prefs?.setStringList(
+      _kOwnedFrames,
+      _ownedFrames.where((id) => id != AvatarFrames.defaultId).toList(),
+    );
   }
 
   /// Claims a gated avatar once its requirement is met. Returns false if the
@@ -782,6 +881,10 @@ class PlayerProfile extends ChangeNotifier {
     _allSixClaimed = '';
     _comebackPending = false;
     _streakFreezes = 0;
+    _ownedFrames
+      ..clear()
+      ..add(AvatarFrames.defaultId);
+    _selectedFrame = AvatarFrames.defaultId;
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -804,6 +907,8 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kAllSixClaimed);
     await _prefs?.remove(_kComebackPending);
     await _prefs?.remove(_kStreakFreezes);
+    await _prefs?.remove(_kOwnedFrames);
+    await _prefs?.remove(_kSelectedFrame);
     notifyListeners();
   }
 }
