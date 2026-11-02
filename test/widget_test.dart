@@ -165,6 +165,12 @@ void main() {
     await tester.tap(find.text('Daily'));
     await tester.pumpAndSettle();
 
+    // The Daily surface now opens the combined reward screen; from there the
+    // "Play today's challenge" button routes into the NQ daily challenge.
+    expect(find.text('Daily Gift'), findsWidgets);
+    await tester.tap(find.text("Play today's challenge"));
+    await tester.pumpAndSettle();
+
     // The NQ game screen renders the daily header when isDaily is true.
     expect(find.text('📅 Daily'), findsOneWidget);
   });

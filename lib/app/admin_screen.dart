@@ -101,6 +101,14 @@ class _AdminScreenState extends State<AdminScreen> {
     _snack('Pet set to level ${widget.profile.petLevel}. 🐦');
   }
 
+  Future<void> _resetDailyLogin() async {
+    // Capture the localized toast before the await so we don't touch context
+    // after an async gap (the _snack guard handles the unmounted case).
+    final msg = context.l10n.adminDailyLoginReset;
+    await widget.profile.debugResetDailyLogin();
+    _snack(msg);
+  }
+
   Future<void> _unlockAllAvatars() async {
     // Most avatar gates read achievements; the pet-level and lifetime-coin
     // gates are covered by the "Set pet to level 10" and "Add 500 coins"
@@ -177,6 +185,13 @@ class _AdminScreenState extends State<AdminScreen> {
                         color: AppTheme.sky,
                         textColor: AppTheme.ink,
                         onPressed: _busy ? null : _unlockAllAvatars,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminResetDailyLogin,
+                        icon: Icons.event_repeat_rounded,
+                        color: AppTheme.primary,
+                        onPressed: _busy ? null : _resetDailyLogin,
                       ),
                     ],
                   ),

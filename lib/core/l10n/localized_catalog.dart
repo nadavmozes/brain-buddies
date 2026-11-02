@@ -158,6 +158,29 @@ class LocalizedCatalog {
       'grand_champion': 'שלטו בכל 6 המשחקים',
     },
 
+    // ---- avatar_frame.dart (frame names) ----
+    'frame.name': {
+      'none': 'ללא',
+      'sky': 'שמיים',
+      'leaf': 'עלה',
+      'bronze': 'ארד',
+      'silver': 'כסף',
+      'gold': 'זהב',
+      'ocean': 'אוקיינוס',
+      'stars': 'כוכבים',
+      'flower': 'פרח',
+      'rainbow': 'קשת',
+    },
+    // ---- avatar_frame.dart (unlock requirement labels) ----
+    'frame.unlock': {
+      'silver': 'שחקו 3 ימים ברצף',
+      'gold': 'שחקו 7 ימים ברצף',
+      'ocean': 'צברו 300 מטבעות בסך הכול',
+      'stars': 'גדלו את החיה לדרגה 10',
+      'flower': 'החזיקו 4 דמויות',
+      'rainbow': 'החזיקו 6 דמויות',
+    },
+
     // ---- pet.dart (stage names) ----
     'pet.stage': {
       'Egg': 'ביצה',

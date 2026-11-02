@@ -5,6 +5,9 @@ import 'package:flutter/widgets.dart';
 import '../l10n/app_lang.dart';
 import '../models/achievement.dart';
 import '../models/avatar.dart';
+import '../models/avatar_frame.dart';
+import '../models/daily_reward.dart';
+import '../models/game_catalog.dart';
 import '../models/mission.dart';
 import '../models/pet.dart';
 import 'analytics_service.dart';
@@ -34,6 +37,11 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _playedGames = {};
   bool _soundOn = true;
 
+  // Avatar frames (Engagement Phase 2): the set of owned frame ids (the
+  // default 'none' is always owned) and the currently equipped frame id.
+  final Set<String> _ownedFrames = {AvatarFrames.defaultId};
+  String _selectedFrame = AvatarFrames.defaultId;
+
   // Hub-wide daily streak (spans all games).
   int _dailyStreak = 0;
   String _lastPlayedDay = '';
@@ -54,6 +62,39 @@ class PlayerProfile extends ChangeNotifier {
   final Map<String, int> _missionProgress = {};
   final Set<String> _missionClaimed = {};
   String _missionDay = '';
+
+  // Daily login reward: the day-key of the last claim and the current position
+  // in the 7-day cycle (0..6). A gift is claimable whenever today differs from
+  // the last-claim day (claimable on APP OPEN, not round end).
+  String _loginLastClaim = '';
+  int _loginCycle = 0;
+
+  // "Play all 6 today" bonus: the day-key the set belongs to, the distinct set
+  // of game ids opened today, and the day-key the bonus was claimed on (so it
+  // pays at most once per day). The set rolls over to empty on a new day.
+  String _allSixDay = '';
+  final Set<String> _allSixSet = {};
+  String _allSixClaimed = '';
+
+  // Comeback gift: PERSISTED as a bool so the "Welcome back! 🎁" card survives
+  // an app restart until the child actually claims it (a transient flag would
+  // vanish if the app rebuilt before they tapped). Set when recordPlayDay sees
+  // a >1-day gap that resets the streak; cleared by claimComebackGift().
+  bool _comebackPending = false;
+
+  // In-flight guard for claimDailyLogin(). The claimable gate (today !=
+  // last-claim day) does not close until the async payout finishes and stamps
+  // the day, so two rapid taps could both pass the gate and double-pay. This
+  // synchronous flag is set BEFORE the first await and cleared in a finally, so
+  // a concurrent second call returns null without paying or advancing.
+  bool _claimingDailyLogin = false;
+
+  // Streak freeze tokens (max 1 held). A freeze forgives EXACTLY ONE missed day
+  // so a single-day gap keeps the streak instead of resetting to 1. One token
+  // is granted when the 7-day login cycle completes (the day-7 claim). This is
+  // deliberately un-abusable: at most 1 is held, it only covers a single-day
+  // gap (a 2+ day gap still resets), and it is consumed on use.
+  int _streakFreezes = 0;
 
   // UI language (English / Hebrew). Persisted additively under [_kLang]. First
   // launch (key absent) defaults from the platform locale: Hebrew device => he,
@@ -80,6 +121,19 @@ class PlayerProfile extends ChangeNotifier {
   static const _kMissionProgress = 'profile_mission_progress';
   static const _kMissionClaimed = 'profile_mission_claimed';
   static const _kLang = 'profile_lang';
+  // Engagement Phase 1 keys (additive, default-absent-safe — schemaVersion
+  // stays 1). All are cleared in reset().
+  static const _kLoginLastClaim = 'profile_login_last_claim';
+  static const _kLoginCycle = 'profile_login_cycle';
+  static const _kAllSixDay = 'profile_allsix_day';
+  static const _kAllSixSet = 'profile_allsix_set';
+  static const _kAllSixClaimed = 'profile_allsix_claimed';
+  static const _kComebackPending = 'profile_comeback_pending';
+  static const _kStreakFreezes = 'profile_streak_freezes';
+  // Engagement Phase 2 keys (additive, default-absent-safe — schemaVersion
+  // stays 1). Both are cleared in reset().
+  static const _kOwnedFrames = 'profile_owned_frames';
+  static const _kSelectedFrame = 'profile_selected_frame';
 
   bool get isLoaded => _loaded;
 
@@ -94,6 +148,18 @@ class PlayerProfile extends ChangeNotifier {
   Avatar get selectedAvatar => Avatars.byId(_selectedAvatar);
   bool ownsAvatar(String id) => _ownedAvatars.contains(id);
   int get ownedAvatarCount => _ownedAvatars.length;
+
+  // ---- avatar frames ----
+
+  /// The id of the currently equipped frame ('none' when no ring is shown).
+  String get selectedFrameId => _selectedFrame;
+
+  /// The currently equipped frame.
+  AvatarFrame get selectedFrame => AvatarFrames.byId(_selectedFrame);
+
+  /// Whether the given frame id is owned. The default 'none' is always owned.
+  bool ownsFrame(String id) =>
+      id == AvatarFrames.defaultId || _ownedFrames.contains(id);
 
   bool hasAchievement(String id) => _achievements.contains(id);
   int get achievementCount => _achievements.length;
@@ -120,6 +186,43 @@ class PlayerProfile extends ChangeNotifier {
   bool missionClaimed(String id) => _missionClaimed.contains(id);
   bool get hasClaimableMission =>
       todaysMissions.any((m) => missionComplete(m) && !missionClaimed(m.id));
+
+  // ---- daily login reward ----
+
+  /// The current position in the 7-day login cycle (0..6).
+  int get loginCycleIndex => _loginCycle;
+
+  /// The reward box the child would claim right now.
+  DailyRewardDef get todaysLoginReward => DailyRewards.atIndex(_loginCycle);
+
+  /// Whether today's login gift is still unclaimed (today != last-claim day).
+  bool get canClaimDailyLogin => _loginLastClaim != _todayKey();
+
+  // ---- play-all-6 bonus ----
+
+  /// How many distinct games have been opened today (0..6). Rolls over to 0 on
+  /// a new day, computed lazily so a session left open past midnight is fresh.
+  int get allSixProgress => (_allSixDay == _todayKey()) ? _allSixSet.length : 0;
+
+  /// The distinct game ids opened today (empty on a new day). Lets the UI light
+  /// up individual game icons.
+  Set<String> get allSixPlayedToday =>
+      (_allSixDay == _todayKey()) ? Set.unmodifiable(_allSixSet) : const {};
+
+  /// Whether the "play all 6 today" bonus is claimable: every game played today
+  /// and not yet claimed today.
+  bool get canClaimAllSix =>
+      allSixProgress >= GameCatalog.all.length &&
+      _allSixClaimed != _todayKey();
+
+  // ---- comeback gift / streak freeze ----
+
+  /// Whether a friendly "welcome back" gift is waiting (set after a missed-day
+  /// gap reset the streak). Persisted so it survives a restart until claimed.
+  bool get comebackGiftPending => _comebackPending;
+
+  /// Streak freeze tokens currently held (0 or 1).
+  int get streakFreezes => _streakFreezes;
 
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
@@ -181,6 +284,38 @@ class PlayerProfile extends ChangeNotifier {
       await p.remove(_kMissionClaimed);
     }
 
+    // Daily login reward (additive, default-safe).
+    _loginLastClaim = p.getString(_kLoginLastClaim) ?? '';
+    _loginCycle = p.getInt(_kLoginCycle) ?? 0;
+
+    // Play-all-6 tracker: only keep today's set; a stale day starts empty.
+    _allSixDay = p.getString(_kAllSixDay) ?? '';
+    _allSixClaimed = p.getString(_kAllSixClaimed) ?? '';
+    _allSixSet.clear();
+    if (_allSixDay == today) {
+      _allSixSet.addAll(p.getStringList(_kAllSixSet) ?? const []);
+    } else {
+      // New day: reset the tracker.
+      _allSixDay = today;
+      await p.setString(_kAllSixDay, today);
+      await p.remove(_kAllSixSet);
+    }
+
+    // Comeback gift + streak freezes (additive, default-safe).
+    _comebackPending = p.getBool(_kComebackPending) ?? false;
+    _streakFreezes = p.getInt(_kStreakFreezes) ?? 0;
+
+    // Avatar frames (Engagement Phase 2): owned defaults to just 'none', and
+    // the selected frame defaults to 'none'. 'none' is always kept in the set.
+    _ownedFrames
+      ..clear()
+      ..add(AvatarFrames.defaultId)
+      ..addAll(p.getStringList(_kOwnedFrames) ?? const []);
+    _selectedFrame = p.getString(_kSelectedFrame) ?? AvatarFrames.defaultId;
+    // Default-safe: a selected frame that is no longer owned (e.g. catalog
+    // change) falls back to 'none'.
+    if (!ownsFrame(_selectedFrame)) _selectedFrame = AvatarFrames.defaultId;
+
     _loaded = true;
     notifyListeners();
   }
@@ -197,6 +332,19 @@ class PlayerProfile extends ChangeNotifier {
       await _prefs?.setString(_kMissionDay, today);
       await _prefs?.remove(_kMissionProgress);
       await _prefs?.remove(_kMissionClaimed);
+    }
+  }
+
+  /// Rolls the "play all 6 today" tracker over to today if its stored day is
+  /// stale. Mirrors [_rolloverMissionsIfNeeded] so a session left open past
+  /// midnight clears yesterday's set before a new game-open is recorded.
+  Future<void> _rolloverAllSixIfNeeded() async {
+    final today = _todayKey();
+    if (_allSixDay != today) {
+      _allSixDay = today;
+      _allSixSet.clear();
+      await _prefs?.setString(_kAllSixDay, today);
+      await _prefs?.remove(_kAllSixSet);
     }
   }
 
@@ -240,6 +388,89 @@ class PlayerProfile extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- daily login reward ----
+
+  /// Claims today's login gift (callable on APP OPEN). Pays the reward at the
+  /// current cycle index via the existing [addCoins]/[addPetXp] grants, then
+  /// advances the cycle (wrapping 0..6) and stamps today as the last-claim day.
+  /// Returns the claimed [DailyRewardDef], or null if already claimed today.
+  ///
+  /// Completing the 7-day cycle (claiming the day-7 [DailyRewardKind.special]
+  /// box) also grants one streak-freeze token (capped at 1).
+  Future<DailyRewardDef?> claimDailyLogin() async {
+    // Close the claim gate synchronously BEFORE any await. [canClaimDailyLogin]
+    // only flips false once _loginLastClaim is stamped at the end of the
+    // payout, so without this in-flight guard two rapid taps could both pass
+    // the gate, double-pay the reward, and advance the cycle twice.
+    if (_claimingDailyLogin || !canClaimDailyLogin) return null;
+    _claimingDailyLogin = true;
+    try {
+      final reward = todaysLoginReward;
+
+      switch (reward.kind) {
+        case DailyRewardKind.coins:
+          await addCoins(reward.amount);
+          break;
+        case DailyRewardKind.petTreat:
+          await addPetXp(reward.amount);
+          break;
+        case DailyRewardKind.special:
+          // Day-7 finale: a cosmetic frame (Engagement Phase 2) PLUS a small
+          // coin + pet-XP bonus. Granting the frame is idempotent — claiming
+          // day 7 again in a later cycle when the frame is already owned is a
+          // no-op, so it never errors or double-grants.
+          await grantFrame(AvatarFrames.dailyRewardFrameId);
+          await addCoins(reward.amount);
+          await addPetXp(reward.petXp);
+          // Completing the cycle grants one streak freeze (max 1 held).
+          if (_streakFreezes < 1) {
+            _streakFreezes = 1;
+            await _prefs?.setInt(_kStreakFreezes, _streakFreezes);
+          }
+          break;
+      }
+
+      _loginCycle = (_loginCycle + 1) % DailyRewards.length;
+      _loginLastClaim = _todayKey();
+      await _prefs?.setInt(_kLoginCycle, _loginCycle);
+      await _prefs?.setString(_kLoginLastClaim, _loginLastClaim);
+      notifyListeners();
+      return reward;
+    } finally {
+      _claimingDailyLogin = false;
+    }
+  }
+
+  // ---- play-all-6 bonus ----
+
+  /// Claims the "play all 6 today" bonus once per day. Pays a modest 40 coins
+  /// via [addCoins]. Returns the coins granted (0 if not claimable).
+  Future<int> claimAllSixBonus() async {
+    await _rolloverAllSixIfNeeded();
+    if (!canClaimAllSix) return 0;
+    const bonus = 40;
+    _allSixClaimed = _todayKey();
+    await _prefs?.setString(_kAllSixClaimed, _allSixClaimed);
+    await addCoins(bonus);
+    notifyListeners();
+    return bonus;
+  }
+
+  // ---- comeback gift ----
+
+  /// Claims the friendly "welcome back" gift once pending. Pays a modest 20
+  /// coins via [addCoins] and clears the flag. Returns coins granted (0 if no
+  /// gift is pending).
+  Future<int> claimComebackGift() async {
+    if (!_comebackPending) return 0;
+    const gift = 20;
+    _comebackPending = false;
+    await _prefs?.setBool(_kComebackPending, false);
+    await addCoins(gift);
+    notifyListeners();
+    return gift;
+  }
+
   // ---- daily streak (hub-wide) ----
 
   /// Records that the child played today, advancing the hub-wide daily streak.
@@ -247,8 +478,38 @@ class PlayerProfile extends ChangeNotifier {
   Future<int> recordPlayDay() async {
     final today = _todayKey();
     if (_lastPlayedDay == today) return _dailyStreak; // already counted
-    final yesterday = _dayKey(DateTime.now().subtract(const Duration(days: 1)));
-    _dailyStreak = (_lastPlayedDay == yesterday) ? _dailyStreak + 1 : 1;
+    final now = DateTime.now();
+    final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
+    final twoDaysAgo = _dayKey(now.subtract(const Duration(days: 2)));
+
+    if (_lastPlayedDay == yesterday) {
+      // UNCHANGED consecutive-day case: advance exactly as before.
+      _dailyStreak = _dailyStreak + 1;
+    } else if (_lastPlayedDay == twoDaysAgo &&
+        _dailyStreak > 0 &&
+        _streakFreezes > 0) {
+      // Engagement Phase 1: a SINGLE missed day (last played two days ago) is
+      // forgiven by consuming one streak-freeze token. The streak is kept and
+      // advanced as if yesterday had been played. Only a one-day gap qualifies
+      // (a 2+ day gap falls through to the reset below), and the token is
+      // consumed, so this is not abusable. No comeback gift here — the streak
+      // was saved, so there is nothing to soften.
+      _streakFreezes -= 1;
+      await _prefs?.setInt(_kStreakFreezes, _streakFreezes);
+      _dailyStreak = _dailyStreak + 1;
+    } else {
+      // UNCHANGED reset case: a gap (no freeze available / applicable) resets
+      // the streak to 1. Engagement Phase 1 ADDS a comeback gift so the reset
+      // feels friendly rather than punishing — only when a real streak was
+      // actually lost (a prior streak existed and this is a true gap, not a
+      // brand-new player's first day).
+      final hadStreak = _dailyStreak > 0 && _lastPlayedDay.isNotEmpty;
+      _dailyStreak = 1;
+      if (hadStreak) {
+        _comebackPending = true;
+        await _prefs?.setBool(_kComebackPending, true);
+      }
+    }
     _lastPlayedDay = today;
     await _prefs?.setInt(_kStreak, _dailyStreak);
     await _prefs?.setString(_kLastDay, _lastPlayedDay);
@@ -362,10 +623,11 @@ class PlayerProfile extends ChangeNotifier {
 
   // ---- avatars / shop ----
 
-  /// Whether a gated avatar's unlock requirement is satisfied. Avatars with no
-  /// [Avatar.unlock] are always considered unlocked.
-  bool isAvatarUnlocked(Avatar a) {
-    final u = a.unlock;
+  /// Whether an [AvatarUnlock] requirement is satisfied. A null unlock (no
+  /// gate) is always considered unlocked. This is the single source of truth
+  /// for BOTH avatars and frames — [isAvatarUnlocked] and [isFrameUnlocked]
+  /// delegate here so the gating rules never drift between them.
+  bool isUnlocked(AvatarUnlock? u) {
     if (u == null) return true;
     switch (u.kind) {
       case AvatarUnlockKind.achievement:
@@ -383,10 +645,9 @@ class PlayerProfile extends ChangeNotifier {
     }
   }
 
-  /// Progress (0..1) toward a gated avatar's unlock requirement, for a hint UI.
-  /// Avatars with no [Avatar.unlock] return 1.
-  double avatarUnlockProgress(Avatar a) {
-    final u = a.unlock;
+  /// Progress (0..1) toward an [AvatarUnlock] requirement, for a hint UI. A
+  /// null unlock returns 1. Shared by avatars and frames (see [isUnlocked]).
+  double unlockProgress(AvatarUnlock? u) {
     if (u == null) return 1;
     double ratio(int current, int target) {
       if (target <= 0) return 1;
@@ -410,6 +671,68 @@ class PlayerProfile extends ChangeNotifier {
       case AvatarUnlockKind.lifetimeCoins:
         return ratio(lifetimeCoins, u.threshold);
     }
+  }
+
+  /// Whether a gated avatar's unlock requirement is satisfied. Avatars with no
+  /// [Avatar.unlock] are always considered unlocked.
+  bool isAvatarUnlocked(Avatar a) => isUnlocked(a.unlock);
+
+  /// Progress (0..1) toward a gated avatar's unlock requirement, for a hint UI.
+  /// Avatars with no [Avatar.unlock] return 1.
+  double avatarUnlockProgress(Avatar a) => unlockProgress(a.unlock);
+
+  // ---- avatar frames (shop + daily reward) ----
+
+  /// Whether a gated frame's unlock requirement is satisfied. Frames with no
+  /// [AvatarFrame.unlock] are always considered unlocked.
+  bool isFrameUnlocked(AvatarFrame f) => isUnlocked(f.unlock);
+
+  /// Progress (0..1) toward a gated frame's unlock requirement, for a hint UI.
+  double frameUnlockProgress(AvatarFrame f) => unlockProgress(f.unlock);
+
+  /// Equips an owned frame. No-op if the frame is not owned. Passing the
+  /// default 'none' frame (always owned) clears the ring.
+  Future<void> selectFrame(String id) async {
+    if (!ownsFrame(id)) return;
+    _selectedFrame = id;
+    await _prefs?.setString(_kSelectedFrame, id);
+    notifyListeners();
+  }
+
+  /// Claims a frame once its requirement is met (mirrors [claimAvatar]).
+  /// Returns false if the frame is still locked; true if already owned. If
+  /// [AvatarFrame.cost] > 0 the claim deducts coins. Grants nothing extra.
+  Future<bool> claimFrame(AvatarFrame frame) async {
+    if (!isFrameUnlocked(frame)) return false;
+    if (ownsFrame(frame.id)) return true;
+    if (frame.cost > 0) {
+      if (_coins < frame.cost) return false;
+      _coins -= frame.cost;
+      await _prefs?.setInt(_kCoins, _coins);
+    }
+    _ownedFrames.add(frame.id);
+    await _persistFrames();
+    notifyListeners();
+    return true;
+  }
+
+  /// Grants a frame outright (no cost, no gate check) — used by reward paths
+  /// such as the day-7 daily-login finale. Idempotent: granting an already
+  /// owned frame returns false and leaves ownership unchanged.
+  Future<bool> grantFrame(String id) async {
+    if (ownsFrame(id)) return false;
+    _ownedFrames.add(id);
+    await _persistFrames();
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> _persistFrames() async {
+    // 'none' is implicit (always owned); persist only the earned ids.
+    await _prefs?.setStringList(
+      _kOwnedFrames,
+      _ownedFrames.where((id) => id != AvatarFrames.defaultId).toList(),
+    );
   }
 
   /// Claims a gated avatar once its requirement is met. Returns false if the
@@ -460,6 +783,15 @@ class PlayerProfile extends ChangeNotifier {
   Future<void> recordGamePlayed(String gameId, int totalGames) async {
     // Count every open (including repeats) before the already-played return.
     _analytics?.recordGameOpened(gameId);
+
+    // Engagement Phase 1: track distinct games opened TODAY for the
+    // "play all 6" bonus. Rolls over on a new day, then adds this game.
+    await _rolloverAllSixIfNeeded();
+    if (_allSixSet.add(gameId)) {
+      await _prefs?.setStringList(_kAllSixSet, _allSixSet.toList());
+      notifyListeners();
+    }
+
     if (_playedGames.contains(gameId)) return;
     _playedGames.add(gameId);
     await _prefs?.setStringList(_kPlayed, _playedGames.toList());
@@ -512,6 +844,16 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.setStringList(_kAchievements, _achievements.toList());
   }
 
+  // ---- dev / admin helpers ----
+
+  /// Clears the daily-login claim stamp (dev-only) so today's gift can be
+  /// claimed again for testing. Does not touch the cycle index.
+  Future<void> debugResetDailyLogin() async {
+    _loginLastClaim = '';
+    await _prefs?.remove(_kLoginLastClaim);
+    notifyListeners();
+  }
+
   // ---- reset ----
 
   Future<void> reset() async {
@@ -532,6 +874,17 @@ class PlayerProfile extends ChangeNotifier {
     _missionClaimed.clear();
     _missionDay = '';
     _lang = AppLang.en;
+    _loginLastClaim = '';
+    _loginCycle = 0;
+    _allSixDay = '';
+    _allSixSet.clear();
+    _allSixClaimed = '';
+    _comebackPending = false;
+    _streakFreezes = 0;
+    _ownedFrames
+      ..clear()
+      ..add(AvatarFrames.defaultId);
+    _selectedFrame = AvatarFrames.defaultId;
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -547,6 +900,15 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kMissionProgress);
     await _prefs?.remove(_kMissionClaimed);
     await _prefs?.remove(_kLang);
+    await _prefs?.remove(_kLoginLastClaim);
+    await _prefs?.remove(_kLoginCycle);
+    await _prefs?.remove(_kAllSixDay);
+    await _prefs?.remove(_kAllSixSet);
+    await _prefs?.remove(_kAllSixClaimed);
+    await _prefs?.remove(_kComebackPending);
+    await _prefs?.remove(_kStreakFreezes);
+    await _prefs?.remove(_kOwnedFrames);
+    await _prefs?.remove(_kSelectedFrame);
     notifyListeners();
   }
 }

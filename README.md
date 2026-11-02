@@ -35,10 +35,18 @@ visual "build-the-fact" array that shows `a × b` as a grid to count.
 ## ✨ Hub-wide systems (shared across all games)
 
 - **Coins** — earned in every game, spent on cosmetic avatars (no real-money purchases).
-- **Avatar shop** — 26 avatars. Some are coin-buyable; many are **unlocked by playing**
-  (beat a game's boss, grow your pet, keep a daily streak, master all six games). Earned
-  avatars show their requirement and a progress hint, then a **CLAIM 🎁** button.
-- **Achievements** — ~25 badges for milestones across every game.
+- **Avatar shop** — avatars plus collectible **avatar frames** (bronze/silver/gold and
+  fun rings). Some items are coin-buyable; many are **unlocked by playing** (beat a game's
+  boss, grow your pet, keep a daily streak, master all six games). Locked items show their
+  requirement and a progress hint, then a **CLAIM 🎁** button.
+- **Daily login reward** — open the app each day and claim a gift from a **7-day reward
+  calendar** (escalating coins, with a special avatar frame on day 7). Reached from the
+  📅 Daily button, which shows a badge when a gift is waiting.
+- **Play-all-6 bonus** — play every game in a single day to light up all six icons and
+  claim a bonus.
+- **Comeback gift & streak freeze** — a friendly "welcome back" gift after a missed day,
+  and a streak freeze that forgives a single missed day so a long streak isn't lost.
+- **Achievements** — badges for milestones across every game.
 - **Daily streak** — a hub-wide streak that grows each day you play.
 - **Pet companion** — a buddy that grows from Egg → Dragon on cross-game XP, with a
   little celebration moment at the end of each round.

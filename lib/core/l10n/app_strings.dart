@@ -26,6 +26,7 @@ abstract class AppStrings {
   // ---- Shop / avatars ----
   String get avatarShop; // "Avatar Shop"
   String get chooseYourAvatar; // "Choose your avatar"
+  String get framesTab; // "Frames" (shop tab + section title)
   String get getMore; // "Get more"
   String get done; // "Done"
   String get comingSoon; // "Coming Soon"
@@ -124,6 +125,26 @@ abstract class AppStrings {
   // ---- Admin ----
   String get adminTitle; // "Admin / Dev Tools"
   String get resetEverything; // "Reset Everything"
+  String get adminResetDailyLogin; // "Reset daily login" (button label)
+  String get adminDailyLoginReset; // toast after resetting the daily login
+
+  // ---- Daily login reward + engagement (Engagement Phase 1) ----
+  String get dailyRewardTitle; // "Daily Gift"
+  String get dailyRewardClaim; // "Claim"
+  String get dailyRewardClaimed; // "Claimed ✓"
+  String get dailyRewardComeBack; // "Come back tomorrow!"
+  String dailyRewardDay(int n); // "Day <n>"
+  /// Short label on a reward box, keyed by DailyRewardDef.labelKey.
+  String dailyRewardLabel(String key, int amount);
+  String dailyRewardClaimedToast(int coins); // "+<coins> coins! 🎁"
+  String get playTodaysChallenge; // "Play today's challenge"
+  String get playAll6Title; // "Play all 6 today!"
+  String playAll6Progress(int done, int total); // "<done> / <total>"
+  String get playAll6Claim; // "Claim bonus 🪙 40"
+  String get playAll6Claimed; // "Bonus claimed ✓"
+  String get welcomeBackTitle; // "Welcome back! 🎁"
+  String get welcomeBackBody; // "We missed you..."
+  String get welcomeBackClaim; // "Get gift 🎁"
 
   // ---- Shared in-round / result chrome (FEAT-002) ----
   String get yourTime; // "Your time"
@@ -291,6 +312,8 @@ class EnStrings extends AppStrings {
   String get avatarShop => 'Avatar Shop';
   @override
   String get chooseYourAvatar => 'Choose your avatar';
+  @override
+  String get framesTab => 'Frames';
   @override
   String get getMore => 'Get more';
   @override
@@ -479,6 +502,43 @@ class EnStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+  @override
+  String get adminResetDailyLogin => 'Reset daily login';
+  @override
+  String get adminDailyLoginReset => 'Daily login reset — today claimable again. 📅';
+
+  // ---- Daily login reward + engagement (Engagement Phase 1) ----
+  @override
+  String get dailyRewardTitle => 'Daily Gift';
+  @override
+  String get dailyRewardClaim => 'Claim';
+  @override
+  String get dailyRewardClaimed => 'Claimed ✓';
+  @override
+  String get dailyRewardComeBack => 'Come back tomorrow!';
+  @override
+  String dailyRewardDay(int n) => 'Day $n';
+  @override
+  String dailyRewardLabel(String key, int amount) =>
+      key == 'special' ? 'Big gift!' : '🪙 $amount';
+  @override
+  String dailyRewardClaimedToast(int coins) => '+$coins coins! 🎁';
+  @override
+  String get playTodaysChallenge => "Play today's challenge";
+  @override
+  String get playAll6Title => 'Play all 6 today!';
+  @override
+  String playAll6Progress(int done, int total) => '$done / $total';
+  @override
+  String get playAll6Claim => 'Claim bonus 🪙 40';
+  @override
+  String get playAll6Claimed => 'Bonus claimed ✓';
+  @override
+  String get welcomeBackTitle => 'Welcome back! 🎁';
+  @override
+  String get welcomeBackBody => 'We missed you! Here is a little gift.';
+  @override
+  String get welcomeBackClaim => 'Get gift 🎁';
 
   // ---- Shared in-round / result chrome (FEAT-002) ----
   @override
@@ -785,6 +845,8 @@ class HeStrings extends AppStrings {
   @override
   String get chooseYourAvatar => 'בחרו את הדמות שלכם';
   @override
+  String get framesTab => 'מסגרות';
+  @override
   String get getMore => 'עוד דמויות';
   @override
   String get done => 'סיום';
@@ -971,6 +1033,43 @@ class HeStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+  @override
+  String get adminResetDailyLogin => 'איפוס כניסה יומית';
+  @override
+  String get adminDailyLoginReset => 'הכניסה היומית אופסה — אפשר לאסוף שוב היום. 📅';
+
+  // ---- Daily login reward + engagement (Engagement Phase 1) ----
+  @override
+  String get dailyRewardTitle => 'מתנה יומית';
+  @override
+  String get dailyRewardClaim => 'קבלו';
+  @override
+  String get dailyRewardClaimed => 'נאסף ✓';
+  @override
+  String get dailyRewardComeBack => 'חזרו מחר!';
+  @override
+  String dailyRewardDay(int n) => 'יום $n';
+  @override
+  String dailyRewardLabel(String key, int amount) =>
+      key == 'special' ? 'מתנה גדולה!' : '🪙 $amount';
+  @override
+  String dailyRewardClaimedToast(int coins) => '+$coins מטבעות! 🎁';
+  @override
+  String get playTodaysChallenge => 'שחקו באתגר היומי';
+  @override
+  String get playAll6Title => 'שחקו בכל 6 היום!';
+  @override
+  String playAll6Progress(int done, int total) => '$done / $total';
+  @override
+  String get playAll6Claim => 'קבלו בונוס 🪙 40';
+  @override
+  String get playAll6Claimed => 'הבונוס נאסף ✓';
+  @override
+  String get welcomeBackTitle => 'שמחים שחזרתם! 🎁';
+  @override
+  String get welcomeBackBody => 'התגעגענו אליכם! הנה מתנה קטנה.';
+  @override
+  String get welcomeBackClaim => 'קבלו מתנה 🎁';
 
   // ---- Shared in-round / result chrome (FEAT-002) ----
   @override
