@@ -105,6 +105,7 @@ abstract class AppStrings {
   String get pickTimeOfDay; // "Pick a time of day to explore!"
   String get pickPiggy; // "Pick a piggy bank to open!"
   String get achievements; // "Achievements"
+  String get stickerShelfTitle; // "Stickers" (collectible shelf / tab label)
   String earnedCount(int earned, int total); // "<e> / <t> earned"
   String get dailyMissions; // "Daily Missions"
   String get yourBuddy; // "Your Buddy"
@@ -514,6 +515,8 @@ class EnStrings extends AppStrings {
   String get pickPiggy => 'Pick a bank to start saving!';
   @override
   String get achievements => 'Achievements';
+  @override
+  String get stickerShelfTitle => 'Stickers';
   @override
   String earnedCount(int earned, int total) => '$earned / $total earned';
   @override
@@ -1142,6 +1145,8 @@ class HeStrings extends AppStrings {
   String get pickPiggy => 'בחרו קופה כדי להתחיל לחסוך!';
   @override
   String get achievements => 'הישגים';
+  @override
+  String get stickerShelfTitle => 'מדבקות';
   @override
   String earnedCount(int earned, int total) => '$earned / $total הושגו';
   @override
