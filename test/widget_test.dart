@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:brain_buddies/app/brain_buddies_app.dart';
+import 'package:brain_buddies/app/game_hub_screen.dart';
+import 'package:brain_buddies/core/models/game_catalog.dart';
 
 void main() {
   testWidgets('Hub shows title and games, opens Number Quest',
@@ -143,7 +145,7 @@ void main() {
     expect(find.text('MATCH'), findsOneWidget);
   });
 
-  testWidgets('Hub opens the Daily Challenge into Number Quest',
+  testWidgets('Hub opens today\'s rotating Daily Challenge',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(430, 1000);
@@ -175,8 +177,14 @@ void main() {
     await tester.tap(find.text("Play today's challenge"));
     await tester.pumpAndSettle();
 
-    // The NQ game screen renders the daily header when isDaily is true.
-    expect(find.text('📅 Daily'), findsOneWidget);
+    // The daily now ROTATES across games by date. Whichever game is today's
+    // pick, launching it must not throw. When Number Quest is the pick it
+    // still renders its daily header exactly as before.
+    expect(tester.takeException(), isNull);
+    final today = dailyChallengeGameFor(DateTime.now());
+    if (today.id == GameCatalog.numberQuest.id) {
+      expect(find.text('📅 Daily'), findsOneWidget);
+    }
   });
 
   testWidgets('Hub opens the shared Avatar Shop with a premium coming-soon',

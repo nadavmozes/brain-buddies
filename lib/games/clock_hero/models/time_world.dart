@@ -104,11 +104,16 @@ class ClockLevel {
     required this.world,
     required this.index,
     required this.isBoss,
+    this.difficultyOverride,
   });
 
   final TimeWorld world;
   final int index;
   final bool isBoss;
+
+  /// Overrides the computed [difficulty] for off-map levels (the daily
+  /// challenge), whose index:999 would otherwise saturate the ramp to the max.
+  final double? difficultyOverride;
 
   int get number => index + 1;
   String get id => '${world.name}_$index';
@@ -117,6 +122,7 @@ class ClockLevel {
   TimeGuardian get guardian => TimeGuardians.forWorld(world);
 
   double difficulty(int levelsPerTrail) {
+    if (difficultyOverride != null) return difficultyOverride!;
     final ramp = index / (levelsPerTrail - 1) * 0.25;
     return (world.baseDifficulty + ramp).clamp(0.0, 1.0);
   }
@@ -156,4 +162,20 @@ class ClockMap {
 
   static List<ClockLevel> get allLevels =>
       [for (final w in TimeWorld.values) ...trail(w).levels];
+
+  /// A repeatable daily-challenge stop. Its time-of-day world rotates by day
+  /// so the minute mix changes, and it uses an off-map index (999) so its id
+  /// `<world>_999` never appears in [allLevels] — keeping it out of
+  /// star/unlock/fastest/mastery progression. A fixed mid difficulty keeps it
+  /// approachable regardless of which world is chosen.
+  static ClockLevel dailyLevel([DateTime? now]) {
+    final day = now ?? DateTime.now();
+    final world = TimeWorld.values[day.day % TimeWorld.values.length];
+    return ClockLevel(
+      world: world,
+      index: 999,
+      isBoss: false,
+      difficultyOverride: 0.5,
+    );
+  }
 }

@@ -55,18 +55,24 @@ class WizardState extends GameProgressStore {
     notifyListeners();
   }
 
+  /// When [isDaily] is true this is the off-map daily challenge: coins, shared
+  /// achievements and [PlayerProfile.onRoundFinished] still run, but the
+  /// star/fastest/best-score/mastery writes are SKIPPED so the off-map
+  /// `<chapter>_999` id never pollutes totalStars/overallFastest/mastery
+  /// (which fold over the whole map). Mirrors Number Quest's on-map guard.
   Future<WizardOutcome> completeLevel({
     required PlayerProfile profile,
     required WizardLevel level,
     required int correct,
     required int total,
     required int elapsedSeconds,
+    bool isDaily = false,
   }) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final stars = starsForPercent(percent);
 
-    // Keep best stars.
-    await keepBestStars(level.id, stars);
+    // Keep best stars (never for the off-map daily).
+    if (!isDaily) await keepBestStars(level.id, stars);
 
     // Boss levels require a strong run to beat.
     final bossBeaten = level.isBoss && percent >= 70;
@@ -76,14 +82,15 @@ class WizardState extends GameProgressStore {
     await profile.addCoins(coinsEarned);
 
     _roundsPlayed++;
-    final isNewBest = correct > _bestCorrect;
+    final isNewBest = !isDaily && correct > _bestCorrect;
     if (isNewBest) _bestCorrect = correct;
 
-    // Fastest only counts on a perfect 3-star run.
-    final isNewFastest =
-        await recordFastestIfBest(level.id, stars, elapsedSeconds);
+    // Fastest only counts on a perfect 3-star run (never for the daily).
+    final isNewFastest = isDaily
+        ? false
+        : await recordFastestIfBest(level.id, stars, elapsedSeconds);
 
-    await prefs?.setInt(_kBest, _bestCorrect);
+    if (!isDaily) await prefs?.setInt(_kBest, _bestCorrect);
     await prefs?.setInt(_kRounds, _roundsPlayed);
 
     final ids = <String>[Achievements.firstGame.id];
@@ -103,7 +110,8 @@ class WizardState extends GameProgressStore {
     );
 
     // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
-    await cacheMastery(profile, GameCatalog.wordWizard.id);
+    // Skipped for the daily so its off-map stars can't shift the tier.
+    if (!isDaily) await cacheMastery(profile, GameCatalog.wordWizard.id);
 
     notifyListeners();
     return WizardOutcome(

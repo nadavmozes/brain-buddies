@@ -7,6 +7,7 @@ class SafariLevel {
     required this.habitat,
     required this.index,
     required this.isGuardian,
+    this.difficultyOverride,
   });
 
   /// The habitat (world) this stop belongs to.
@@ -17,6 +18,10 @@ class SafariLevel {
 
   /// Whether this is the guardian encounter at the end of the trail.
   final bool isGuardian;
+
+  /// Overrides the computed [difficulty] for off-map levels (the daily
+  /// challenge), whose index:999 would otherwise saturate the ramp to the max.
+  final double? difficultyOverride;
 
   int get number => index + 1;
 
@@ -33,6 +38,7 @@ class SafariLevel {
 
   /// Per-level difficulty: habitat base plus a ramp along the trail.
   double difficulty(int levelsPerTrail) {
+    if (difficultyOverride != null) return difficultyOverride!;
     final ramp = index / (levelsPerTrail - 1) * 0.3; // up to +0.3 by the end
     return (habitat.baseDifficulty + ramp).clamp(0.0, 1.0);
   }
@@ -75,4 +81,20 @@ class SafariMap {
   /// Every level across all habitats, in play order.
   static List<SafariLevel> get allLevels =>
       [for (final h in Habitat.values) ...trail(h).levels];
+
+  /// A repeatable daily-challenge stop. Its habitat rotates by day so the
+  /// shape mix changes, and it uses an off-map index (999) so its id
+  /// `<habitat>_999` never appears in [allLevels] — keeping it out of
+  /// star/unlock/fastest/mastery progression. A fixed mid difficulty keeps it
+  /// approachable regardless of which habitat is chosen.
+  static SafariLevel dailyLevel([DateTime? now]) {
+    final day = now ?? DateTime.now();
+    final habitat = Habitat.values[day.day % Habitat.values.length];
+    return SafariLevel(
+      habitat: habitat,
+      index: 999,
+      isGuardian: false,
+      difficultyOverride: 0.5,
+    );
+  }
 }

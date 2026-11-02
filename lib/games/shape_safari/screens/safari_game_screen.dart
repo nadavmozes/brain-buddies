@@ -26,11 +26,16 @@ class SafariGameScreen extends StatefulWidget {
       {super.key,
       required this.state,
       required this.profile,
-      required this.level});
+      required this.level,
+      this.isDaily = false});
 
   final SafariState state;
   final PlayerProfile profile;
   final SafariLevel level;
+
+  /// True when this round is today's rotating hub daily challenge. The off-map
+  /// level then skips all per-game progression writes (see [SafariState]).
+  final bool isDaily;
 
   @override
   State<SafariGameScreen> createState() => _SafariGameScreenState();
@@ -138,7 +143,13 @@ class _SafariGameScreenState extends State<SafariGameScreen> {
       total: _questions.length,
       guardianBefriended: befriended,
       elapsedSeconds: _stopwatch.elapsed.inSeconds,
+      isDaily: widget.isDaily,
     );
+    // Finishing today's rotating daily challenge consumes the what's-new
+    // nudge for the day (the challenge stays replayable). Mirrors NQ.
+    if (widget.isDaily) {
+      await widget.profile.markDailyChallengePlayed();
+    }
     if (!mounted) return;
     if (outcome.stars == 3 || befriended) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();

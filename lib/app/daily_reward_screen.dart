@@ -10,6 +10,7 @@ import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_button.dart';
 import '../core/widgets/comic_panel.dart';
 import '../core/widgets/confetti.dart';
+import 'game_hub_screen.dart' show dailyChallengeGameFor;
 
 /// The hub "Daily" surface. Combines the 7-day login-reward calendar + a
 /// "play all 6 today" tracker at the top, and a "Play today's challenge" button
@@ -155,12 +156,7 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
                           onOpen: _openChest,
                         ),
                         const SizedBox(height: 16),
-                        ComicButton(
-                          label: context.l10n.playTodaysChallenge,
-                          icon: Icons.play_arrow_rounded,
-                          color: AppTheme.primary,
-                          onPressed: widget.onPlayDaily,
-                        ),
+                        _TodaysChallengePanel(onPlay: widget.onPlayDaily),
                         const SizedBox(height: 8),
                       ],
                     ),
@@ -547,6 +543,50 @@ class _ChestPanel extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows WHICH game today's rotating daily challenge is (icon + localized
+/// name), with the "Play today's challenge" button. The game is chosen
+/// deterministically by date via [dailyChallengeGameFor]. Comic style, no
+/// MediaQuery; RTL-safe via directional widgets.
+class _TodaysChallengePanel extends StatelessWidget {
+  const _TodaysChallengePanel({required this.onPlay});
+
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = dailyChallengeGameFor(DateTime.now());
+    final name = context.tr('game.title', game.id, game.title);
+    return ComicPanel(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(game.emoji, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.l10n.dailyChallengeToday(name),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ComicButton(
+            label: context.l10n.playTodaysChallenge,
+            icon: Icons.play_arrow_rounded,
+            color: AppTheme.primary,
+            onPressed: onPlay,
+          ),
         ],
       ),
     );

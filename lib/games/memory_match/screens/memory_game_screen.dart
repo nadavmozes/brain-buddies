@@ -28,11 +28,16 @@ class MemoryGameScreen extends StatefulWidget {
     required this.state,
     required this.profile,
     required this.level,
+    this.isDaily = false,
   });
 
   final MemoryState state;
   final PlayerProfile profile;
   final MemoryLevel level;
+
+  /// True when this round is today's rotating hub daily challenge. The off-map
+  /// level then skips all per-game progression writes (see [MemoryState]).
+  final bool isDaily;
 
   @override
   State<MemoryGameScreen> createState() => _MemoryGameScreenState();
@@ -133,7 +138,13 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       level: widget.level,
       wrongFlips: _wrongFlips,
       elapsedSeconds: _stopwatch.elapsed.inSeconds,
+      isDaily: widget.isDaily,
     );
+    // Finishing today's rotating daily challenge consumes the what's-new
+    // nudge for the day (the challenge stays replayable). Mirrors NQ.
+    if (widget.isDaily) {
+      await widget.profile.markDailyChallengePlayed();
+    }
     if (!mounted) return;
     if (outcome.stars == 3 || outcome.isNewFastest || outcome.bossBeaten) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();

@@ -100,11 +100,16 @@ class MemoryLevel {
     required this.world,
     required this.index,
     required this.isBoss,
+    this.pairsOverride,
   });
 
   final MemoryWorld world;
   final int index;
   final bool isBoss;
+
+  /// Fixes the pair count for off-map levels (the daily challenge). Without it
+  /// the daily's index:999 would feed `3 + index` and build an absurd grid.
+  final int? pairsOverride;
 
   int get number => index + 1;
   String get id => '${world.name}_$index';
@@ -113,6 +118,7 @@ class MemoryLevel {
 
   /// Number of matching PAIRS in this level's grid. Ramps 3 → 8 (boss).
   int get pairs {
+    if (pairsOverride != null) return pairsOverride!;
     if (isBoss) return 8;
     return 3 + index; // stops: 3,4,5,6 pairs
   }
@@ -152,4 +158,20 @@ class MemoryMap {
 
   static List<MemoryLevel> get allLevels =>
       [for (final w in MemoryWorld.values) ...trail(w).levels];
+
+  /// A repeatable daily-challenge board. Its world (deck) rotates by day so
+  /// the cards change, and it uses an off-map index (999) so its id
+  /// `<world>_999` never appears in [allLevels] — keeping it out of
+  /// star/unlock/fastest/mastery progression. A fixed mid-size 5-pair board
+  /// keeps it quick regardless of which deck is chosen.
+  static MemoryLevel dailyLevel([DateTime? now]) {
+    final day = now ?? DateTime.now();
+    final world = MemoryWorld.values[day.day % MemoryWorld.values.length];
+    return MemoryLevel(
+      world: world,
+      index: 999,
+      isBoss: false,
+      pairsOverride: 5,
+    );
+  }
 }

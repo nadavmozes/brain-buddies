@@ -140,6 +140,7 @@ abstract class AppStrings {
   String dailyRewardLabel(String key, int amount);
   String dailyRewardClaimedToast(int coins); // "+<coins> coins! 🎁"
   String get playTodaysChallenge; // "Play today's challenge"
+  String dailyChallengeToday(String game); // "Today: <game>"
   String get playAll6Title; // "Play all 6 today!"
   String playAll6Progress(int done, int total); // "<done> / <total>"
   String get playAll6Claim; // "Claim bonus 🪙 40"
@@ -582,6 +583,8 @@ class EnStrings extends AppStrings {
   String dailyRewardClaimedToast(int coins) => '+$coins coins! 🎁';
   @override
   String get playTodaysChallenge => "Play today's challenge";
+  @override
+  String dailyChallengeToday(String game) => 'Today: $game';
   @override
   String get playAll6Title => 'Play all 6 today!';
   @override
@@ -1211,6 +1214,8 @@ class HeStrings extends AppStrings {
   String dailyRewardClaimedToast(int coins) => '+$coins מטבעות! 🎁';
   @override
   String get playTodaysChallenge => 'שחקו באתגר היומי';
+  @override
+  String dailyChallengeToday(String game) => 'היום: $game';
   @override
   String get playAll6Title => 'שחקו בכל 6 היום!';
   @override
