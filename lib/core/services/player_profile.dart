@@ -76,6 +76,13 @@ class PlayerProfile extends ChangeNotifier {
   // a >1-day gap that resets the streak; cleared by claimComebackGift().
   bool _comebackPending = false;
 
+  // In-flight guard for claimDailyLogin(). The claimable gate (today !=
+  // last-claim day) does not close until the async payout finishes and stamps
+  // the day, so two rapid taps could both pass the gate and double-pay. This
+  // synchronous flag is set BEFORE the first await and cleared in a finally, so
+  // a concurrent second call returns null without paying or advancing.
+  bool _claimingDailyLogin = false;
+
   // Streak freeze tokens (max 1 held). A freeze forgives EXACTLY ONE missed day
   // so a single-day gap keeps the streak instead of resetting to 1. One token
   // is granted when the 7-day login cycle completes (the day-7 claim). This is
@@ -358,34 +365,43 @@ class PlayerProfile extends ChangeNotifier {
   /// Completing the 7-day cycle (claiming the day-7 [DailyRewardKind.special]
   /// box) also grants one streak-freeze token (capped at 1).
   Future<DailyRewardDef?> claimDailyLogin() async {
-    if (!canClaimDailyLogin) return null;
-    final reward = todaysLoginReward;
+    // Close the claim gate synchronously BEFORE any await. [canClaimDailyLogin]
+    // only flips false once _loginLastClaim is stamped at the end of the
+    // payout, so without this in-flight guard two rapid taps could both pass
+    // the gate, double-pay the reward, and advance the cycle twice.
+    if (_claimingDailyLogin || !canClaimDailyLogin) return null;
+    _claimingDailyLogin = true;
+    try {
+      final reward = todaysLoginReward;
 
-    switch (reward.kind) {
-      case DailyRewardKind.coins:
-        await addCoins(reward.amount);
-        break;
-      case DailyRewardKind.petTreat:
-        await addPetXp(reward.amount);
-        break;
-      case DailyRewardKind.special:
-        // Day-7 finale: coins + bonus pet XP. Swappable to a frame later.
-        await addCoins(reward.amount);
-        await addPetXp(reward.petXp);
-        // Completing the cycle grants one streak freeze (max 1 held).
-        if (_streakFreezes < 1) {
-          _streakFreezes = 1;
-          await _prefs?.setInt(_kStreakFreezes, _streakFreezes);
-        }
-        break;
+      switch (reward.kind) {
+        case DailyRewardKind.coins:
+          await addCoins(reward.amount);
+          break;
+        case DailyRewardKind.petTreat:
+          await addPetXp(reward.amount);
+          break;
+        case DailyRewardKind.special:
+          // Day-7 finale: coins + bonus pet XP. Swappable to a frame later.
+          await addCoins(reward.amount);
+          await addPetXp(reward.petXp);
+          // Completing the cycle grants one streak freeze (max 1 held).
+          if (_streakFreezes < 1) {
+            _streakFreezes = 1;
+            await _prefs?.setInt(_kStreakFreezes, _streakFreezes);
+          }
+          break;
+      }
+
+      _loginCycle = (_loginCycle + 1) % DailyRewards.length;
+      _loginLastClaim = _todayKey();
+      await _prefs?.setInt(_kLoginCycle, _loginCycle);
+      await _prefs?.setString(_kLoginLastClaim, _loginLastClaim);
+      notifyListeners();
+      return reward;
+    } finally {
+      _claimingDailyLogin = false;
     }
-
-    _loginCycle = (_loginCycle + 1) % DailyRewards.length;
-    _loginLastClaim = _todayKey();
-    await _prefs?.setInt(_kLoginCycle, _loginCycle);
-    await _prefs?.setString(_kLoginLastClaim, _loginLastClaim);
-    notifyListeners();
-    return reward;
   }
 
   // ---- play-all-6 bonus ----

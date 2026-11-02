@@ -36,18 +36,29 @@ class DailyRewardScreen extends StatefulWidget {
 
 class _DailyRewardScreenState extends State<DailyRewardScreen> {
   bool _showConfetti = false;
+  // Disables the CLAIM button while a claim is in flight so rapid taps can't
+  // fire a second claim. The profile also guards against this internally, but
+  // disabling the button is the first line of defence and gives instant
+  // feedback.
+  bool _claiming = false;
 
   PlayerProfile get _profile => widget.profile;
 
   Future<void> _claimLogin() async {
-    final reward = await _profile.claimDailyLogin();
-    if (reward == null || !mounted) return;
-    FeedbackService(enabled: _profile.soundOn).coin();
-    setState(() => _showConfetti = true);
-    final coins = reward.kind == DailyRewardKind.petTreat ? 0 : reward.amount;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.dailyRewardClaimedToast(coins))),
-    );
+    if (_claiming) return;
+    setState(() => _claiming = true);
+    try {
+      final reward = await _profile.claimDailyLogin();
+      if (reward == null || !mounted) return;
+      FeedbackService(enabled: _profile.soundOn).coin();
+      setState(() => _showConfetti = true);
+      final coins = reward.kind == DailyRewardKind.petTreat ? 0 : reward.amount;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.dailyRewardClaimedToast(coins))),
+      );
+    } finally {
+      if (mounted) setState(() => _claiming = false);
+    }
   }
 
   Future<void> _claimAllSix() async {
@@ -102,6 +113,7 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
                           profile: _profile,
                           maxWidth: constraints.maxWidth,
                           onClaim: _claimLogin,
+                          claiming: _claiming,
                         ),
                         const SizedBox(height: 16),
                         _AllSixPanel(
@@ -138,11 +150,16 @@ class _CalendarPanel extends StatelessWidget {
     required this.profile,
     required this.maxWidth,
     required this.onClaim,
+    required this.claiming,
   });
 
   final PlayerProfile profile;
   final double maxWidth;
   final VoidCallback onClaim;
+
+  /// True while a claim is in flight; disables the CLAIM button so a second
+  /// rapid tap can't fire another claim.
+  final bool claiming;
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +207,7 @@ class _CalendarPanel extends StatelessWidget {
               icon: Icons.card_giftcard_rounded,
               color: AppTheme.accent,
               textColor: AppTheme.ink,
-              onPressed: onClaim,
+              onPressed: claiming ? null : onClaim,
             )
           else
             Center(

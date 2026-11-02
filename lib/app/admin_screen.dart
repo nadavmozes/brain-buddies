@@ -102,8 +102,11 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _resetDailyLogin() async {
+    // Capture the localized toast before the await so we don't touch context
+    // after an async gap (the _snack guard handles the unmounted case).
+    final msg = context.l10n.adminDailyLoginReset;
     await widget.profile.debugResetDailyLogin();
-    _snack('Daily login reset — today claimable again. 📅');
+    _snack(msg);
   }
 
   Future<void> _unlockAllAvatars() async {
@@ -185,7 +188,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                       const SizedBox(height: 14),
                       ComicButton(
-                        label: 'Reset daily login',
+                        label: context.l10n.adminResetDailyLogin,
                         icon: Icons.event_repeat_rounded,
                         color: AppTheme.primary,
                         onPressed: _busy ? null : _resetDailyLogin,

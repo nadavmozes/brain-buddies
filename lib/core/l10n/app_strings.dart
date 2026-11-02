@@ -124,6 +124,8 @@ abstract class AppStrings {
   // ---- Admin ----
   String get adminTitle; // "Admin / Dev Tools"
   String get resetEverything; // "Reset Everything"
+  String get adminResetDailyLogin; // "Reset daily login" (button label)
+  String get adminDailyLoginReset; // toast after resetting the daily login
 
   // ---- Daily login reward + engagement (Engagement Phase 1) ----
   String get dailyRewardTitle; // "Daily Gift"
@@ -497,6 +499,10 @@ class EnStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+  @override
+  String get adminResetDailyLogin => 'Reset daily login';
+  @override
+  String get adminDailyLoginReset => 'Daily login reset — today claimable again. 📅';
 
   // ---- Daily login reward + engagement (Engagement Phase 1) ----
   @override
@@ -1022,6 +1028,10 @@ class HeStrings extends AppStrings {
   String get adminTitle => 'Admin / Dev Tools';
   @override
   String get resetEverything => 'Reset Everything';
+  @override
+  String get adminResetDailyLogin => 'איפוס כניסה יומית';
+  @override
+  String get adminDailyLoginReset => 'הכניסה היומית אופסה — אפשר לאסוף שוב היום. 📅';
 
   // ---- Daily login reward + engagement (Engagement Phase 1) ----
   @override
