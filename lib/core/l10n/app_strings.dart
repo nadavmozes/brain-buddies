@@ -146,6 +146,22 @@ abstract class AppStrings {
   String get welcomeBackBody; // "We missed you..."
   String get welcomeBackClaim; // "Get gift 🎁"
 
+  // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  String get petTreatsLabel; // "Treats" — pet feed panel heading
+  String petTreatsCount(int n); // "🦴 <n>" treat count row
+  String get feedBuddy; // "Feed Buddy"
+  String get feedYum; // "Yum! 😋"
+  String get claimFreeTreat; // "Free treat! 🎁"
+  String get dailyDoubleBanner; // "Daily Double! 🪙 x2"
+  String get weeklyGoalTitle; // "Weekly Goal"
+  String weeklyGoalProgress(int done, int target); // "<done> / <target> days"
+  String get weeklyGoalClaim; // "Claim 🪙 40 + 🦴"
+  String get weeklyGoalClaimed; // "Claimed ✓"
+  // Admin shortcut labels (Engagement Phase 3).
+  String get adminAddTreats; // "Add 5 treats"
+  String get adminResetDailyDouble; // "Reset daily double"
+  String get adminResetWeeklyGoal; // "Reset weekly goal"
+
   // ---- Shared in-round / result chrome (FEAT-002) ----
   String get yourTime; // "Your time"
   String get coinsEarned; // "Coins earned"
@@ -539,6 +555,34 @@ class EnStrings extends AppStrings {
   String get welcomeBackBody => 'We missed you! Here is a little gift.';
   @override
   String get welcomeBackClaim => 'Get gift 🎁';
+
+  // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  @override
+  String get petTreatsLabel => 'Treats';
+  @override
+  String petTreatsCount(int n) => '🦴 $n';
+  @override
+  String get feedBuddy => 'Feed Buddy';
+  @override
+  String get feedYum => 'Yum! 😋';
+  @override
+  String get claimFreeTreat => 'Free treat! 🎁';
+  @override
+  String get dailyDoubleBanner => 'Daily Double! 🪙 x2';
+  @override
+  String get weeklyGoalTitle => 'Weekly Goal';
+  @override
+  String weeklyGoalProgress(int done, int target) => '$done / $target days';
+  @override
+  String get weeklyGoalClaim => 'Claim 🪙 40 + 🦴';
+  @override
+  String get weeklyGoalClaimed => 'Claimed ✓';
+  @override
+  String get adminAddTreats => 'Add 5 treats';
+  @override
+  String get adminResetDailyDouble => 'Reset daily double';
+  @override
+  String get adminResetWeeklyGoal => 'Reset weekly goal';
 
   // ---- Shared in-round / result chrome (FEAT-002) ----
   @override
@@ -1070,6 +1114,34 @@ class HeStrings extends AppStrings {
   String get welcomeBackBody => 'התגעגענו אליכם! הנה מתנה קטנה.';
   @override
   String get welcomeBackClaim => 'קבלו מתנה 🎁';
+
+  // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  @override
+  String get petTreatsLabel => 'חטיפים';
+  @override
+  String petTreatsCount(int n) => '🦴 $n';
+  @override
+  String get feedBuddy => 'האכילו את החבר';
+  @override
+  String get feedYum => 'טעים! 😋';
+  @override
+  String get claimFreeTreat => 'חטיף חינם! 🎁';
+  @override
+  String get dailyDoubleBanner => 'בונוס כפול! 🪙 x2';
+  @override
+  String get weeklyGoalTitle => 'מטרה שבועית';
+  @override
+  String weeklyGoalProgress(int done, int target) => '$done / $target ימים';
+  @override
+  String get weeklyGoalClaim => 'קבלו 🪙 40 + 🦴';
+  @override
+  String get weeklyGoalClaimed => 'נאסף ✓';
+  @override
+  String get adminAddTreats => 'הוסיפו 5 חטיפים';
+  @override
+  String get adminResetDailyDouble => 'אפסו בונוס כפול';
+  @override
+  String get adminResetWeeklyGoal => 'אפסו מטרה שבועית';
 
   // ---- Shared in-round / result chrome (FEAT-002) ----
   @override

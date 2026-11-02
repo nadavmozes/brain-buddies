@@ -168,6 +168,10 @@ void main() {
     // The Daily surface now opens the combined reward screen; from there the
     // "Play today's challenge" button routes into the NQ daily challenge.
     expect(find.text('Daily Gift'), findsWidgets);
+    // The reward screen scrolls; ensure the challenge button is on-screen
+    // before tapping (new panels can push it below the fold at phone height).
+    await tester.ensureVisible(find.text("Play today's challenge"));
+    await tester.pumpAndSettle();
     await tester.tap(find.text("Play today's challenge"));
     await tester.pumpAndSettle();
 

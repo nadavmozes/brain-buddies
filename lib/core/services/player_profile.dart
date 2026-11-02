@@ -42,6 +42,30 @@ class PlayerProfile extends ChangeNotifier {
   final Set<String> _ownedFrames = {AvatarFrames.defaultId};
   String _selectedFrame = AvatarFrames.defaultId;
 
+  // Pet treats (Engagement Phase 3 / P4): a small inventory of treats the
+  // child spends to feed the pet, plus the day-key of the last free daily
+  // treat so one is granted per calendar day.
+  int _petTreats = 0;
+  String _dailyTreatDay = '';
+
+  // Coin daily-double (Engagement Phase 3 / P10): the day-key whose first
+  // finished round has already been doubled. Empty '' means today's first win
+  // is still eligible.
+  String _doubleDay = '';
+
+  // Transient (non-persisted) daily-double summary from the most recent
+  // onRoundFinished call, so the result/round feedback can surface the doubled
+  // coin payout. Reset at the top of every onRoundFinished.
+  int _lastRoundCoinsPaid = 0;
+  bool _lastRoundWasDoubled = false;
+
+  // Weekly goal (Engagement Phase 3 / P9): the current week-key, the count of
+  // distinct days played this week, and whether this week's bonus was claimed.
+  // Rolls over when the week-key changes (mirrors the mission rollover).
+  String _weekKey = '';
+  int _weekDaysPlayed = 0;
+  bool _weekClaimed = false;
+
   // Hub-wide daily streak (spans all games).
   int _dailyStreak = 0;
   String _lastPlayedDay = '';
@@ -134,6 +158,34 @@ class PlayerProfile extends ChangeNotifier {
   // stays 1). Both are cleared in reset().
   static const _kOwnedFrames = 'profile_owned_frames';
   static const _kSelectedFrame = 'profile_selected_frame';
+  // Engagement Phase 3 keys (additive, default-absent-safe — schemaVersion
+  // stays 1). All are cleared in reset().
+  // P4 pet treats:
+  static const _kPetTreats = 'profile_pet_treats';
+  static const _kDailyTreatDay = 'profile_daily_treat_day';
+  // P10 coin daily-double:
+  static const _kDoubleDay = 'profile_double_day';
+  // P9 weekly goal:
+  static const _kWeekKey = 'profile_week_key';
+  static const _kWeekDaysPlayed = 'profile_week_days_played';
+  static const _kWeekClaimed = 'profile_week_claimed';
+
+  // ---- Engagement Phase 3 tuning constants (documented) ----
+
+  /// XP granted when the child feeds the pet one treat. Deliberately SMALL so
+  /// treat feeding never outpaces the normal coin-XP curve in pet.dart: the
+  /// first level step costs 60 XP (`Pet.xpForLevel`), so one treat is ~13% of
+  /// a level and shrinks as a share at higher levels. Keeps stage pacing intact.
+  static const int _kTreatXp = 8;
+
+  /// Upper bound on the COIN payout of the once-per-day "daily double". The
+  /// first finished round each day pays `min(coinsEarned * 2, _kDoubleCap)`.
+  /// Capped below the cheapest 50-coin avatar so doubling can't flood the
+  /// economy (round payouts are small; this just rewards playing today).
+  static const int _kDoubleCap = 60;
+
+  /// Distinct days this week needed to claim the weekly bonus.
+  static const int _kWeeklyGoalTarget = 5;
 
   bool get isLoaded => _loaded;
 
@@ -160,6 +212,38 @@ class PlayerProfile extends ChangeNotifier {
   /// Whether the given frame id is owned. The default 'none' is always owned.
   bool ownsFrame(String id) =>
       id == AvatarFrames.defaultId || _ownedFrames.contains(id);
+
+  // ---- pet treats (Engagement Phase 3 / P4) ----
+
+  /// Treats the child currently holds (spent to feed the pet).
+  int get petTreats => _petTreats;
+
+  /// Whether a free daily treat is still unclaimed today (today != last claim
+  /// day). Grants one free treat per calendar day.
+  bool get canClaimDailyTreat => _dailyTreatDay != _todayKey();
+
+  // ---- coin daily-double (Engagement Phase 3 / P10) ----
+
+  /// The coin payout surfaced for the most recent round (the doubled amount
+  /// when the daily-double applied, otherwise the plain coinsEarned).
+  int get lastRoundCoinsPaid => _lastRoundCoinsPaid;
+
+  /// Whether the most recent round's coin payout was doubled by the once-per-
+  /// day first-win bonus.
+  bool get lastRoundWasDoubled => _lastRoundWasDoubled;
+
+  // ---- weekly goal (Engagement Phase 3 / P9) ----
+
+  /// Distinct days played this week (0..target+). Rolls over on a new week.
+  int get weekDaysPlayed => _weekDaysPlayed;
+
+  /// Distinct days needed this week to claim the weekly bonus.
+  int get weeklyGoalTarget => _kWeeklyGoalTarget;
+
+  /// Whether the weekly bonus is claimable: enough distinct days played this
+  /// week and not yet claimed this week.
+  bool get canClaimWeeklyBonus =>
+      _weekDaysPlayed >= weeklyGoalTarget && !_weekClaimed;
 
   bool hasAchievement(String id) => _achievements.contains(id);
   int get achievementCount => _achievements.length;
@@ -316,6 +400,19 @@ class PlayerProfile extends ChangeNotifier {
     // change) falls back to 'none'.
     if (!ownsFrame(_selectedFrame)) _selectedFrame = AvatarFrames.defaultId;
 
+    // Pet treats + coin daily-double (Engagement Phase 3, additive/default-safe).
+    _petTreats = p.getInt(_kPetTreats) ?? 0;
+    _dailyTreatDay = p.getString(_kDailyTreatDay) ?? '';
+    _doubleDay = p.getString(_kDoubleDay) ?? '';
+
+    // Weekly goal (Engagement Phase 3): read the stored week state, then roll
+    // over if the stored week-key is stale (mirrors the mission rollover so a
+    // session open across a week boundary starts the new week fresh).
+    _weekKey = p.getString(_kWeekKey) ?? '';
+    _weekDaysPlayed = p.getInt(_kWeekDaysPlayed) ?? 0;
+    _weekClaimed = p.getBool(_kWeekClaimed) ?? false;
+    await _rolloverWeekIfNeeded();
+
     _loaded = true;
     notifyListeners();
   }
@@ -348,10 +445,37 @@ class PlayerProfile extends ChangeNotifier {
     }
   }
 
+  /// Rolls the weekly goal over to the current week if the stored week-key is
+  /// stale. Mirrors [_rolloverMissionsIfNeeded] so a session left open across a
+  /// week boundary resets last week's distinct-day count + claimed flag before
+  /// any new day is counted.
+  Future<void> _rolloverWeekIfNeeded() async {
+    final week = _weekKeyNow();
+    if (_weekKey != week) {
+      _weekKey = week;
+      _weekDaysPlayed = 0;
+      _weekClaimed = false;
+      await _prefs?.setString(_kWeekKey, _weekKey);
+      await _prefs?.setInt(_kWeekDaysPlayed, _weekDaysPlayed);
+      await _prefs?.setBool(_kWeekClaimed, _weekClaimed);
+    }
+  }
+
   // ---- date helpers ----
   String _todayKey() => _dayKey(DateTime.now());
   String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// A documented "ISO-week-ish" key: the day-key of the Monday on or before
+  /// today, prefixed with 'W'. Dart `DateTime.weekday` is 1=Mon..7=Sun, so
+  /// subtracting `(weekday - 1)` days lands on this week's Monday. A Monday
+  /// anchor is a stable, locale-independent week window — simpler and
+  /// unambiguous for a kids' app compared to true ISO-8601 week numbers.
+  String _weekKeyNow() {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    return 'W${_dayKey(monday)}';
+  }
 
   /// Switches the UI language and persists it (additive key). Rebuilds the app
   /// via [notifyListeners] so the toggle flips strings + RTL live.
@@ -478,6 +602,13 @@ class PlayerProfile extends ChangeNotifier {
   Future<int> recordPlayDay() async {
     final today = _todayKey();
     if (_lastPlayedDay == today) return _dailyStreak; // already counted
+    // Engagement Phase 3 / P9: count this distinct day toward the weekly goal.
+    // The early-return above guarantees each calendar day reaches here at most
+    // once, so the count increments exactly once per distinct day. Roll the
+    // week over first so a new week starts the count fresh.
+    await _rolloverWeekIfNeeded();
+    _weekDaysPlayed += 1;
+    await _prefs?.setInt(_kWeekDaysPlayed, _weekDaysPlayed);
     final now = DateTime.now();
     final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
     final twoDaysAgo = _dayKey(now.subtract(const Duration(days: 2)));
@@ -537,6 +668,34 @@ class PlayerProfile extends ChangeNotifier {
     _lastRoundPetNewLevel = 0;
     _lastRoundPetStageChanged = false;
 
+    // Engagement Phase 3 / P10: coin daily-double. The FIRST finished round
+    // each day doubles the round's coin payout (capped at [_kDoubleCap] to
+    // protect the shop economy); every later round the same day pays normally.
+    // Games already credited the single [coinsEarned] via addCoins BEFORE
+    // calling this method, so when the double applies we credit only the DELTA
+    // (the extra coins on top of what the game already paid) via addCoins here.
+    // The doubled total is surfaced via the transient getters
+    // [lastRoundCoinsPaid]/[lastRoundWasDoubled] so the result/round feedback
+    // can show the "Daily Double!" banner. Pet XP and the mission coin metric
+    // below stay on the ORIGINAL coinsEarned so the double only affects the
+    // coin balance shown to the child.
+    final firstWinToday = _doubleDay != _todayKey();
+    final firstWinWithCoins = firstWinToday && coinsEarned > 0;
+    final paid =
+        firstWinWithCoins ? (coinsEarned * 2).clamp(0, _kDoubleCap) : coinsEarned;
+    final extra = paid - coinsEarned;
+    // Only flag/celebrate the "Daily Double" when the child actually received
+    // extra coins. On a very high-earning round the cap can leave extra == 0;
+    // consuming the day's double silently (no banner) avoids over-promising.
+    _lastRoundWasDoubled = firstWinWithCoins && extra > 0;
+    _lastRoundCoinsPaid = paid;
+    if (firstWinWithCoins) {
+      _doubleDay = _todayKey();
+      await _prefs?.setString(_kDoubleDay, _doubleDay);
+      // Credit the extra coins beyond what the game already paid.
+      if (extra > 0) await addCoins(extra);
+    }
+
     await recordPlayDay();
     // Pet grows with roughly the coins earned, so playing anything feeds it.
     final beforeLevel = petLevel;
@@ -554,11 +713,82 @@ class PlayerProfile extends ChangeNotifier {
     await reportMission(MissionMetric.coinsEarned, coinsEarned);
     if (threeStars) await reportMission(MissionMetric.threeStarRounds, 1);
     if (bossBeaten) await reportMission(MissionMetric.bossesBeaten, 1);
+    // Engagement Phase 3 / P4: earn a treat on a strong outcome. At most one
+    // treat per round, only on a boss win or a 3-star clear — modest earning
+    // that keeps treats from outpacing the pet XP curve.
+    if (bossBeaten || threeStars) await addTreats(1);
     // Local-only analytics: aggregate counters + latest snapshots.
     _analytics?.recordRound(
         correct: correct, threeStars: threeStars, bossBeaten: bossBeaten);
     await _analytics?.updateSnapshots(
         streak: dailyStreak, petLevel: petLevel, coins: coins);
+  }
+
+  // ---- pet treats (Engagement Phase 3 / P4) ----
+
+  /// Adds [n] treats to the inventory (no-op when n <= 0). Persists + notifies.
+  Future<void> addTreats(int n) async {
+    if (n <= 0) return;
+    _petTreats += n;
+    await _prefs?.setInt(_kPetTreats, _petTreats);
+    notifyListeners();
+  }
+
+  /// Claims the one free treat available each calendar day. No-ops (returns
+  /// false) when today's free treat was already claimed; otherwise stamps today
+  /// as the claim day, grants one treat via [addTreats], and returns true.
+  Future<bool> claimDailyTreat() async {
+    if (!canClaimDailyTreat) return false;
+    _dailyTreatDay = _todayKey();
+    await _prefs?.setString(_kDailyTreatDay, _dailyTreatDay);
+    await addTreats(1); // persists treats + notifies
+    return true;
+  }
+
+  /// Feeds the pet one treat. No-ops (returns false) when there are no treats.
+  /// Otherwise spends one treat and grants the small documented [_kTreatXp] to
+  /// the pet, capturing the transient "Buddy grew" summary so a level-up from
+  /// feeding still celebrates (mirrors the onRoundFinished pet block).
+  Future<bool> feedPet() async {
+    if (_petTreats <= 0) return false;
+    _petTreats -= 1;
+    await _prefs?.setInt(_kPetTreats, _petTreats);
+
+    // Capture the pet's state before the XP so the feed can surface a "Buddy
+    // grew" moment exactly like a finished round does.
+    final beforeLevel = petLevel;
+    final beforeStage = Pet.stageForLevel(beforeLevel);
+    // Reset the transient summary so the feed reports only its own change.
+    _lastRoundPetXp = 0;
+    _lastRoundPetLeveledUp = false;
+    _lastRoundPetNewLevel = 0;
+    _lastRoundPetStageChanged = false;
+    await addPetXp(_kTreatXp);
+    final afterLevel = petLevel;
+    _lastRoundPetXp = _kTreatXp;
+    _lastRoundPetNewLevel = afterLevel;
+    _lastRoundPetLeveledUp = afterLevel > beforeLevel;
+    _lastRoundPetStageChanged =
+        Pet.stageForLevel(afterLevel).name != beforeStage.name;
+    notifyListeners();
+    return true;
+  }
+
+  // ---- weekly goal (Engagement Phase 3 / P9) ----
+
+  /// Claims this week's bonus once the goal is met. Rolls the week over first,
+  /// no-ops (returns 0) when not claimable, else stamps the week claimed and
+  /// pays a modest 40 coins + 1 treat. Returns the coins granted.
+  Future<int> claimWeeklyBonus() async {
+    await _rolloverWeekIfNeeded();
+    if (!canClaimWeeklyBonus) return 0;
+    const bonus = 40;
+    _weekClaimed = true;
+    await _prefs?.setBool(_kWeekClaimed, _weekClaimed);
+    await addCoins(bonus);
+    await addTreats(1);
+    notifyListeners();
+    return bonus;
   }
 
   // ---- pet companion ----
@@ -854,6 +1084,31 @@ class PlayerProfile extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Adds [n] treats (dev-only shortcut for testing the feed loop).
+  Future<void> debugAddTreats(int n) async {
+    await addTreats(n);
+  }
+
+  /// Clears the daily-double stamp (dev-only) so the next finished round today
+  /// doubles its coins again.
+  Future<void> debugResetDailyDouble() async {
+    _doubleDay = '';
+    await _prefs?.remove(_kDoubleDay);
+    notifyListeners();
+  }
+
+  /// Resets this week's goal state (dev-only): clears the week-key, distinct-
+  /// day count, and claimed flag so the weekly bar can be re-tested.
+  Future<void> debugResetWeeklyGoal() async {
+    _weekKey = '';
+    _weekDaysPlayed = 0;
+    _weekClaimed = false;
+    await _prefs?.remove(_kWeekKey);
+    await _prefs?.remove(_kWeekDaysPlayed);
+    await _prefs?.remove(_kWeekClaimed);
+    notifyListeners();
+  }
+
   // ---- reset ----
 
   Future<void> reset() async {
@@ -885,6 +1140,14 @@ class PlayerProfile extends ChangeNotifier {
       ..clear()
       ..add(AvatarFrames.defaultId);
     _selectedFrame = AvatarFrames.defaultId;
+    _petTreats = 0;
+    _dailyTreatDay = '';
+    _doubleDay = '';
+    _lastRoundCoinsPaid = 0;
+    _lastRoundWasDoubled = false;
+    _weekKey = '';
+    _weekDaysPlayed = 0;
+    _weekClaimed = false;
     await _prefs?.remove(_kSchemaVersion);
     await _prefs?.remove(_kCoins);
     await _prefs?.remove(_kLifetime);
@@ -909,6 +1172,12 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kStreakFreezes);
     await _prefs?.remove(_kOwnedFrames);
     await _prefs?.remove(_kSelectedFrame);
+    await _prefs?.remove(_kPetTreats);
+    await _prefs?.remove(_kDailyTreatDay);
+    await _prefs?.remove(_kDoubleDay);
+    await _prefs?.remove(_kWeekKey);
+    await _prefs?.remove(_kWeekDaysPlayed);
+    await _prefs?.remove(_kWeekClaimed);
     notifyListeners();
   }
 }

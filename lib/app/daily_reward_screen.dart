@@ -71,6 +71,16 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
     );
   }
 
+  Future<void> _claimWeekly() async {
+    final coins = await _profile.claimWeeklyBonus();
+    if (coins <= 0 || !mounted) return;
+    FeedbackService(enabled: _profile.soundOn).coin();
+    setState(() => _showConfetti = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.coinsGained(coins))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,6 +129,11 @@ class _DailyRewardScreenState extends State<DailyRewardScreen> {
                         _AllSixPanel(
                           profile: _profile,
                           onClaim: _claimAllSix,
+                        ),
+                        const SizedBox(height: 16),
+                        _WeeklyGoalPanel(
+                          profile: _profile,
+                          onClaim: _claimWeekly,
                         ),
                         const SizedBox(height: 16),
                         ComicButton(
@@ -383,6 +398,76 @@ class _AllSixPanel extends StatelessWidget {
             Center(
               child: Text(
                 context.l10n.playAll6Claimed,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The weekly-goal panel (Engagement Phase 3 / P9): a small progress bar of
+/// distinct days played this week toward the target, with a claim button when
+/// the goal is met. RTL-safe and sized from the panel (no MediaQuery).
+class _WeeklyGoalPanel extends StatelessWidget {
+  const _WeeklyGoalPanel({required this.profile, required this.onClaim});
+
+  final PlayerProfile profile;
+  final VoidCallback onClaim;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = profile.weekDaysPlayed;
+    final target = profile.weeklyGoalTarget;
+    final canClaim = profile.canClaimWeeklyBonus;
+    final value = target <= 0 ? 1.0 : (done / target).clamp(0.0, 1.0);
+
+    return ComicPanel(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.l10n.weeklyGoalTitle,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Text(
+                context.l10n.weeklyGoalProgress(done, target),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: value,
+              minHeight: 16,
+              backgroundColor: Colors.grey.shade200,
+              color: AppTheme.accent,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (canClaim)
+            ComicButton(
+              label: context.l10n.weeklyGoalClaim,
+              icon: Icons.redeem_rounded,
+              color: AppTheme.accent,
+              textColor: AppTheme.ink,
+              onPressed: onClaim,
+            )
+          else if (profile.weekDaysPlayed >= target)
+            Center(
+              child: Text(
+                context.l10n.weeklyGoalClaimed,
                 style: const TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w800),
               ),
