@@ -11,8 +11,9 @@ support. The app auto-detects the device/browser language on first launch and ca
 switched any time with an in-app **EN ⇄ עב** toggle.
 
 All six games are playable, and the hub ties them together with a shared coin
-economy, avatars, achievements, a daily streak, a growing pet companion, and daily
-missions.
+economy, avatars and collectible cosmetics, achievements, a growing pet companion,
+and a full **daily-engagement layer** — login rewards, a surprise chest, daily
+missions, a rotating daily challenge, streaks, and more (see below).
 
 ## 🎮 Games
 
@@ -119,14 +120,17 @@ lib/
 │  ├─ pet_screen.dart           # Pet companion
 │  └─ avatar_picker.dart        # Equip an owned avatar
 ├─ core/                        # Shared across ALL games
-│  ├─ models/                   # game_catalog, avatar, achievement, mission, pet
+│  ├─ l10n/                     # app_lang, app_strings (En/He), l10n, localized_catalog
+│  ├─ models/                   # game_catalog, avatar, avatar_frame, sticker,
+│  │                            #   achievement, mission, pet, daily_reward, mastery
 │  ├─ services/                 # player_profile (shared state), game_progress_store
 │  │                            #   (base for per-game stores), analytics_service,
 │  │                            #   feedback_service, sound_bridge*/
-│  ├─ theme/app_theme.dart      # Comic palette, borders, shadows
+│  ├─ theme/app_theme.dart      # Comic palette, borders, shadows (locale-aware font)
 │  └─ widgets/                  # comic_button, comic_panel, star_row, coin_pill,
-│                               #   xp_bar, confetti, timer_chip, answer_badge,
-│                               #   pet_round_moment, game_header, reward_row, ...
+│                               #   xp_bar, confetti, timer_chip, answer_badge, stat_chip,
+│                               #   avatar_badge, pet_round_moment, game_header,
+│                               #   reward_row, result_banner, trail_map, ...
 └─ games/
    ├─ number_quest/   ├─ shape_safari/   ├─ word_wizard/
    ├─ clock_hero/     ├─ money_math/     └─ memory_match/
@@ -200,9 +204,13 @@ flutter build web --release        # Web
 flutter test
 ```
 
-The suite covers hub/game navigation plus the highest-risk logic: streaks, missions
-(including midnight rollover), level unlocking, star-scoring thresholds, every question
-generator (with a seeded RNG), avatar unlocks, and the shared progress store.
+200+ tests cover hub/game navigation, the two languages + RTL, and the highest-risk
+logic: streaks (incl. the streak freeze and midnight rollover), missions, level
+unlocking, star-scoring thresholds, every question generator (with a seeded RNG),
+avatar/frame/sticker unlocks, the shared progress store, and the engagement loop
+(daily login reward, play-all-6, pet treats, daily double, weekly goal, mastery
+medals, surprise chest, and the rotating multi-game daily challenge not polluting
+per-game progression).
 
 ## 📝 Notes
 
