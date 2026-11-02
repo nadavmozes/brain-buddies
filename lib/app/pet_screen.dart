@@ -138,7 +138,7 @@ class _PetScreenState extends State<PetScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  context.l10n.feedBuddy,
+                                  context.l10n.petTreatsLabel,
                                   style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w900),

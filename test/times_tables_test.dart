@@ -262,9 +262,15 @@ void main() {
     );
 
     // onRoundFinished advanced the hub-wide day streak and coins flowed to the
-    // shared profile.
+    // shared profile. This is the first finished round of the day, so the coin
+    // daily-double (Engagement Phase 3 / P10) applies: the balance reflects the
+    // doubled payout, capped at 60.
+    const doubleCap = 60;
+    final expectedPaid = (outcome.coinsEarned * 2).clamp(0, doubleCap);
     expect(profile.dailyStreak, greaterThanOrEqualTo(startStreak + 1));
-    expect(profile.coins, startCoins + outcome.coinsEarned);
+    expect(profile.coins, startCoins + expectedPaid);
+    expect(profile.lastRoundWasDoubled, isTrue,
+        reason: 'the first round of the day doubles coins');
     expect(outcome.coinsEarned, greaterThan(0));
     expect(
         outcome.newAchievements.any((a) => a.id == 'nq_boss'), isTrue,

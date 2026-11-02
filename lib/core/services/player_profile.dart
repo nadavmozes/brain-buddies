@@ -671,11 +671,14 @@ class PlayerProfile extends ChangeNotifier {
     // Engagement Phase 3 / P10: coin daily-double. The FIRST finished round
     // each day doubles the round's coin payout (capped at [_kDoubleCap] to
     // protect the shop economy); every later round the same day pays normally.
-    // This method does NOT itself call addCoins — games award coins separately
-    // — so the doubled amount is surfaced via the transient getters
-    // [lastRoundCoinsPaid]/[lastRoundWasDoubled] for the result/round feedback.
-    // Pet XP and the mission coin metric below stay on the ORIGINAL coinsEarned
-    // so the double only affects the coin balance shown to the child.
+    // Games already credited the single [coinsEarned] via addCoins BEFORE
+    // calling this method, so when the double applies we credit only the DELTA
+    // (the extra coins on top of what the game already paid) via addCoins here.
+    // The doubled total is surfaced via the transient getters
+    // [lastRoundCoinsPaid]/[lastRoundWasDoubled] so the result/round feedback
+    // can show the "Daily Double!" banner. Pet XP and the mission coin metric
+    // below stay on the ORIGINAL coinsEarned so the double only affects the
+    // coin balance shown to the child.
     final firstWinToday = _doubleDay != _todayKey();
     final doubledNow = firstWinToday && coinsEarned > 0;
     _lastRoundWasDoubled = doubledNow;
@@ -684,6 +687,8 @@ class PlayerProfile extends ChangeNotifier {
     if (doubledNow) {
       _doubleDay = _todayKey();
       await _prefs?.setString(_kDoubleDay, _doubleDay);
+      // Credit the extra coins beyond what the game already paid.
+      await addCoins(_lastRoundCoinsPaid - coinsEarned);
     }
 
     await recordPlayDay();

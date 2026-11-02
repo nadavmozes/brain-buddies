@@ -109,17 +109,22 @@ void main() {
       final profile = PlayerProfile();
       await profile.load();
 
-      // First win today: coins doubled (10 -> 20, under the 60 cap).
+      // First win today: games credit coinsEarned first, then onRoundFinished
+      // credits the extra so the balance reflects the double (10 -> 20).
+      await profile.addCoins(10);
       await profile.onRoundFinished(
           correct: 3, coinsEarned: 10, threeStars: false, bossBeaten: false);
       expect(profile.lastRoundWasDoubled, isTrue);
       expect(profile.lastRoundCoinsPaid, 20);
+      expect(profile.coins, 20, reason: 'balance reflects the doubled payout');
 
-      // Second win same day: not doubled.
+      // Second win same day: not doubled, balance gains only the single amount.
+      await profile.addCoins(10);
       await profile.onRoundFinished(
           correct: 3, coinsEarned: 10, threeStars: false, bossBeaten: false);
       expect(profile.lastRoundWasDoubled, isFalse);
       expect(profile.lastRoundCoinsPaid, 10);
+      expect(profile.coins, 30, reason: 'second round pays normally');
     });
 
     test('daily-double payout is capped at 60', () async {
@@ -127,11 +132,14 @@ void main() {
       final profile = PlayerProfile();
       await profile.load();
 
-      // 40 * 2 = 80 would exceed the cap -> clamped to 60.
+      // 40 * 2 = 80 would exceed the cap -> clamped to 60. The game credited 40,
+      // onRoundFinished credits the extra 20 so the balance lands on 60.
+      await profile.addCoins(40);
       await profile.onRoundFinished(
           correct: 3, coinsEarned: 40, threeStars: false, bossBeaten: false);
       expect(profile.lastRoundWasDoubled, isTrue);
       expect(profile.lastRoundCoinsPaid, 60);
+      expect(profile.coins, 60, reason: 'balance reflects the capped double');
     });
 
     test('already-doubled today (seeded) does not double again', () async {
@@ -139,10 +147,12 @@ void main() {
       final profile = PlayerProfile();
       await profile.load();
 
+      await profile.addCoins(10);
       await profile.onRoundFinished(
           correct: 3, coinsEarned: 10, threeStars: false, bossBeaten: false);
       expect(profile.lastRoundWasDoubled, isFalse);
       expect(profile.lastRoundCoinsPaid, 10);
+      expect(profile.coins, 10, reason: 'no extra credited when already doubled');
     });
   });
 

@@ -147,6 +147,7 @@ abstract class AppStrings {
   String get welcomeBackClaim; // "Get gift 🎁"
 
   // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  String get petTreatsLabel; // "Treats" — pet feed panel heading
   String petTreatsCount(int n); // "🦴 <n>" treat count row
   String get feedBuddy; // "Feed Buddy"
   String get feedYum; // "Yum! 😋"
@@ -556,6 +557,8 @@ class EnStrings extends AppStrings {
   String get welcomeBackClaim => 'Get gift 🎁';
 
   // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  @override
+  String get petTreatsLabel => 'Treats';
   @override
   String petTreatsCount(int n) => '🦴 $n';
   @override
@@ -1113,6 +1116,8 @@ class HeStrings extends AppStrings {
   String get welcomeBackClaim => 'קבלו מתנה 🎁';
 
   // ---- Pet treats + daily-double + weekly goal (Engagement Phase 3) ----
+  @override
+  String get petTreatsLabel => 'חטיפים';
   @override
   String petTreatsCount(int n) => '🦴 $n';
   @override
