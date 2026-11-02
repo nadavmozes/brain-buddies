@@ -101,6 +101,11 @@ class _AdminScreenState extends State<AdminScreen> {
     _snack('Pet set to level ${widget.profile.petLevel}. 🐦');
   }
 
+  Future<void> _resetDailyLogin() async {
+    await widget.profile.debugResetDailyLogin();
+    _snack('Daily login reset — today claimable again. 📅');
+  }
+
   Future<void> _unlockAllAvatars() async {
     // Most avatar gates read achievements; the pet-level and lifetime-coin
     // gates are covered by the "Set pet to level 10" and "Add 500 coins"
@@ -177,6 +182,13 @@ class _AdminScreenState extends State<AdminScreen> {
                         color: AppTheme.sky,
                         textColor: AppTheme.ink,
                         onPressed: _busy ? null : _unlockAllAvatars,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: 'Reset daily login',
+                        icon: Icons.event_repeat_rounded,
+                        color: AppTheme.primary,
+                        onPressed: _busy ? null : _resetDailyLogin,
                       ),
                     ],
                   ),

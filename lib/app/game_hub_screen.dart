@@ -9,6 +9,7 @@ import '../core/services/player_profile.dart';
 import '../core/services/sound_bridge.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/coin_pill.dart';
+import '../core/widgets/comic_button.dart';
 import '../core/widgets/comic_panel.dart';
 import '../core/widgets/stat_chip.dart';
 import '../games/clock_hero/screens/clock_hero_home_screen.dart';
@@ -25,9 +26,11 @@ import '../games/shape_safari/screens/shape_safari_home_screen.dart';
 import '../games/shape_safari/services/safari_state.dart';
 import '../games/word_wizard/screens/word_wizard_home_screen.dart';
 import '../games/word_wizard/services/wizard_state.dart';
+import '../core/services/feedback_service.dart';
 import 'achievements_screen.dart';
 import 'admin_screen.dart';
 import 'avatar_picker.dart';
+import 'daily_reward_screen.dart';
 import 'missions_screen.dart';
 import 'pet_screen.dart';
 import 'shop_screen.dart';
@@ -177,6 +180,30 @@ class _GameHubScreenState extends State<GameHubScreen> {
         builder: (_) =>
             MemoryMatchHome(state: _memoryState!, profile: _profile),
       ),
+    );
+  }
+
+  /// Opens the combined Daily surface: the 7-day login-reward calendar + the
+  /// "play all 6 today" tracker, with a button that routes into the existing
+  /// Number Quest daily challenge via [_openDailyChallenge].
+  void _openDaily() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DailyRewardScreen(
+          profile: _profile,
+          onPlayDaily: _openDailyChallenge,
+        ),
+      ),
+    );
+  }
+
+  /// Claims the friendly "welcome back" gift and confirms with a SnackBar.
+  Future<void> _claimComeback() async {
+    final coins = await _profile.claimComebackGift();
+    if (coins <= 0 || !mounted) return;
+    FeedbackService(enabled: _profile.soundOn).coin();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.coinsGained(coins))),
     );
   }
 
@@ -330,7 +357,18 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _hubActions(),
+                AnimatedBuilder(
+                  animation: _profile,
+                  builder: (context, _) => Column(
+                    children: [
+                      if (_profile.comebackGiftPending) ...[
+                        _WelcomeBackCard(onClaim: _claimComeback),
+                        const SizedBox(height: 14),
+                      ],
+                      _hubActions(),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
                 _Footer(
                   onFeedback: () => FeedbackEmail.open(context),
@@ -352,7 +390,9 @@ class _GameHubScreenState extends State<GameHubScreen> {
           _ActionButton(
             label: context.l10n.daily,
             emoji: '📅',
-            onTap: _openDailyChallenge,
+            onTap: _openDaily,
+            // Nudge the child when today's login gift is unclaimed.
+            badge: _profile.canClaimDailyLogin,
           ),
           const SizedBox(height: 14),
           Row(
@@ -605,6 +645,48 @@ class _ActionButton extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// A friendly, one-tap "Welcome back! 🎁" card shown on the hub after a missed
+/// day softened the streak reset. Encouraging, never punishing — claiming pays
+/// a small coin gift and clears the flag.
+class _WelcomeBackCard extends StatelessWidget {
+  const _WelcomeBackCard({required this.onClaim});
+
+  final VoidCallback onClaim;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ComicPanel(
+        color: AppTheme.accent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.welcomeBackTitle,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.l10n.welcomeBackBody,
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            ComicButton(
+              label: context.l10n.welcomeBackClaim,
+              icon: Icons.card_giftcard_rounded,
+              color: AppTheme.primary,
+              onPressed: onClaim,
+            ),
+          ],
+        ),
       ),
     );
   }
