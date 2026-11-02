@@ -109,6 +109,24 @@ class _AdminScreenState extends State<AdminScreen> {
     _snack(msg);
   }
 
+  Future<void> _addTreats() async {
+    final msg = context.l10n.adminAddTreats;
+    await widget.profile.debugAddTreats(5);
+    _snack(msg);
+  }
+
+  Future<void> _resetDailyDouble() async {
+    final msg = context.l10n.adminResetDailyDouble;
+    await widget.profile.debugResetDailyDouble();
+    _snack(msg);
+  }
+
+  Future<void> _resetWeeklyGoal() async {
+    final msg = context.l10n.adminResetWeeklyGoal;
+    await widget.profile.debugResetWeeklyGoal();
+    _snack(msg);
+  }
+
   Future<void> _unlockAllAvatars() async {
     // Most avatar gates read achievements; the pet-level and lifetime-coin
     // gates are covered by the "Set pet to level 10" and "Add 500 coins"
@@ -192,6 +210,28 @@ class _AdminScreenState extends State<AdminScreen> {
                         icon: Icons.event_repeat_rounded,
                         color: AppTheme.primary,
                         onPressed: _busy ? null : _resetDailyLogin,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminAddTreats,
+                        icon: Icons.restaurant_rounded,
+                        color: AppTheme.success,
+                        onPressed: _busy ? null : _addTreats,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminResetDailyDouble,
+                        icon: Icons.monetization_on_rounded,
+                        color: AppTheme.accent,
+                        textColor: AppTheme.ink,
+                        onPressed: _busy ? null : _resetDailyDouble,
+                      ),
+                      const SizedBox(height: 14),
+                      ComicButton(
+                        label: context.l10n.adminResetWeeklyGoal,
+                        icon: Icons.calendar_month_rounded,
+                        color: AppTheme.primary,
+                        onPressed: _busy ? null : _resetWeeklyGoal,
                       ),
                     ],
                   ),

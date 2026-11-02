@@ -413,6 +413,8 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   label: context.l10n.buddy,
                   emoji: _profile.petStage.emoji,
                   onTap: _openPet,
+                  // Nudge the child when a free daily treat is waiting.
+                  badge: _profile.canClaimDailyTreat,
                 ),
               ),
             ],

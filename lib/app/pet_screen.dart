@@ -2,16 +2,59 @@ import 'package:flutter/material.dart';
 
 import '../core/l10n/l10n.dart';
 import '../core/models/pet.dart';
+import '../core/services/feedback_service.dart';
 import '../core/services/player_profile.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/comic_button.dart';
 import '../core/widgets/comic_panel.dart';
+import '../core/widgets/confetti.dart';
 
 /// The hub-level pet companion screen. The pet grows through stages as the
-/// child earns XP across all games.
-class PetScreen extends StatelessWidget {
+/// child earns XP across all games, and can be fed treats for a happy,
+/// nurturing daily ritual (Engagement Phase 3 / P4).
+class PetScreen extends StatefulWidget {
   const PetScreen({super.key, required this.profile});
 
   final PlayerProfile profile;
+
+  @override
+  State<PetScreen> createState() => _PetScreenState();
+}
+
+class _PetScreenState extends State<PetScreen> {
+  // Incremented on each feed/claim to re-key the Confetti so it replays its
+  // one-shot burst. Null means no confetti is showing.
+  int _confettiKey = 0;
+  bool _showConfetti = false;
+
+  PlayerProfile get profile => widget.profile;
+
+  void _burstConfetti() {
+    setState(() {
+      _confettiKey++;
+      _showConfetti = true;
+    });
+  }
+
+  Future<void> _feed() async {
+    final fed = await profile.feedPet();
+    if (!fed || !mounted) return;
+    FeedbackService(enabled: profile.soundOn).coin();
+    _burstConfetti();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.feedYum)),
+    );
+  }
+
+  Future<void> _claimFreeTreat() async {
+    final claimed = await profile.claimDailyTreat();
+    if (!claimed || !mounted) return;
+    FeedbackService(enabled: profile.soundOn).coin();
+    _burstConfetti();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.claimFreeTreat)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,16 +73,19 @@ class PetScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: profile,
-            builder: (context, _) {
-              final level = profile.petLevel;
-              final stage = profile.petStage;
-              final nextStage = _nextStage(level);
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
+          child: Stack(
+            children: [
+              AnimatedBuilder(
+                animation: profile,
+                builder: (context, _) {
+                  final level = profile.petLevel;
+                  final stage = profile.petStage;
+                  final nextStage = _nextStage(level);
+                  return LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
                     // Big pet display.
                     Container(
                       width: 180,
@@ -77,6 +123,54 @@ class PetScreen extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Treats + feeding (Engagement Phase 3 / P4).
+                    ComicPanel(
+                      color: Colors.white,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  context.l10n.feedBuddy,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                              Text(
+                                context.l10n
+                                    .petTreatsCount(profile.petTreats),
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (profile.canClaimDailyTreat) ...[
+                            ComicButton(
+                              label: context.l10n.claimFreeTreat,
+                              icon: Icons.card_giftcard_rounded,
+                              color: AppTheme.sky,
+                              textColor: AppTheme.ink,
+                              onPressed: _claimFreeTreat,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          ComicButton(
+                            label: context.l10n.feedBuddy,
+                            icon: Icons.restaurant_rounded,
+                            color: AppTheme.accent,
+                            textColor: AppTheme.ink,
+                            onPressed:
+                                profile.petTreats > 0 ? _feed : null,
                           ),
                         ],
                       ),
@@ -147,10 +241,17 @@ class PetScreen extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w600),
                     ),
-                  ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (_showConfetti)
+                Positioned.fill(
+                  child: Confetti(key: ValueKey(_confettiKey)),
                 ),
-              );
-            },
+            ],
           ),
         ),
       ),
