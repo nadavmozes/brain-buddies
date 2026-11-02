@@ -170,6 +170,8 @@ class LocalizedCatalog {
       'stars': 'כוכבים',
       'flower': 'פרח',
       'rainbow': 'קשת',
+      'frost': 'כפור',
+      'blossom': 'פריחה',
     },
     // ---- avatar_frame.dart (unlock requirement labels) ----
     'frame.unlock': {
@@ -179,6 +181,37 @@ class LocalizedCatalog {
       'stars': 'גדלו את החיה לדרגה 10',
       'flower': 'החזיקו 4 דמויות',
       'rainbow': 'החזיקו 6 דמויות',
+    },
+
+    // ---- sticker.dart (collectible sticker names) ----
+    'sticker.name': {
+      'star_sticker': 'כוכב נוצץ',
+      'rainbow_sticker': 'קשת',
+      'balloon_sticker': 'בלון מסיבה',
+      'sun_sticker': 'יום שמשי',
+      'party_sticker': 'קונפטי',
+      'paw_sticker': 'כפות גור',
+      'butterfly_sticker': 'פרפר',
+      'blossom_sticker': 'פריחת דובדבן',
+      'heart_sticker': 'לב',
+      'crown_sticker': 'כתר קטן',
+      'rocket_sticker': 'טיל',
+      'trophy_sticker': 'גביע הזהב',
+    },
+    // ---- sticker.dart (unlock requirement labels) ----
+    'sticker.unlock': {
+      'star_sticker': 'צברו 100 מטבעות בסך הכול',
+      'rainbow_sticker': 'צברו 400 מטבעות בסך הכול',
+      'balloon_sticker': 'צברו 700 מטבעות בסך הכול',
+      'sun_sticker': 'שחקו 2 ימים ברצף',
+      'party_sticker': 'שחקו 5 ימים ברצף',
+      'paw_sticker': 'גדלו את החיה לדרגה 3',
+      'butterfly_sticker': 'גדלו את החיה לדרגה 6',
+      'blossom_sticker': 'גדלו את החיה לדרגה 8',
+      'heart_sticker': 'החזיקו 2 דמויות',
+      'crown_sticker': 'החזיקו 5 דמויות',
+      'rocket_sticker': 'סיימו את הסיבוב הראשון',
+      'trophy_sticker': 'שלטו בכל 6 המשחקים',
     },
 
     // ---- pet.dart (stage names) ----

@@ -35,10 +35,14 @@ visual "build-the-fact" array that shows `a × b` as a grid to count.
 ## ✨ Hub-wide systems (shared across all games)
 
 - **Coins** — earned in every game, spent on cosmetic avatars (no real-money purchases).
-- **Avatar shop** — avatars plus collectible **avatar frames** (bronze/silver/gold and
-  fun rings). Some items are coin-buyable; many are **unlocked by playing** (beat a game's
-  boss, grow your pet, keep a daily streak, master all six games). Locked items show their
-  requirement and a progress hint, then a **CLAIM 🎁** button.
+- **Avatar shop** — avatars plus collectible **avatar frames** (bronze/silver/gold, fun
+  rings, and season-only frames). Some items are coin-buyable; many are **unlocked by
+  playing** (beat a game's boss, grow your pet, keep a daily streak, master all six games).
+  Locked items show their requirement and a progress hint, then a **CLAIM 🎁** button.
+- **Collectible stickers** — a trophy shelf of playful cosmetic stickers earned for
+  milestones, in the Awards area.
+- **Seasonal themes** — the hub gets a subtle seasonal dressing (winter/spring/summer/
+  autumn) with season-only avatar frames.
 - **Daily login reward** — open the app each day and claim a gift from a **7-day reward
   calendar** (escalating coins, with a special avatar frame on day 7). Reached from the
   📅 Daily button, which shows a badge when a gift is waiting.
@@ -58,7 +62,8 @@ visual "build-the-fact" array that shows `a × b` as a grid to count.
 - **Personal bests** — a "New Best! 🌟" celebration when you beat your own fastest time.
 - **"What's new today"** — a compact hub card that surfaces whatever is ready to claim.
 - **Daily missions** — three rotating goals each day, with coin rewards.
-- **Daily Challenge** — a rotating bonus round reachable from the hub.
+- **Daily Challenge** — a bonus round that **rotates across all six games** by date;
+  it awards coins and feeds the hub systems but never affects a game's star progression.
 
 Games report a round with a single hook — `profile.onRoundFinished(correct,
 coinsEarned, threeStars, bossBeaten)` — which advances the streak, feeds the pet, and

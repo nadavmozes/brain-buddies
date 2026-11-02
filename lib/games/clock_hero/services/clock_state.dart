@@ -53,17 +53,23 @@ class ClockState extends GameProgressStore {
     notifyListeners();
   }
 
+  /// When [isDaily] is true this is the off-map daily challenge: coins, shared
+  /// achievements and [PlayerProfile.onRoundFinished] still run, but the
+  /// star/fastest/best-score/mastery writes are SKIPPED so the off-map
+  /// `<world>_999` id never pollutes totalStars/overallFastest/mastery
+  /// (which fold over the whole map). Mirrors Number Quest's on-map guard.
   Future<ClockOutcome> completeLevel({
     required PlayerProfile profile,
     required ClockLevel level,
     required int correct,
     required int total,
     required int elapsedSeconds,
+    bool isDaily = false,
   }) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final stars = starsForPercent(percent);
 
-    await keepBestStars(level.id, stars);
+    if (!isDaily) await keepBestStars(level.id, stars);
 
     final guardianGreeted = level.isBoss && percent >= 70;
 
@@ -71,13 +77,14 @@ class ClockState extends GameProgressStore {
     await profile.addCoins(coinsEarned);
 
     _roundsPlayed++;
-    final isNewBest = correct > _bestCorrect;
+    final isNewBest = !isDaily && correct > _bestCorrect;
     if (isNewBest) _bestCorrect = correct;
 
-    final isNewFastest =
-        await recordFastestIfBest(level.id, stars, elapsedSeconds);
+    final isNewFastest = isDaily
+        ? false
+        : await recordFastestIfBest(level.id, stars, elapsedSeconds);
 
-    await prefs?.setInt(_kBest, _bestCorrect);
+    if (!isDaily) await prefs?.setInt(_kBest, _bestCorrect);
     await prefs?.setInt(_kRounds, _roundsPlayed);
 
     final ids = <String>[Achievements.firstGame.id];
@@ -97,7 +104,8 @@ class ClockState extends GameProgressStore {
     );
 
     // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
-    await cacheMastery(profile, GameCatalog.clockHero.id);
+    // Skipped for the daily so its off-map stars can't shift the tier.
+    if (!isDaily) await cacheMastery(profile, GameCatalog.clockHero.id);
 
     notifyListeners();
     return ClockOutcome(

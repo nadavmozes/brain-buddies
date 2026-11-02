@@ -11,6 +11,8 @@ import '../models/game_catalog.dart';
 import '../models/mastery.dart';
 import '../models/mission.dart';
 import '../models/pet.dart';
+import '../models/season.dart';
+import '../models/sticker.dart';
 import 'analytics_service.dart';
 import 'sound_bridge.dart';
 
@@ -42,6 +44,11 @@ class PlayerProfile extends ChangeNotifier {
   // default 'none' is always owned) and the currently equipped frame id.
   final Set<String> _ownedFrames = {AvatarFrames.defaultId};
   String _selectedFrame = AvatarFrames.defaultId;
+
+  // Collectible stickers (Engagement Phase 5 / P8): the set of owned sticker
+  // ids. Stickers are playful cosmetics shown on the trophy shelf and are
+  // auto-granted (like achievements) when their AvatarUnlock condition is met.
+  final Set<String> _ownedStickers = {};
 
   // Pet treats (Engagement Phase 3 / P4): a small inventory of treats the
   // child spends to feed the pet, plus the day-key of the last free daily
@@ -180,6 +187,9 @@ class PlayerProfile extends ChangeNotifier {
   // stays 1). Both are cleared in reset().
   static const _kOwnedFrames = 'profile_owned_frames';
   static const _kSelectedFrame = 'profile_selected_frame';
+  // Engagement Phase 5 key (additive, default-absent-safe — schemaVersion
+  // stays 1). Cleared in reset().
+  static const _kOwnedStickers = 'profile_owned_stickers';
   // Engagement Phase 3 keys (additive, default-absent-safe — schemaVersion
   // stays 1). All are cleared in reset().
   // P4 pet treats:
@@ -255,6 +265,14 @@ class PlayerProfile extends ChangeNotifier {
   /// Whether the given frame id is owned. The default 'none' is always owned.
   bool ownsFrame(String id) =>
       id == AvatarFrames.defaultId || _ownedFrames.contains(id);
+
+  // ---- collectible stickers (Engagement Phase 5 / P8) ----
+
+  /// The set of owned sticker ids (unmodifiable snapshot).
+  Set<String> get ownedStickers => Set.unmodifiable(_ownedStickers);
+
+  /// Whether the given sticker id has been earned.
+  bool hasSticker(String id) => _ownedStickers.contains(id);
 
   // ---- pet treats (Engagement Phase 3 / P4) ----
 
@@ -466,6 +484,11 @@ class PlayerProfile extends ChangeNotifier {
     // Default-safe: a selected frame that is no longer owned (e.g. catalog
     // change) falls back to 'none'.
     if (!ownsFrame(_selectedFrame)) _selectedFrame = AvatarFrames.defaultId;
+
+    // Collectible stickers (Engagement Phase 5): owned ids default to empty.
+    _ownedStickers
+      ..clear()
+      ..addAll(p.getStringList(_kOwnedStickers) ?? const []);
 
     // Pet treats + coin daily-double (Engagement Phase 3, additive/default-safe).
     _petTreats = p.getInt(_kPetTreats) ?? 0;
@@ -801,6 +824,9 @@ class PlayerProfile extends ChangeNotifier {
         correct: correct, threeStars: threeStars, bossBeaten: bossBeaten);
     await _analytics?.updateSnapshots(
         streak: dailyStreak, petLevel: petLevel, coins: coins);
+    // Engagement Phase 5 / P8: auto-grant any stickers now unlocked (streak,
+    // pet growth, and coin milestones all move in this round).
+    await _checkStickerGrants();
   }
 
   // ---- pet treats (Engagement Phase 3 / P4) ----
@@ -1064,8 +1090,17 @@ class PlayerProfile extends ChangeNotifier {
   // ---- avatar frames (shop + daily reward) ----
 
   /// Whether a gated frame's unlock requirement is satisfied. Frames with no
-  /// [AvatarFrame.unlock] are always considered unlocked.
-  bool isFrameUnlocked(AvatarFrame f) => isUnlocked(f.unlock);
+  /// [AvatarFrame.unlock] are always considered unlocked. A season-gated frame
+  /// ([AvatarFrame.season] != null) ALSO requires the current date to fall in
+  /// that season — so a seasonal frame is claimable only in its season. This
+  /// adds NO persistence: the season is derived from the clock each call.
+  bool isFrameUnlocked(AvatarFrame f) {
+    if (!isUnlocked(f.unlock)) return false;
+    if (f.season != null && Season.forDate(DateTime.now()).key != f.season) {
+      return false;
+    }
+    return true;
+  }
 
   /// Progress (0..1) toward a gated frame's unlock requirement, for a hint UI.
   double frameUnlockProgress(AvatarFrame f) => unlockProgress(f.unlock);
@@ -1103,6 +1138,8 @@ class PlayerProfile extends ChangeNotifier {
     if (ownsFrame(id)) return false;
     _ownedFrames.add(id);
     await _persistFrames();
+    // A day-7 finale frame arrives with a 7-day streak — re-check stickers.
+    await _checkStickerGrants();
     notifyListeners();
     return true;
   }
@@ -1113,6 +1150,27 @@ class PlayerProfile extends ChangeNotifier {
       _kOwnedFrames,
       _ownedFrames.where((id) => id != AvatarFrames.defaultId).toList(),
     );
+  }
+
+  // ---- collectible stickers (Engagement Phase 5 / P8) ----
+
+  /// Auto-grants any sticker whose [AvatarUnlock] condition is now satisfied
+  /// (reusing [isUnlocked] — no new unlock engine) and not already owned, then
+  /// persists + notifies if anything was added. Called at the same milestone
+  /// points achievements are granted (round end + avatar/frame grants) so
+  /// stickers appear the moment their condition becomes true, like achievements.
+  Future<void> _checkStickerGrants() async {
+    var added = false;
+    for (final s in Stickers.all) {
+      if ((s.unlock == null || isUnlocked(s.unlock)) &&
+          _ownedStickers.add(s.id)) {
+        added = true;
+      }
+    }
+    if (added) {
+      await _prefs?.setStringList(_kOwnedStickers, _ownedStickers.toList());
+      notifyListeners();
+    }
   }
 
   /// Claims a gated avatar once its requirement is met. Returns false if the
@@ -1133,6 +1191,8 @@ class PlayerProfile extends ChangeNotifier {
     if (_ownedAvatars.length >= 3) _grant(Achievements.collector.id);
     if (_ownedAvatars.length >= 6) _grant(Achievements.wardrobe.id);
     await _persistAchievements();
+    // Owning more avatars can unlock ownedAvatars-gated stickers.
+    await _checkStickerGrants();
     notifyListeners();
     return true;
   }
@@ -1152,6 +1212,8 @@ class PlayerProfile extends ChangeNotifier {
     if (_ownedAvatars.length >= 3) _grant(Achievements.collector.id);
     if (_ownedAvatars.length >= 6) _grant(Achievements.wardrobe.id);
     await _persistAchievements();
+    // Owning more avatars can unlock ownedAvatars-gated stickers.
+    await _checkStickerGrants();
     notifyListeners();
     return true;
   }
@@ -1318,6 +1380,7 @@ class PlayerProfile extends ChangeNotifier {
       ..clear()
       ..add(AvatarFrames.defaultId);
     _selectedFrame = AvatarFrames.defaultId;
+    _ownedStickers.clear();
     _petTreats = 0;
     _dailyTreatDay = '';
     _doubleDay = '';
@@ -1354,6 +1417,7 @@ class PlayerProfile extends ChangeNotifier {
     await _prefs?.remove(_kStreakFreezes);
     await _prefs?.remove(_kOwnedFrames);
     await _prefs?.remove(_kSelectedFrame);
+    await _prefs?.remove(_kOwnedStickers);
     await _prefs?.remove(_kPetTreats);
     await _prefs?.remove(_kDailyTreatDay);
     await _prefs?.remove(_kDoubleDay);

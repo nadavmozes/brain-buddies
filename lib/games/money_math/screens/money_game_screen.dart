@@ -25,11 +25,16 @@ class MoneyGameScreen extends StatefulWidget {
     required this.state,
     required this.profile,
     required this.level,
+    this.isDaily = false,
   });
 
   final MoneyState state;
   final PlayerProfile profile;
   final MoneyLevel level;
+
+  /// True when this round is today's rotating hub daily challenge. The off-map
+  /// level then skips all per-game progression writes (see [MoneyState]).
+  final bool isDaily;
 
   @override
   State<MoneyGameScreen> createState() => _MoneyGameScreenState();
@@ -111,7 +116,13 @@ class _MoneyGameScreenState extends State<MoneyGameScreen> {
       correct: _correct,
       total: _questions.length,
       elapsedSeconds: _stopwatch.elapsed.inSeconds,
+      isDaily: widget.isDaily,
     );
+    // Finishing today's rotating daily challenge consumes the what's-new
+    // nudge for the day (the challenge stays replayable). Mirrors NQ.
+    if (widget.isDaily) {
+      await widget.profile.markDailyChallengePlayed();
+    }
     if (!mounted) return;
     if (outcome.stars == 3 || outcome.isNewFastest || outcome.bossBeaten) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();

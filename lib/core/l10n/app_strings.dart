@@ -20,6 +20,7 @@ abstract class AppStrings {
   String get shop; // "Shop"
   String get awards; // "Awards"
   String comingSoonGame(String title); // "<title> is coming soon! 🚧"
+  String seasonName(String key); // season key -> "Winter/Spring/Summer/Autumn"
   String get play; // "PLAY"
   String get soon; // "SOON"
 
@@ -104,6 +105,7 @@ abstract class AppStrings {
   String get pickTimeOfDay; // "Pick a time of day to explore!"
   String get pickPiggy; // "Pick a piggy bank to open!"
   String get achievements; // "Achievements"
+  String get stickerShelfTitle; // "Stickers" (collectible shelf / tab label)
   String earnedCount(int earned, int total); // "<e> / <t> earned"
   String get dailyMissions; // "Daily Missions"
   String get yourBuddy; // "Your Buddy"
@@ -138,6 +140,7 @@ abstract class AppStrings {
   String dailyRewardLabel(String key, int amount);
   String dailyRewardClaimedToast(int coins); // "+<coins> coins! 🎁"
   String get playTodaysChallenge; // "Play today's challenge"
+  String dailyChallengeToday(String game); // "Today: <game>"
   String get playAll6Title; // "Play all 6 today!"
   String playAll6Progress(int done, int total); // "<done> / <total>"
   String get playAll6Claim; // "Claim bonus 🪙 40"
@@ -342,6 +345,21 @@ class EnStrings extends AppStrings {
   @override
   String comingSoonGame(String title) => '$title is coming soon! 🚧';
   @override
+  String seasonName(String key) {
+    switch (key) {
+      case 'winter':
+        return 'Winter';
+      case 'spring':
+        return 'Spring';
+      case 'summer':
+        return 'Summer';
+      case 'autumn':
+        return 'Autumn';
+      default:
+        return key;
+    }
+  }
+  @override
   String get play => 'PLAY';
   @override
   String get soon => 'SOON';
@@ -499,6 +517,8 @@ class EnStrings extends AppStrings {
   @override
   String get achievements => 'Achievements';
   @override
+  String get stickerShelfTitle => 'Stickers';
+  @override
   String earnedCount(int earned, int total) => '$earned / $total earned';
   @override
   String get dailyMissions => 'Daily Missions';
@@ -563,6 +583,8 @@ class EnStrings extends AppStrings {
   String dailyRewardClaimedToast(int coins) => '+$coins coins! 🎁';
   @override
   String get playTodaysChallenge => "Play today's challenge";
+  @override
+  String dailyChallengeToday(String game) => 'Today: $game';
   @override
   String get playAll6Title => 'Play all 6 today!';
   @override
@@ -955,6 +977,21 @@ class HeStrings extends AppStrings {
   @override
   String comingSoonGame(String title) => '$title יגיע בקרוב! 🚧';
   @override
+  String seasonName(String key) {
+    switch (key) {
+      case 'winter':
+        return 'חורף';
+      case 'spring':
+        return 'אביב';
+      case 'summer':
+        return 'קיץ';
+      case 'autumn':
+        return 'סתיו';
+      default:
+        return key;
+    }
+  }
+  @override
   String get play => 'שחקו';
   @override
   String get soon => 'בקרוב';
@@ -1112,6 +1149,8 @@ class HeStrings extends AppStrings {
   @override
   String get achievements => 'הישגים';
   @override
+  String get stickerShelfTitle => 'מדבקות';
+  @override
   String earnedCount(int earned, int total) => '$earned / $total הושגו';
   @override
   String get dailyMissions => 'משימות יומיות';
@@ -1175,6 +1214,8 @@ class HeStrings extends AppStrings {
   String dailyRewardClaimedToast(int coins) => '+$coins מטבעות! 🎁';
   @override
   String get playTodaysChallenge => 'שחקו באתגר היומי';
+  @override
+  String dailyChallengeToday(String game) => 'היום: $game';
   @override
   String get playAll6Title => 'שחקו בכל 6 היום!';
   @override

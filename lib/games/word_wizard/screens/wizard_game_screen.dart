@@ -23,11 +23,16 @@ class WizardGameScreen extends StatefulWidget {
     required this.state,
     required this.profile,
     required this.level,
+    this.isDaily = false,
   });
 
   final WizardState state;
   final PlayerProfile profile;
   final WizardLevel level;
+
+  /// True when this round is today's rotating hub daily challenge. The off-map
+  /// level then skips all per-game progression writes (see [WizardState]).
+  final bool isDaily;
 
   @override
   State<WizardGameScreen> createState() => _WizardGameScreenState();
@@ -110,7 +115,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       correct: _correct,
       total: _questions.length,
       elapsedSeconds: _stopwatch.elapsed.inSeconds,
+      isDaily: widget.isDaily,
     );
+    // Finishing today's rotating daily challenge consumes the what's-new
+    // nudge for the day (the challenge stays replayable). Mirrors NQ.
+    if (widget.isDaily) {
+      await widget.profile.markDailyChallengePlayed();
+    }
     if (!mounted) return;
     if (outcome.stars == 3 || outcome.isNewFastest || outcome.bossBeaten) {
       FeedbackService(enabled: widget.state.soundOn).celebrate();

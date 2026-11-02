@@ -19,6 +19,7 @@ class AvatarFrame {
     this.gradient,
     this.cost = 0,
     this.unlock,
+    this.season,
   });
 
   final String id;
@@ -41,6 +42,12 @@ class AvatarFrame {
   /// Optional unlock requirement, reusing the avatar gating model. `null` means
   /// always available (the default 'none' frame and any always-free frames).
   final AvatarUnlock? unlock;
+
+  /// Optional season gate (a [Season.key] like 'winter'/'spring'). `null`
+  /// (the default) means the frame is NOT season-gated. When set, the frame is
+  /// only CLAIMABLE while the current date falls in that season (see
+  /// PlayerProfile.isFrameUnlocked); owning it out-of-season stays allowed.
+  final String? season;
 
   /// Whether this frame draws a visible ring.
   bool get hasRing => ringWidth > 0;
@@ -166,6 +173,25 @@ class AvatarFrames {
         achievementId: 'avatar_wardrobe',
         label: 'Own 6 avatars',
       ),
+    ),
+    // Season-gated cosmetic rings. Availability comes from the season gate
+    // (not an AvatarUnlock), so `unlock` is null; they are claimable only
+    // while the current date is in-season. Modest coin cost, cosmetic only.
+    AvatarFrame(
+      id: 'frost',
+      name: 'Frost',
+      ringWidth: 6,
+      gradient: [Color(0xFFE1F5FE), Color(0xFF81D4FA), Color(0xFFE1F5FE)],
+      cost: 40,
+      season: 'winter',
+    ),
+    AvatarFrame(
+      id: 'blossom',
+      name: 'Blossom',
+      ringWidth: 6,
+      gradient: [Color(0xFFFCE4EC), Color(0xFFF48FB1), Color(0xFFFCE4EC)],
+      cost: 40,
+      season: 'spring',
     ),
   ];
 

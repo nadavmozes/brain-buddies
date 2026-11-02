@@ -92,11 +92,16 @@ class WizardLevel {
     required this.chapter,
     required this.index,
     required this.isBoss,
+    this.difficultyOverride,
   });
 
   final WizardChapter chapter;
   final int index;
   final bool isBoss;
+
+  /// Overrides the computed [difficulty] for off-map levels (the daily
+  /// challenge), whose index:999 would otherwise saturate the ramp to the max.
+  final double? difficultyOverride;
 
   int get number => index + 1;
   String get id => '${chapter.name}_$index';
@@ -106,6 +111,7 @@ class WizardLevel {
 
   /// Per-level difficulty: chapter base plus a ramp along the path.
   double difficulty(int levelsPerChapter) {
+    if (difficultyOverride != null) return difficultyOverride!;
     final ramp = index / (levelsPerChapter - 1) * 0.25;
     return (chapter.baseDifficulty + ramp).clamp(0.0, 1.0);
   }
@@ -145,4 +151,21 @@ class WizardMap {
 
   static List<WizardLevel> get allLevels =>
       [for (final c in WizardChapter.values) ...path(c).levels];
+
+  /// A repeatable daily-challenge lesson. Its chapter rotates by day so the
+  /// word mix changes, and it uses an off-map index (999) so its id
+  /// `<chapter>_999` never appears in [allLevels] — keeping it out of
+  /// star/unlock/fastest/mastery progression. A fixed mid difficulty keeps it
+  /// approachable regardless of which chapter is chosen.
+  static WizardLevel dailyLevel([DateTime? now]) {
+    final day = now ?? DateTime.now();
+    final chapter =
+        WizardChapter.values[day.day % WizardChapter.values.length];
+    return WizardLevel(
+      chapter: chapter,
+      index: 999,
+      isBoss: false,
+      difficultyOverride: 0.5,
+    );
+  }
 }

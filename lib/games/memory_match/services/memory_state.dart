@@ -53,11 +53,17 @@ class MemoryState extends GameProgressStore {
   /// Completes a Memory Match level. Stars are based on efficiency: how few
   /// wrong flips relative to a generous allowance. [wrongFlips] is the number
   /// of non-matching pair reveals.
+  /// When [isDaily] is true this is the off-map daily challenge: coins, shared
+  /// achievements and [PlayerProfile.onRoundFinished] still run, but the
+  /// star/fastest/mastery writes are SKIPPED so the off-map `<world>_999` id
+  /// never pollutes totalStars/overallFastest/mastery (which fold over the
+  /// whole map). Mirrors Number Quest's on-map guard.
   Future<MemoryOutcome> completeLevel({
     required PlayerProfile profile,
     required MemoryLevel level,
     required int wrongFlips,
     required int elapsedSeconds,
+    bool isDaily = false,
   }) async {
     final pairs = level.pairs;
     // Allowance scales with the board size. Fewer mistakes → more stars.
@@ -68,7 +74,7 @@ class MemoryState extends GameProgressStore {
             ? 2
             : 1; // always at least 1 for finishing
 
-    await keepBestStars(level.id, stars);
+    if (!isDaily) await keepBestStars(level.id, stars);
 
     final bossBeaten = level.isBoss; // finishing the boss grid counts
     final coinsEarned = pairs * 3 + stars * 5 + (bossBeaten ? 20 : 0);
@@ -76,8 +82,9 @@ class MemoryState extends GameProgressStore {
 
     _roundsPlayed++;
 
-    final isNewFastest =
-        await recordFastestIfBest(level.id, stars, elapsedSeconds);
+    final isNewFastest = isDaily
+        ? false
+        : await recordFastestIfBest(level.id, stars, elapsedSeconds);
 
     await prefs?.setInt(_kRounds, _roundsPlayed);
 
@@ -99,8 +106,9 @@ class MemoryState extends GameProgressStore {
     );
 
     // Engagement Phase 4 / P5b: recompute this game's cached mastery tier now
-    // that its star coverage may have changed.
-    await cacheMastery(profile, GameCatalog.memoryMatch.id);
+    // that its star coverage may have changed. Skipped for the daily so its
+    // off-map stars can't shift the tier.
+    if (!isDaily) await cacheMastery(profile, GameCatalog.memoryMatch.id);
 
     notifyListeners();
     return MemoryOutcome(

@@ -66,6 +66,11 @@ class SafariState extends GameProgressStore {
 
   /// Applies a finished level: keeps best stars, awards coins, tracks best
   /// score, and records a befriended guardian on a guardian stop.
+  /// When [isDaily] is true this is the off-map daily challenge: coins, shared
+  /// achievements and [PlayerProfile.onRoundFinished] still run, but the
+  /// star/fastest/best-score/mastery writes are SKIPPED so the off-map
+  /// `<habitat>_999` id never pollutes totalStars/overallFastest/mastery
+  /// (which fold over the whole map). Mirrors Number Quest's on-map guard.
   Future<SafariOutcome> completeLevel({
     required PlayerProfile profile,
     required SafariLevel level,
@@ -73,15 +78,17 @@ class SafariState extends GameProgressStore {
     required int total,
     required bool guardianBefriended,
     int elapsedSeconds = 0,
+    bool isDaily = false,
   }) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final stars = starsForPercent(percent);
 
-    await keepBestStars(level.id, stars);
+    if (!isDaily) await keepBestStars(level.id, stars);
 
-    // Fastest time: only count a perfect 3-star run.
-    final isNewFastest =
-        await recordFastestIfBest(level.id, stars, elapsedSeconds);
+    // Fastest time: only count a perfect 3-star run (never for the daily).
+    final isNewFastest = isDaily
+        ? false
+        : await recordFastestIfBest(level.id, stars, elapsedSeconds);
 
     // Coins go to the SHARED profile.
     final coinsEarned =
@@ -89,16 +96,20 @@ class SafariState extends GameProgressStore {
     await profile.addCoins(coinsEarned);
 
     _roundsPlayed++;
-    final isNewBest = correct > _bestCorrect;
+    // Best-score + befriended guardian tracking are per-game progress, so the
+    // off-map daily must not touch them.
+    final isNewBest = !isDaily && correct > _bestCorrect;
     if (isNewBest) _bestCorrect = correct;
 
-    if (guardianBefriended && !_befriended.contains(level.id)) {
+    if (!isDaily &&
+        guardianBefriended &&
+        !_befriended.contains(level.id)) {
       _befriended.add(level.id);
       await prefs?.setStringList(_kBefriended, _befriended.toList());
     }
 
     await prefs?.setInt(_kRounds, _roundsPlayed);
-    await prefs?.setInt(_kBest, _bestCorrect);
+    if (!isDaily) await prefs?.setInt(_kBest, _bestCorrect);
 
     // Grant SHARED achievements.
     final ids = <String>[Achievements.firstGame.id];
@@ -106,10 +117,12 @@ class SafariState extends GameProgressStore {
     if (stars == 3) ids.add(Achievements.threeStar.id);
     if (isNewFastest) ids.add(Achievements.speedster.id);
     if (guardianBefriended) ids.add(Achievements.guardianFriend.id);
-    // Whole habitat trail cleared?
-    final trailLevels = SafariMap.trail(level.habitat).levels;
-    if (trailLevels.every((l) => this.stars(l.id) > 0)) {
-      ids.add(Achievements.shapeExplorer.id);
+    // Whole habitat trail cleared? (The daily is off-map, so skip this check.)
+    if (!isDaily) {
+      final trailLevels = SafariMap.trail(level.habitat).levels;
+      if (trailLevels.every((l) => this.stars(l.id) > 0)) {
+        ids.add(Achievements.shapeExplorer.id);
+      }
     }
     await profile.grantAll(ids);
 
@@ -121,7 +134,8 @@ class SafariState extends GameProgressStore {
     );
 
     // Engagement Phase 4 / P5b: recompute this game's cached mastery tier.
-    await cacheMastery(profile, GameCatalog.shapeSafari.id);
+    // Skipped for the daily so its off-map stars can't shift the tier.
+    if (!isDaily) await cacheMastery(profile, GameCatalog.shapeSafari.id);
 
     notifyListeners();
     return SafariOutcome(

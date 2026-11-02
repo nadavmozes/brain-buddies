@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/l10n/l10n.dart';
 import '../core/models/game_catalog.dart';
+import '../core/models/season.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/feedback_email.dart';
 import '../core/services/player_profile.dart';
@@ -13,18 +14,28 @@ import '../core/widgets/coin_pill.dart';
 import '../core/widgets/comic_button.dart';
 import '../core/widgets/comic_panel.dart';
 import '../core/widgets/stat_chip.dart';
+import '../games/clock_hero/models/time_world.dart';
+import '../games/clock_hero/screens/clock_game_screen.dart';
 import '../games/clock_hero/screens/clock_hero_home_screen.dart';
 import '../games/clock_hero/services/clock_state.dart';
+import '../games/memory_match/models/memory_level.dart';
+import '../games/memory_match/screens/memory_game_screen.dart';
 import '../games/memory_match/screens/memory_match_home_screen.dart';
 import '../games/memory_match/services/memory_state.dart';
+import '../games/money_math/models/money_level.dart';
+import '../games/money_math/screens/money_game_screen.dart';
 import '../games/money_math/screens/money_math_home_screen.dart';
 import '../games/money_math/services/money_state.dart';
 import '../games/number_quest/models/level.dart';
 import '../games/number_quest/screens/game_screen.dart';
 import '../games/number_quest/screens/number_quest_home_screen.dart';
 import '../games/number_quest/services/game_state.dart';
+import '../games/shape_safari/models/safari_level.dart';
+import '../games/shape_safari/screens/safari_game_screen.dart';
 import '../games/shape_safari/screens/shape_safari_home_screen.dart';
 import '../games/shape_safari/services/safari_state.dart';
+import '../games/word_wizard/models/wizard_level.dart';
+import '../games/word_wizard/screens/wizard_game_screen.dart';
 import '../games/word_wizard/screens/word_wizard_home_screen.dart';
 import '../games/word_wizard/services/wizard_state.dart';
 import '../core/services/feedback_service.dart';
@@ -35,6 +46,27 @@ import 'daily_reward_screen.dart';
 import 'missions_screen.dart';
 import 'pet_screen.dart';
 import 'shop_screen.dart';
+
+/// The games eligible to host the rotating daily challenge, in rotation order.
+///
+/// All six games are wired with an off-map `dailyLevel()` + an `isDaily` path
+/// that keeps their star/unlock/fastest/mastery state untouched, so every game
+/// is in the rotation. (If a game's daily ever had to be pulled, it would be
+/// removed from THIS list — with a comment + a findings note — never shipped
+/// broken.)
+const List<GameEntry> dailyChallengeRotation = GameCatalog.all;
+
+/// Picks today's daily-challenge game deterministically from the date, using
+/// the day-of-year modulo the rotation length. Pure + date-driven so it is
+/// unit-testable without mocking the clock (mirrors Missions.forDay).
+GameEntry dailyChallengeGameFor(DateTime d) {
+  // Day-of-year: 1 on Jan 1. Using a date-only DateTime avoids any time-of-day
+  // influence.
+  final dayOfYear =
+      DateTime(d.year, d.month, d.day).difference(DateTime(d.year)).inDays + 1;
+  final index = dayOfYear % dailyChallengeRotation.length;
+  return dailyChallengeRotation[index];
+}
 
 /// The BrainBuddies home: a shared profile bar, a grid of games, and hub-level
 /// actions (Shop, Achievements) that use the shared [PlayerProfile].
@@ -83,28 +115,95 @@ class _GameHubScreenState extends State<GameHubScreen> {
     );
   }
 
-  /// Launches today's Number Quest daily challenge, reusing NQ's [GameScreen]
-  /// with [WorldMap.dailyLevel] and [isDaily]. The daily round still ticks
-  /// streak/pet/missions/analytics via onRoundFinished, but its off-map id
-  /// keeps it out of star/unlock progression.
+  /// Launches today's ROTATING daily challenge. The game is chosen
+  /// deterministically by date via [dailyChallengeGameFor]; each game's
+  /// off-map daily level is played with `isDaily: true` so it ticks
+  /// streak/pet/missions/analytics + coins + shared achievements via
+  /// onRoundFinished, but never pollutes that game's star/unlock/fastest/
+  /// mastery state. Number Quest keeps its exact original behavior when it is
+  /// today's pick. Every game's isDaily finish path stamps
+  /// [PlayerProfile.markDailyChallengePlayed], so the what's-new nudge clears
+  /// no matter which game ran.
   Future<void> _openDailyChallenge() async {
-    _numberQuestState ??= GameState();
-    if (!_numberQuestState!.isLoaded) {
-      await _numberQuestState!.load();
-    }
-    if (!mounted) return;
-    _profile.recordGamePlayed(
-        GameCatalog.numberQuest.id, GameCatalog.all.length);
-    Navigator.of(context).push(
-      MaterialPageRoute(
+    final game = dailyChallengeGameFor(DateTime.now());
+    final id = game.id;
+    _profile.recordGamePlayed(id, GameCatalog.all.length);
+
+    // Lazily load the chosen game's state, then push its GameScreen with the
+    // game's off-map dailyLevel() and isDaily:true.
+    if (id == GameCatalog.numberQuest.id) {
+      _numberQuestState ??= GameState();
+      if (!_numberQuestState!.isLoaded) await _numberQuestState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => GameScreen(
           level: WorldMap.dailyLevel(),
           state: _numberQuestState!,
           profile: _profile,
           isDaily: true,
         ),
-      ),
-    );
+      ));
+    } else if (id == GameCatalog.shapeSafari.id) {
+      _safariState ??= SafariState();
+      if (!_safariState!.isLoaded) await _safariState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => SafariGameScreen(
+          level: SafariMap.dailyLevel(),
+          state: _safariState!,
+          profile: _profile,
+          isDaily: true,
+        ),
+      ));
+    } else if (id == GameCatalog.wordWizard.id) {
+      _wizardState ??= WizardState();
+      if (!_wizardState!.isLoaded) await _wizardState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => WizardGameScreen(
+          level: WizardMap.dailyLevel(),
+          state: _wizardState!,
+          profile: _profile,
+          isDaily: true,
+        ),
+      ));
+    } else if (id == GameCatalog.clockHero.id) {
+      _clockState ??= ClockState();
+      if (!_clockState!.isLoaded) await _clockState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ClockGameScreen(
+          level: ClockMap.dailyLevel(),
+          state: _clockState!,
+          profile: _profile,
+          isDaily: true,
+        ),
+      ));
+    } else if (id == GameCatalog.moneyMath.id) {
+      _moneyState ??= MoneyState();
+      if (!_moneyState!.isLoaded) await _moneyState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => MoneyGameScreen(
+          level: MoneyMap.dailyLevel(),
+          state: _moneyState!,
+          profile: _profile,
+          isDaily: true,
+        ),
+      ));
+    } else if (id == GameCatalog.memoryMatch.id) {
+      _memoryState ??= MemoryState();
+      if (!_memoryState!.isLoaded) await _memoryState!.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => MemoryGameScreen(
+          level: MemoryMap.dailyLevel(),
+          state: _memoryState!,
+          profile: _profile,
+          isDaily: true,
+        ),
+      ));
+    }
   }
 
   Future<void> _openShapeSafari() async {
@@ -314,13 +413,19 @@ class _GameHubScreenState extends State<GameHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // P7 seasonal dressing: a SUBTLE, date-driven tint (no persistence). The
+    // top gradient stop is lerped lightly toward the season's accent so the
+    // hub quietly changes with the time of year.
+    final season = Season.forDate(DateTime.now());
+    final topColor =
+        Color.lerp(AppTheme.sky, season.tint, 0.35) ?? AppTheme.sky;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.sky, AppTheme.paper],
+            colors: [topColor, AppTheme.paper],
           ),
         ),
         child: SafeArea(
@@ -345,7 +450,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _HubTitle(),
+                _HubTitle(seasonEmoji: season.emoji),
                 const SizedBox(height: 6),
                 Text(
                   context.l10n.hubTagline,
@@ -1024,33 +1129,54 @@ class _LangToggle extends StatelessWidget {
 }
 
 class _HubTitle extends StatelessWidget {
-  const _HubTitle();
+  const _HubTitle({required this.seasonEmoji});
+
+  /// The current season's small emoji motif (P7), tucked beside the title.
+  final String seasonEmoji;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: -0.02,
-      child: ComicPanel(
-        color: AppTheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('🧠', style: TextStyle(fontSize: 30)),
-            SizedBox(width: 8),
-            Text(
-              'BrainBuddies',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 0.5,
-                shadows: [Shadow(color: AppTheme.ink, offset: Offset(2.5, 2.5))],
-              ),
+    // Overlay ONE small seasonal motif at the title's trailing-top corner.
+    // PositionedDirectional + EdgeInsetsDirectional keep it RTL-safe inside
+    // the 430px frame; clipBehavior:none lets it peek just outside the panel.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Transform.rotate(
+          angle: -0.02,
+          child: ComicPanel(
+            color: AppTheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('🧠', style: TextStyle(fontSize: 30)),
+                SizedBox(width: 8),
+                Text(
+                  'BrainBuddies',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(color: AppTheme.ink, offset: Offset(2.5, 2.5))
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        PositionedDirectional(
+          end: -6,
+          top: -10,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 4),
+            child: Text(seasonEmoji, style: const TextStyle(fontSize: 24)),
+          ),
+        ),
+      ],
     );
   }
 }
