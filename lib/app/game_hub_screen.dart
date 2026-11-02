@@ -791,21 +791,31 @@ class _WhatsNewCard extends StatelessWidget {
                           fontSize: 18, fontWeight: FontWeight.w900),
                     ),
                   ),
+                  // Compact 28x28 visual, but the tap target fills a 44x44
+                  // box so it meets the kid-friendly large-target convention.
                   GestureDetector(
                     onTap: profile.markWhatsNewSeen,
+                    behavior: HitTestBehavior.opaque,
                     child: Tooltip(
                       message: l.whatsNewDismiss,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.ink, width: 2),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: AppTheme.ink, width: 2),
+                            ),
+                            child: const Icon(Icons.close,
+                                size: 16, color: AppTheme.ink),
+                          ),
                         ),
-                        child: const Icon(Icons.close,
-                            size: 16, color: AppTheme.ink),
                       ),
                     ),
                   ),

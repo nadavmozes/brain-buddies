@@ -230,7 +230,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Today ✨'), findsOneWidget);
-    // The X close control sits inside the panel.
+    // The X close control sits inside the panel. Its TAP TARGET must be at
+    // least 44x44 (kid-friendly large-target convention), even though the
+    // visible circle stays a compact 28x28.
+    final dismiss = find.ancestor(
+      of: find.byIcon(Icons.close),
+      matching: find.byType(GestureDetector),
+    );
+    expect(dismiss, findsOneWidget);
+    final dismissSize = tester.getSize(dismiss);
+    expect(dismissSize.width, greaterThanOrEqualTo(44.0));
+    expect(dismissSize.height, greaterThanOrEqualTo(44.0));
+
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
 
