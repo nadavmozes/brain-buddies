@@ -49,7 +49,10 @@ visual "build-the-fact" array that shows `a × b` as a grid to count.
 - **Achievements** — badges for milestones across every game.
 - **Daily streak** — a hub-wide streak that grows each day you play.
 - **Pet companion** — a buddy that grows from Egg → Dragon on cross-game XP, with a
-  little celebration moment at the end of each round.
+  little celebration moment at the end of each round. Earn and claim **treats** (a free
+  one daily, plus more from bosses/3-star rounds) and **feed** Buddy for bonus growth.
+- **Daily double** — the first finished round each day pays **double coins** (capped).
+- **Weekly goal** — play a set number of days each week for a bonus.
 - **Daily missions** — three rotating goals each day, with coin rewards.
 - **Daily Challenge** — a rotating bonus round reachable from the hub.
 
